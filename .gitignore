@@ -1,0 +1,97 @@
+# =============================================================================
+# Project Tracker .gitignore
+# =============================================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+
+# Virtual environments
+backend/venv/
+venv/
+.venv/
+env/
+
+# Node.js
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.lnk
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+*.key
+*.pem
+*.cert
+
+# Sensitive files
+**/Anthropic API Key*
+**/API Key*
+**/credentials*
+**/secrets*
+
+# Database files
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+backend/project_tracker.db*
+
+# Logs
+*.log
+logs/
+backend/logs/
+
+# Temporary files
+tmp*/
+tmpclaude-*
+nul
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Build artifacts
+*.pyc
+frontend/dist/
+
+# Claude Code working files (not needed in repo)
+.claude/
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Poetry
+poetry.lock
