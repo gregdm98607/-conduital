@@ -473,6 +473,35 @@ class APIClient {
   }
 
   // ============================================================================
+  // Momentum Settings
+  // ============================================================================
+
+  async getMomentumSettings(): Promise<{
+    stalled_threshold_days: number;
+    at_risk_threshold_days: number;
+    activity_decay_days: number;
+    recalculate_interval: number;
+  }> {
+    const response = await this.client.get('/settings/momentum');
+    return response.data;
+  }
+
+  async updateMomentumSettings(settings: {
+    stalled_threshold_days?: number;
+    at_risk_threshold_days?: number;
+    activity_decay_days?: number;
+    recalculate_interval?: number;
+  }): Promise<{
+    stalled_threshold_days: number;
+    at_risk_threshold_days: number;
+    activity_decay_days: number;
+    recalculate_interval: number;
+  }> {
+    const response = await this.client.put('/settings/momentum', settings);
+    return response.data;
+  }
+
+  // ============================================================================
   // AI Context Export
   // ============================================================================
 
@@ -484,6 +513,48 @@ class APIClient {
   }> {
     const response = await this.client.get('/export/ai-context', { params });
     return response.data;
+  }
+
+  // ============================================================================
+  // Data Export
+  // ============================================================================
+
+  async getExportPreview(): Promise<{
+    entity_counts: Record<string, number>;
+    estimated_size_bytes: number;
+    estimated_size_display: string;
+    available_formats: string[];
+  }> {
+    const response = await this.client.get('/export/preview');
+    return response.data;
+  }
+
+  async downloadJSONExport(): Promise<void> {
+    const response = await this.client.get('/export/json', { responseType: 'blob' });
+    const disposition = response.headers['content-disposition'] || '';
+    const filename = disposition.match(/filename="?(.+)"?/)?.[1] || 'project_tracker_export.json';
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }
+
+  async downloadDatabaseBackup(): Promise<void> {
+    const response = await this.client.get('/export/backup', { responseType: 'blob' });
+    const disposition = response.headers['content-disposition'] || '';
+    const filename = disposition.match(/filename="?(.+)"?/)?.[1] || 'project_tracker_backup.db';
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   }
 
   // ============================================================================

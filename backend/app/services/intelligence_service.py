@@ -91,7 +91,7 @@ class IntelligenceService:
                 select(Task)
                 .where(
                     Task.project_id == project.id,
-                    Task.is_next_action == True,
+                    Task.is_next_action.is_(True),
                     Task.status == "pending",
                 )
                 .limit(1)
@@ -160,7 +160,7 @@ class IntelligenceService:
                 select(Task)
                 .where(
                     Task.project_id == project.id,
-                    Task.is_next_action == True,
+                    Task.is_next_action.is_(True),
                     Task.status == "pending",
                 )
                 .limit(1)
@@ -267,7 +267,7 @@ class IntelligenceService:
             row[0] for row in db.execute(
                 select(Task.project_id).where(
                     Task.project_id.in_(project_ids),
-                    Task.is_next_action == True,
+                    Task.is_next_action.is_(True),
                     Task.status == "pending",
                 ).distinct()
             ).all()

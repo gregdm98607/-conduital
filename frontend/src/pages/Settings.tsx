@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
+import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight, Download, HardDrive } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAreaMappings, useUpdateAreaMappings, useAreaMappingSuggestions, useScanProjects } from '@/hooks/useDiscovery';
 import { useTheme } from '@/context/ThemeContext';
@@ -7,7 +7,7 @@ import { api } from '@/services/api';
 
 const SETTINGS_SECTIONS_KEY = 'pt-settings-sections';
 
-type SectionId = 'appearance' | 'area-mappings' | 'database' | 'sync' | 'ai' | 'momentum';
+type SectionId = 'appearance' | 'area-mappings' | 'database' | 'sync' | 'ai' | 'momentum' | 'export';
 
 function loadCollapsedSections(): Set<SectionId> {
   try {
@@ -18,7 +18,7 @@ function loadCollapsedSections(): Set<SectionId> {
   } catch {
     localStorage.removeItem(SETTINGS_SECTIONS_KEY);
   }
-  return new Set<SectionId>(['appearance', 'area-mappings', 'database', 'sync', 'ai', 'momentum']);
+  return new Set<SectionId>(['appearance', 'area-mappings', 'database', 'sync', 'ai', 'momentum', 'export']);
 }
 
 export function Settings() {
@@ -62,7 +62,38 @@ export function Settings() {
   const [aiTestResult, setAiTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [providerModels, setProviderModels] = useState<Record<string, Array<{ id: string; name: string }>>>({});
 
+  // Momentum Settings state
+  const [stalledThreshold, setStalledThreshold] = useState(14);
+  const [atRiskThreshold, setAtRiskThreshold] = useState(7);
+  const [activityDecayDays, setActivityDecayDays] = useState(30);
+  const [recalculateInterval, setRecalculateInterval] = useState(3600);
+  const [momentumLoading, setMomentumLoading] = useState(true);
+  const [momentumSaving, setMomentumSaving] = useState(false);
+
+  // Export state
+  const [exportPreview, setExportPreview] = useState<{
+    entity_counts: Record<string, number>;
+    estimated_size_display: string;
+  } | null>(null);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [downloadingJSON, setDownloadingJSON] = useState(false);
+  const [downloadingBackup, setDownloadingBackup] = useState(false);
+
   const { theme, setTheme } = useTheme();
+
+  // Load Momentum settings on mount
+  useEffect(() => {
+    api.getMomentumSettings()
+      .then((data) => {
+        setStalledThreshold(data.stalled_threshold_days);
+        setAtRiskThreshold(data.at_risk_threshold_days);
+        setActivityDecayDays(data.activity_decay_days);
+        setRecalculateInterval(data.recalculate_interval);
+        setMomentumLoading(false);
+      })
+      .catch(() => setMomentumLoading(false));
+  }, []);
+
   // Load AI settings on mount
   useEffect(() => {
     api.getAISettings()
@@ -259,6 +290,59 @@ export function Settings() {
         toast.error('Failed to scan projects');
       },
     });
+  };
+
+  const handleSaveMomentumSettings = async () => {
+    setMomentumSaving(true);
+    try {
+      const result = await api.updateMomentumSettings({
+        stalled_threshold_days: stalledThreshold,
+        at_risk_threshold_days: atRiskThreshold,
+        activity_decay_days: activityDecayDays,
+        recalculate_interval: recalculateInterval,
+      });
+      setStalledThreshold(result.stalled_threshold_days);
+      setAtRiskThreshold(result.at_risk_threshold_days);
+      setActivityDecayDays(result.activity_decay_days);
+      setRecalculateInterval(result.recalculate_interval);
+      toast.success('Momentum settings saved');
+    } catch {
+      toast.error('Failed to save momentum settings');
+    }
+    setMomentumSaving(false);
+  };
+
+  const handleLoadExportPreview = async () => {
+    setExportLoading(true);
+    try {
+      const preview = await api.getExportPreview();
+      setExportPreview(preview);
+    } catch {
+      toast.error('Failed to load export preview');
+    }
+    setExportLoading(false);
+  };
+
+  const handleDownloadJSON = async () => {
+    setDownloadingJSON(true);
+    try {
+      await api.downloadJSONExport();
+      toast.success('JSON export downloaded');
+    } catch {
+      toast.error('Failed to download JSON export');
+    }
+    setDownloadingJSON(false);
+  };
+
+  const handleDownloadBackup = async () => {
+    setDownloadingBackup(true);
+    try {
+      await api.downloadDatabaseBackup();
+      toast.success('Database backup downloaded');
+    } catch {
+      toast.error('Failed to download database backup');
+    }
+    setDownloadingBackup(false);
   };
 
   const sortedMappings = mappings
@@ -777,33 +861,138 @@ export function Settings() {
             {collapsedSections.has('momentum') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Momentum Thresholds</h2>
           </button>
-          {!collapsedSections.has('momentum') && (
-          <div className="space-y-4 mt-4">
-            <div>
-              <label className="label">Stalled Threshold (days)</label>
-              <input
-                type="number"
-                className="input"
-                value="14"
-                disabled
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Projects are marked stalled after this many days of inactivity
+          {!collapsedSections.has('momentum') && (momentumLoading ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading momentum settings...</div>
+          ) : (
+            <div className="space-y-4 mt-4">
+              <div>
+                <label className="label">Stalled Threshold (days)</label>
+                <input
+                  type="number"
+                  className="input w-32"
+                  value={stalledThreshold}
+                  min={1}
+                  max={90}
+                  onChange={(e) => setStalledThreshold(Number(e.target.value))}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Projects are marked stalled after this many days of inactivity
+                </p>
+              </div>
+              <div>
+                <label className="label">At Risk Threshold (days)</label>
+                <input
+                  type="number"
+                  className="input w-32"
+                  value={atRiskThreshold}
+                  min={1}
+                  max={90}
+                  onChange={(e) => setAtRiskThreshold(Number(e.target.value))}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Projects are flagged at risk after this many days
+                </p>
+              </div>
+              <div>
+                <label className="label">Activity Decay (days)</label>
+                <input
+                  type="number"
+                  className="input w-32"
+                  value={activityDecayDays}
+                  min={7}
+                  max={365}
+                  onChange={(e) => setActivityDecayDays(Number(e.target.value))}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Activity factor decays to 0 after this many days without activity
+                </p>
+              </div>
+              <div className="pt-2">
+                <button
+                  onClick={handleSaveMomentumSettings}
+                  disabled={momentumSaving}
+                  className="btn btn-primary flex items-center gap-2"
+                >
+                  {momentumSaving ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                  Save Thresholds
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        {/* Data Export Section */}
+        <section className="card">
+          <button
+            onClick={() => toggleSection('export')}
+            className="flex items-center gap-3 w-full text-left"
+          >
+            {collapsedSections.has('export') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            <Download className="w-6 h-6 text-primary-600" />
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Data Export</h2>
+          </button>
+          {!collapsedSections.has('export') && (
+            <div className="space-y-4 mt-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Export your data for backup or migration purposes.
+              </p>
+
+              {/* Preview */}
+              {exportPreview ? (
+                <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                  <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Export Summary</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                    {Object.entries(exportPreview.entity_counts).map(([key, count]) => (
+                      <div key={key} className="text-center">
+                        <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{count}</div>
+                        <div className="text-gray-500 dark:text-gray-400 capitalize">{key.replace('_', ' ')}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                    Estimated size: {exportPreview.estimated_size_display}
+                  </p>
+                </div>
+              ) : (
+                <button
+                  onClick={handleLoadExportPreview}
+                  disabled={exportLoading}
+                  className="btn btn-secondary btn-sm flex items-center gap-2"
+                >
+                  {exportLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+                  Preview Export Data
+                </button>
+              )}
+
+              {/* Download Buttons */}
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleDownloadJSON}
+                  disabled={downloadingJSON}
+                  className="btn btn-primary flex items-center gap-2"
+                >
+                  {downloadingJSON ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  Export as JSON
+                </button>
+                <button
+                  onClick={handleDownloadBackup}
+                  disabled={downloadingBackup}
+                  className="btn btn-secondary flex items-center gap-2"
+                >
+                  {downloadingBackup ? <RefreshCw className="w-4 h-4 animate-spin" /> : <HardDrive className="w-4 h-4" />}
+                  Download Database Backup
+                </button>
+              </div>
+
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                JSON export includes all projects, tasks, areas, goals, visions, and inbox items.
+                Database backup is a raw SQLite copy.
               </p>
             </div>
-            <div>
-              <label className="label">At Risk Threshold (days)</label>
-              <input
-                type="number"
-                className="input"
-                value="7"
-                disabled
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Projects are flagged at risk after this many days
-              </p>
-            </div>
-          </div>
           )}
         </section>
 

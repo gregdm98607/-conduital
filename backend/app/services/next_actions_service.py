@@ -51,7 +51,7 @@ class NextActionsService:
             select(Task)
             .join(Project)
             .where(
-                Task.is_next_action == True,
+                Task.is_next_action.is_(True),
                 Task.status.in_(["pending", "in_progress"]),
                 Project.status == "active",
             )
@@ -127,7 +127,7 @@ class NextActionsService:
             select(Task)
             .join(Project)
             .where(
-                Task.is_next_action == True,
+                Task.is_next_action.is_(True),
                 Task.status.in_(["pending", "in_progress"]),
                 Task.context.is_not(None),
                 Project.status == "active",
@@ -194,7 +194,7 @@ class NextActionsService:
             select(Task)
             .join(Project)
             .where(
-                Task.is_next_action == True,
+                Task.is_next_action.is_(True),
                 Task.status == "pending",
                 Task.estimated_minutes.is_not(None),
                 Task.estimated_minutes <= 15,

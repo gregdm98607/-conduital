@@ -504,7 +504,7 @@ class TaskService:
         query = (
             select(Task)
             .where(
-                Task.is_two_minute_task == True,
+                Task.is_two_minute_task.is_(True),
                 Task.status == "pending",
             )
             .order_by(Task.priority)

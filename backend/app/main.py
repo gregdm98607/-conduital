@@ -11,6 +11,7 @@ Set COMMERCIAL_MODE in .env or use ENABLED_MODULES for custom configs.
 """
 
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -49,25 +50,6 @@ setup_logging(
 
 logger = logging.getLogger(__name__)
 
-# Create FastAPI application
-app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.VERSION,
-    description="GTD + Manage Your Now project management system with Second Brain integration. "
-                f"Commercial mode: {settings.COMMERCIAL_MODE}",
-    docs_url="/docs",
-    redoc_url="/redoc",
-)
-
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 
 # =============================================================================
 # Module System Initialization
@@ -87,7 +69,7 @@ def register_modules():
     return enabled
 
 
-def mount_module_routers(enabled_modules: set[str]):
+def mount_module_routers(app: FastAPI, enabled_modules: set[str]):
     """Mount routers for enabled modules"""
     from app.modules.registry import registry
 
@@ -104,20 +86,18 @@ def mount_module_routers(enabled_modules: set[str]):
 
 
 # =============================================================================
-# Startup Event
+# Lifespan (startup + shutdown)
 # =============================================================================
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize application on startup"""
-    # Initialize database tables if they don't exist
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan: startup logic before yield, shutdown after."""
+    # --- Startup ---
     from app.core.database import init_db
     init_db()
 
-    # Enable WAL mode for better concurrency
     enable_wal_mode()
 
-    # Register and initialize modules
     enabled_modules = register_modules()
 
     logger.info(f"{settings.APP_NAME} v{settings.VERSION} started")
@@ -129,7 +109,6 @@ async def startup_event():
     if settings.LOG_TO_FILE:
         logger.info(f"Log file: {get_log_file_path()}")
 
-    # Initialize modules (async initialization)
     from app.modules.registry import registry
     app_context = {
         "app": app,
@@ -137,19 +116,14 @@ async def startup_event():
     }
     await registry.initialize_all(enabled_modules, app_context)
 
-    # Mount module-specific routers
-    mount_module_routers(enabled_modules)
+    mount_module_routers(app, enabled_modules)
 
-    # Start background scheduler for periodic tasks
     from app.services.scheduler_service import start_scheduler
     start_scheduler()
 
-    # Recalculate urgency zones on startup so tasks due today are promoted to Critical Now
     from app.services.scheduler_service import run_urgency_zone_recalculation_now
     await run_urgency_zone_recalculation_now()
 
-    # Legacy: Start folder watcher for auto-discovery if enabled
-    # (This will be moved to projects module in future)
     if settings.AUTO_DISCOVERY_ENABLED and "projects" in enabled_modules and settings.SECOND_BRAIN_ROOT:
         from app.sync.folder_watcher import start_folder_watcher
         from app.services.auto_discovery_service import (
@@ -170,38 +144,53 @@ async def startup_event():
         )
         logger.info("Auto-discovery enabled (Projects & Areas)")
 
+    yield
 
-# =============================================================================
-# Shutdown Event
-# =============================================================================
+    # --- Shutdown ---
+    from app.modules.registry import registry as reg
+    await reg.shutdown_all()
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    # Shutdown all modules
-    from app.modules.registry import registry
-    await registry.shutdown_all()
-
-    # Stop background scheduler
     from app.services.scheduler_service import stop_scheduler
     try:
         stop_scheduler()
     except Exception as e:
         logger.debug(f"Scheduler cleanup: {e}")
 
-    # Stop file watcher if running
     from app.sync.file_watcher import stop_file_watcher
     try:
         stop_file_watcher()
     except Exception as e:
         logger.debug(f"File watcher cleanup: {e}")
 
-    # Stop folder watcher if running
     from app.sync.folder_watcher import stop_folder_watcher
     try:
         stop_folder_watcher()
     except Exception as e:
         logger.debug(f"Folder watcher cleanup: {e}")
+
+
+# =============================================================================
+# Create FastAPI Application
+# =============================================================================
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.VERSION,
+    description="GTD + Manage Your Now project management system with Second Brain integration. "
+                f"Commercial mode: {settings.COMMERCIAL_MODE}",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan,
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # =============================================================================

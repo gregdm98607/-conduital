@@ -328,7 +328,7 @@ class HydrationService:
         """Get bundle of objects for a prefetch trigger"""
         rule = db.query(PrefetchRule).filter(
             PrefetchRule.trigger == trigger,
-            PrefetchRule.is_active == True
+            PrefetchRule.is_active.is_(True)
         ).first()
 
         if not rule:

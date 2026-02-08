@@ -72,6 +72,14 @@ class MomentumSettingsResponse(BaseModel):
     recalculate_interval: int
 
 
+class MomentumSettingsUpdate(BaseModel):
+    """Schema for updating momentum settings"""
+    stalled_threshold_days: Optional[int] = Field(None, ge=1, le=90)
+    at_risk_threshold_days: Optional[int] = Field(None, ge=1, le=90)
+    activity_decay_days: Optional[int] = Field(None, ge=7, le=365)
+    recalculate_interval: Optional[int] = Field(None, ge=60, le=86400)
+
+
 def _mask_key(key: Optional[str]) -> tuple[bool, Optional[str]]:
     """Mask an API key. Returns (is_configured, masked_value)."""
     if not key:
@@ -257,6 +265,35 @@ def test_ai_connection():
 @router.get("/momentum", response_model=MomentumSettingsResponse)
 def get_momentum_settings():
     """Get current momentum threshold settings"""
+    return MomentumSettingsResponse(
+        stalled_threshold_days=settings.MOMENTUM_STALLED_THRESHOLD_DAYS,
+        at_risk_threshold_days=settings.MOMENTUM_AT_RISK_THRESHOLD_DAYS,
+        activity_decay_days=settings.MOMENTUM_ACTIVITY_DECAY_DAYS,
+        recalculate_interval=settings.MOMENTUM_RECALCULATE_INTERVAL,
+    )
+
+
+@router.put("/momentum", response_model=MomentumSettingsResponse)
+def update_momentum_settings(update: MomentumSettingsUpdate):
+    """Update momentum threshold settings and persist to .env"""
+    env_updates: dict[str, str] = {}
+
+    if update.stalled_threshold_days is not None:
+        settings.MOMENTUM_STALLED_THRESHOLD_DAYS = update.stalled_threshold_days
+        env_updates["MOMENTUM_STALLED_THRESHOLD_DAYS"] = str(update.stalled_threshold_days)
+    if update.at_risk_threshold_days is not None:
+        settings.MOMENTUM_AT_RISK_THRESHOLD_DAYS = update.at_risk_threshold_days
+        env_updates["MOMENTUM_AT_RISK_THRESHOLD_DAYS"] = str(update.at_risk_threshold_days)
+    if update.activity_decay_days is not None:
+        settings.MOMENTUM_ACTIVITY_DECAY_DAYS = update.activity_decay_days
+        env_updates["MOMENTUM_ACTIVITY_DECAY_DAYS"] = str(update.activity_decay_days)
+    if update.recalculate_interval is not None:
+        settings.MOMENTUM_RECALCULATE_INTERVAL = update.recalculate_interval
+        env_updates["MOMENTUM_RECALCULATE_INTERVAL"] = str(update.recalculate_interval)
+
+    if env_updates:
+        _persist_to_env(env_updates)
+
     return MomentumSettingsResponse(
         stalled_threshold_days=settings.MOMENTUM_STALLED_THRESHOLD_DAYS,
         at_risk_threshold_days=settings.MOMENTUM_AT_RISK_THRESHOLD_DAYS,

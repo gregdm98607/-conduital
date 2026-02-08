@@ -19,7 +19,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
@@ -226,13 +226,15 @@ def export_ai_context(
             lines.append(f"**Exported:** {now.strftime('%Y-%m-%d %H:%M UTC')}")
             lines.append("")
 
-            # Summary counts
-            active_count = db.execute(
-                select(func.count(Project.id)).where(Project.status == "active")
-            ).scalar_one()
-            stalled_count = db.execute(
-                select(func.count(Project.id)).where(Project.stalled_since.isnot(None), Project.status == "active")
-            ).scalar_one()
+            # Fetch all active projects once (reused for counts and stalled section)
+            all_active = db.execute(
+                select(Project)
+                .options(joinedload(Project.tasks))
+                .where(Project.status == "active")
+            ).unique().scalars().all()
+
+            active_count = len(all_active)
+            stalled_count = len([p for p in all_active if p.stalled_since])
 
             lines.append(f"**Active Projects:** {active_count} | **Stalled:** {stalled_count}")
             lines.append("")
@@ -293,13 +295,11 @@ def export_ai_context(
                     lines.extend(_format_project_summary(p))
                 lines.append("")
 
-            # Stalled projects highlight
-            stalled = db.execute(
-                select(Project)
-                .options(joinedload(Project.tasks))
-                .where(Project.stalled_since.isnot(None), Project.status == "active")
-                .order_by(Project.stalled_since)
-            ).unique().scalars().all()
+            # Stalled projects highlight (derived from all_active)
+            stalled = sorted(
+                [p for p in all_active if p.stalled_since],
+                key=lambda p: p.stalled_since,
+            )
 
             if stalled:
                 lines.append("## Stalled Projects (Need Attention)")
@@ -311,12 +311,7 @@ def export_ai_context(
                     lines.append(f"- **{p.title}** - stalled {days}d | momentum: {p.momentum_score or 0:.2f} | tasks: {done}/{total} | next actions: {next_actions}")
                 lines.append("")
 
-            # Count totals
-            all_active = db.execute(
-                select(Project)
-                .options(joinedload(Project.tasks))
-                .where(Project.status == "active")
-            ).unique().scalars().all()
+            # Count totals (from all_active fetched above)
             p_count = len(all_active)
             t_count = sum(len(p.tasks or []) for p in all_active)
 

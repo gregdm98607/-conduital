@@ -436,6 +436,57 @@ For SQLAlchemy self-referential relationships:
 
 ---
 
+## 2026-02-07: Batch 5+6 — BACKLOG-072/084/091/098 + DEBT-042/043/045/050/066/067
+
+### What Went Well
+1. **11 items across 2 batches** — Clean builds after every phase, zero regressions
+2. **Lifespan migration (DEBT-067)** was clean — tests still pass 18/18 after converting on_event to asynccontextmanager
+3. **N+1 elimination (DEBT-045)** — Removed 3 redundant queries from AI context export by reusing a single `all_active` fetch
+4. **Pattern-based grep (DEBT-066)** — Found and fixed all 8 `== True` instances across 4 files in one pass
+
+### Lessons Learned
+
+#### 1. Lifespan Functions Must Be Defined Before `app = FastAPI()`
+**Issue:** After converting `@app.on_event("startup")` and `@app.on_event("shutdown")` to a `lifespan` async context manager, the initial attempt defined `lifespan()` below `app = FastAPI(lifespan=lifespan)`. Python evaluates `FastAPI(lifespan=lifespan)` at import time, causing a NameError.
+**Fix:** Move `lifespan()` and all helper functions (`register_modules`, `mount_module_routers`) above the `app = FastAPI(...)` call.
+**Rule:** When converting to FastAPI's lifespan pattern, restructure the file so: (1) imports, (2) helper functions, (3) lifespan function, (4) `app = FastAPI(lifespan=lifespan)`, (5) middleware/routes. The lifespan must be defined before it's referenced.
+
+#### 2. `mount_module_routers` Needs Explicit `app` Parameter in Lifespan
+**Issue:** The old `mount_module_routers()` function used the global `app` variable. Inside `lifespan(app)`, the `app` parameter shadows the global. The function worked by accident before because the global was defined by the time startup ran, but it's cleaner and more correct to pass `app` explicitly.
+**Fix:** Changed signature to `mount_module_routers(app: FastAPI, enabled_modules)` and called with the lifespan's `app` parameter.
+**Rule:** Functions called inside lifespan should receive `app` as a parameter, not rely on module-level globals. This makes testing easier and avoids subtle import-order bugs.
+
+#### 3. Unused Imports Accumulate After Refactoring — Always Check
+**Issue:** After DEBT-045 removed `func.count()` queries from export.py, the `func` import from sqlalchemy became unused. After DEBT-067 refactored main.py, `get_db` and potentially `Path` became unused imports.
+**Fix:** Grepped for remaining usages of `func` and removed the import. Filed DEBT-071/072 for the main.py leftovers.
+**Rule:** After any refactor that removes code, immediately check if the imports used by that code are still needed elsewhere in the file. `grep` for the import name in the same file.
+
+#### 4. Venv Must Be Documented for Claude Code Sessions
+**Issue:** `python -m pytest` fails because the system Python doesn't have sqlalchemy installed. The project has a `venv/` directory with all dependencies, but nothing tells Claude Code to use it. The fix is `"C:\Dev\...\venv\Scripts\python.exe" -m pytest`.
+**Fix:** Filed DEBT-078. For now, always use the explicit venv python path when running backend commands.
+**Rule:** If a project uses a venv, document the activation command in CLAUDE.md or QUICKSTART.md so automated tools (and future Claude sessions) know how to run tests.
+
+#### 5. Settings Mutations on Singleton Config Objects Are Risky
+**Issue:** The momentum PUT endpoint does `settings.MOMENTUM_STALLED_THRESHOLD_DAYS = value` directly on the Pydantic Settings singleton. If Pydantic Settings has `model_config = ConfigDict(frozen=True)`, this will raise an error. Currently works because the config isn't frozen, but it's fragile.
+**Fix:** Filed DEBT-075. Consider using a separate mutable runtime config dict or a dedicated settings service.
+**Rule:** Don't mutate Pydantic Settings objects at runtime unless you've verified they're not frozen. Prefer a separate runtime config layer for dynamic settings.
+
+### Technical Debt Identified
+- [ ] DEBT-071: Unused `get_db` import in main.py after lifespan refactor
+- [ ] DEBT-072: Potentially unused `Path` import in main.py
+- [ ] DEBT-073: Momentum section missing icon in Settings.tsx (inconsistent with other sections)
+- [ ] DEBT-074: `recalculateInterval` loaded but not shown in UI
+- [ ] DEBT-075: Momentum PUT mutates singleton settings object (fragile if frozen)
+- [ ] DEBT-076: Duplicate blob download logic in api.ts
+- [ ] DEBT-077: pytest-asyncio mode=AUTO warning from pyproject.toml
+- [ ] DEBT-078: Tests require explicit venv python path
+
+### Potential Backlog Items
+1. **BACKLOG-111:** Momentum settings stalled > at_risk validation (client + server)
+2. **BACKLOG-112:** Export preview refresh after download
+
+---
+
 ## Template for Future Sessions
 
 ```markdown

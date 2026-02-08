@@ -40,7 +40,6 @@ This backlog is organized by commercial release milestones. Each release builds 
 - DOC-005: Module System Documentation (user-facing docs)
 
 **Known Limitations:**
-- Export UI not in frontend (use API endpoints directly)
 - 15 API integration tests failing (test harness issue, not production)
 - Single-user only (no multi-user/teams)
 
@@ -198,7 +197,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DIST-021 | Lock dependency versions | Open | Pre-R1 | Freeze requirements.txt + package-lock.json for reproducible builds |
 | DIST-022 | Semantic versioning setup | Open | Pre-R1 | Per STRAT-008: SemVer `Major.Minor.Patch`, first public version `1.0.0-beta` |
 | DIST-023 | Path resolution for packaged exe | Open | R1 | .env/config paths must resolve relative to executable, not source tree |
-| DIST-024 | Fix deprecated on_event → lifespan handlers | Open | Pre-R1 | FastAPI modernization required before packaging |
+| DIST-024 | Fix deprecated on_event → lifespan handlers | ✅ Done | Pre-R1 | FastAPI modernization required before packaging (DEBT-067) |
 
 #### Distribution & Marketing
 
@@ -245,7 +244,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-042 | `_persist_to_env` race condition on concurrent .env writes | `settings.py:73-98` | **Done** — threading.Lock added |
 | DEBT-043 | `_persist_to_env` no value sanitization (newlines/special chars in API keys) | `settings.py:83-86` | **Done** — _sanitize_env_value() added |
 | DEBT-044 | Unused imports: `os` in settings.py, `PlainTextResponse`/`Task` in export.py | `settings.py:8`, `export.py:20,27` | **Done** |
-| DEBT-045 | AI context export N+1: overview fetches all active projects twice | `export.py:231-236,316-322` | Open |
+| DEBT-045 | AI context export N+1: overview fetches all active projects twice | `export.py:231-236,316-322` | **Done** — Single `all_active` query, stalled/counts derived from it |
 | DEBT-046 | ContextExportModal setState-in-render anti-pattern (same as DEBT-030) | `ContextExportModal.tsx:59-61` | ✅ Done — moved to useEffect |
 | DEBT-047 | ContextExportModal stale data on reopen + memory leak on unmount | `ContextExportModal.tsx:15-39` | ✅ Done — reset on close + AbortController cleanup |
 | DEBT-048 | SQLAlchemy `== False` should use `.is_(False)` in export.py | `export.py:272` | ✅ Done — also fixed in areas.py + intelligence_service.py |
@@ -268,7 +267,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-019 | Silent auto-discovery failures | Auto-discovery service | Open |
 | DEBT-039 | MemoryPage priority input allows out-of-range values client-side | `MemoryPage.tsx:447` | Open |
 | DEBT-049 | Collapsible section buttons missing `type="button"` and `aria-expanded` | `Settings.tsx` | Open |
-| DEBT-050 | Unused `timedelta` import | `ai_service.py:12` | Open |
+| DEBT-050 | Unused `timedelta` import | `ai_service.py:12` | **Done** |
 | DEBT-051 | Inconsistent BaseModel naming (`PydanticBaseModel` alias) | `memory_layer/routes.py` | **Done** |
 | DEBT-052 | Empty model dropdown edge case when provider_models not yet loaded | `Settings.tsx` | Open |
 | DEBT-058 | `get_by_id` returns `task_count: 0` — detail pages show misleading task counts | `project_service.py` | **Done** |
@@ -279,11 +278,19 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-063 | `/modules` proxy needs production server configuration (Vite dev proxy only) | `vite.config.ts` | Open |
 | DEBT-064 | "Processed Today" count shows 0 on unprocessed tab — needs dedicated API endpoint | `InboxPage.tsx`, backend inbox API | Open |
 | DEBT-065 | API client methods don't accept AbortSignal — prevents true HTTP request cancellation | `api.ts` (all methods) | Open |
-| DEBT-066 | SQLAlchemy `== True` pattern in 8 locations — should use `.is_(True)` | `intelligence_service.py` ×3, `next_actions_service.py` ×3, `task_service.py` ×1, `memory_layer/services.py` ×1 | Open |
-| DEBT-067 | FastAPI `@app.on_event("startup"/"shutdown")` deprecated — migrate to lifespan context manager | `main.py:110,178` | Open |
+| DEBT-066 | SQLAlchemy `== True` pattern in 8 locations — should use `.is_(True)` | `intelligence_service.py` ×3, `next_actions_service.py` ×3, `task_service.py` ×1, `memory_layer/services.py` ×1 | **Done** |
+| DEBT-067 | FastAPI `@app.on_event("startup"/"shutdown")` deprecated — migrate to lifespan context manager | `main.py:110,178` | **Done** — asynccontextmanager lifespan, helpers moved before app creation |
 | DEBT-068 | Pydantic V1-style `class Config` + `Field(example=...)` deprecated — migrate to `ConfigDict` + `json_schema_extra` | Multiple schema files | Open |
 | DEBT-069 | conftest.py `in_memory_engine` fixture missing `StaticPool` — inconsistent with test_api_basic.py | `tests/conftest.py` | Open |
 | DEBT-070 | conftest.py and test_api_basic.py duplicate engine/session setup — consolidate into shared conftest | `tests/conftest.py`, `tests/test_api_basic.py` | Open |
+| DEBT-071 | `get_db` imported but unused in main.py after lifespan refactor | `main.py:38` | Open |
+| DEBT-072 | `Path` imported but unused in main.py (only used in setup_logging call which can use string) | `main.py:15` — verify if still needed | Open |
+| DEBT-073 | Momentum section missing icon — other Settings sections have colored icons, Momentum has none | `Settings.tsx:862` | Open |
+| DEBT-074 | `recalculateInterval` state variable loaded from API but never exposed in UI — hidden from user | `Settings.tsx:69` | Open |
+| DEBT-075 | Momentum PUT endpoint mutates the singleton `settings` object in-memory — not safe if Pydantic Settings is frozen | `settings.py:282-292` | Open |
+| DEBT-076 | `downloadJSONExport` and `downloadDatabaseBackup` duplicate blob download logic — extract shared helper | `api.ts:532-558` | Open |
+| DEBT-077 | Tests use `pytest-asyncio` but test_api_basic.py uses sync TestClient — `asyncio: mode=AUTO` warning in pytest config | `pyproject.toml` | Open |
+| DEBT-078 | Test run requires explicit venv python — `python -m pytest` fails without venv activation | `backend/venv` exists but PATH doesn't include it | Open |
 
 ---
 
@@ -359,11 +366,11 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-061 | Register Claude Code Skills | Developer tooling |
 | BACKLOG-066 | Automated Urgency Zone (Phase 3) | Zone lock capability |
 | BACKLOG-090 | Data Import from JSON Backup | Complement to export feature |
-| BACKLOG-091 | Export UI in Frontend | Settings page with export buttons |
+| BACKLOG-091 | ~~Export UI in Frontend~~ | **Done** — Export section in Settings with preview, JSON download, DB backup |
 | BACKLOG-093 | Quick Capture Success Animation | Visual flash/animation feedback on Capture & Next for consecutive entries |
 | BACKLOG-094 | ~~Whitespace-Only Content Validation~~ | **Done** — strip_whitespace validator on inbox, task, project, area schemas |
 | BACKLOG-095 | Collapsible Sections Pattern Extension | Apply collapsible pattern to Weekly Review checklist and ProjectDetail task sections |
-| BACKLOG-098 | Momentum Settings PUT Endpoint | GET exists but no update counterpart in settings API |
+| BACKLOG-098 | ~~Momentum Settings PUT Endpoint~~ | **Done** — PUT /settings/momentum + editable controls in Settings UI |
 | BACKLOG-099 | Archive Area Confirmation Dialog | Warn when area has active projects, offer cascade options |
 | BACKLOG-101 | Dashboard Stats Block Visual Consistency | Active Projects, Pending Tasks, Avg Momentum blocks mix bold text and color-coded badges for counts — pick one treatment and apply consistently |
 | BACKLOG-103 | Project Review Frequency + Mark Reviewed Next Date |
@@ -374,6 +381,8 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-108 | ~~Global React Error Boundary~~ | **Done** — ErrorBoundary wraps App root |
 | BACKLOG-109 | ~~CORS Origins from Environment Variable~~ | **Done** — field_validator parses comma-separated or JSON array from .env |
 | BACKLOG-110 | Auto-Discovery as Optional Setting | Add a user setting on the Settings page to toggle on/off Project discovery, Area discovery, and Project Prefix discovery independently. Design what "off" means (skip on startup, ignore file changes, preserve existing data vs. clear). |
+| BACKLOG-111 | Momentum Settings: Validate stalled > at_risk | Frontend allows saving stalled_threshold < at_risk_threshold, which is logically invalid (a project can't be at-risk before it's stalled). Add client-side + server-side validation. |
+| BACKLOG-112 | Export Preview: Refresh after download | After downloading JSON export or DB backup, the export preview data doesn't refresh. Add a re-fetch or stale indicator. |
 
 ---
 
@@ -469,6 +478,13 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-043 | _persist_to_env value sanitization (_sanitize_env_value for newlines/special chars) | 2026-02-07 |
 | BACKLOG-094 | Whitespace-Only Content Validation (strip_whitespace validator on all title/content fields) | 2026-02-07 |
 | BACKLOG-109 | CORS Origins from Environment Variable (field_validator parses CSV or JSON) | 2026-02-07 |
+| BACKLOG-091 | Export UI in Frontend (preview, JSON download, DB backup in Settings page) | 2026-02-07 |
+| BACKLOG-098 | Momentum Settings PUT Endpoint (PUT /settings/momentum + editable UI) | 2026-02-07 |
+| DEBT-045 | AI context export N+1 fix (single all_active query, derived counts) | 2026-02-07 |
+| DEBT-050 | Unused timedelta import removed from ai_service.py | 2026-02-07 |
+| DEBT-066 | SQLAlchemy `== True` → `.is_(True)` in 8 locations across 4 files | 2026-02-07 |
+| DEBT-067 | FastAPI on_event → lifespan context manager migration | 2026-02-07 |
+| DIST-024 | Fix deprecated on_event → lifespan handlers (same as DEBT-067) | 2026-02-07 |
 
 *See git history for detailed completion notes.*
 
@@ -506,5 +522,5 @@ For each release, verify:
 
 ---
 
-*Last updated: 2026-02-07 (Batch 5: BACKLOG-072, 084, 094, 109 + DEBT-042, 043)*
+*Last updated: 2026-02-07 (Batch 6: BACKLOG-091, 098 + DEBT-045, 050, 066, 067 + DIST-024)*
 *Reorganized by commercial release milestones*

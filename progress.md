@@ -42,3 +42,19 @@
 - BACKLOG-094: Whitespace-Only Content Validation — `strip_whitespace` validator in common.py applied to inbox, task, project, area schemas (title/content fields) **Done**
 - BACKLOG-109: CORS Origins from Environment Variable — field_validator parses comma-separated or JSON array; .env.example updated **Done**
 - TypeScript: clean | Vite build: clean | Python syntax: clean
+
+### Batch 6 Complete (6 items) — 2026-02-07
+- BACKLOG-091: Export UI in Frontend — Data Export section in Settings with preview, JSON download, DB backup download **Done**
+- BACKLOG-098: Momentum Settings PUT Endpoint — `MomentumSettingsUpdate` schema + `PUT /settings/momentum` + editable stalled/at-risk/decay controls in Settings UI **Done**
+- DEBT-066: SQLAlchemy `== True` → `.is_(True)` — Fixed 8 instances across intelligence_service.py (×3), next_actions_service.py (×3), task_service.py (×1), memory_layer/services.py (×1) **Done**
+- DEBT-067: FastAPI `on_event` → lifespan — Converted startup/shutdown handlers to `asynccontextmanager` lifespan; moved helpers + lifespan above `app = FastAPI()` creation; `mount_module_routers` now takes `app` parameter **Done**
+- DEBT-045: AI context export N+1 — Removed 2 redundant `func.count` queries + 1 redundant `all_active` query; single fetch at top, stalled/counts derived; removed unused `func` import **Done**
+- DEBT-050: Unused `timedelta` import removed from ai_service.py **Done**
+- Also: DIST-024 resolved (same as DEBT-067)
+- TypeScript: clean | Vite build: clean | Python syntax: clean | Backend tests: **18/18 pass** (via venv python)
+
+### Session Audit (Batches 5+6)
+- Logged 8 new DEBT items (DEBT-071 through DEBT-078)
+- Logged 2 new BACKLOG items (BACKLOG-111, BACKLOG-112)
+- Updated lessons.md with 5 lessons from this session
+- Root-caused test venv issue: `python` on PATH is system Python (no sqlalchemy), but `backend/venv/` has all deps. Must use explicit venv path.
