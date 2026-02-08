@@ -33,9 +33,9 @@ class ProjectBase(BaseModel):
         return strip_whitespace(v)
     description: Optional[str] = Field(None, max_length=5000, description="Project description")
     outcome_statement: Optional[str] = Field(
-        None, max_length=2000, description="GTD: What does successful completion look like?"
+        None, max_length=2000, description="What does successful completion look like?"
     )
-    # GTD Natural Planning Model fields
+    # Natural Planning Model fields
     purpose: Optional[str] = Field(
         None, max_length=2000, description="NPM Step 1: Why are we doing this?"
     )
@@ -51,7 +51,7 @@ class ProjectBase(BaseModel):
     status: StatusEnum = Field(StatusEnum.ACTIVE, description="Project status")
     priority: int = Field(5, ge=1, le=10, description="Project priority (1-10, 1 is highest)")
     target_completion_date: Optional[date] = Field(None, description="Target completion date")
-    next_review_date: Optional[date] = Field(None, description="GTD: When to review this project")
+    next_review_date: Optional[date] = Field(None, description="When to review this project")
     area_id: Optional[int] = Field(None, description="Area of responsibility ID")
     goal_id: Optional[int] = Field(None, description="Goal ID (1-3 year)")
     vision_id: Optional[int] = Field(None, description="Vision ID (3-5 year)")
@@ -94,14 +94,14 @@ class Project(ProjectBase):
 
     id: int
     outcome_statement: Optional[str] = Field(
-        None, description="GTD: What does successful completion look like?"
+        None, description="What does successful completion look like?"
     )
     momentum_score: float = Field(..., ge=0.0, le=1.0, description="Momentum score (0.0-1.0)")
     last_activity_at: Optional[datetime] = Field(None, description="Last activity timestamp")
     stalled_since: Optional[datetime] = Field(None, description="When project became stalled")
     completed_at: Optional[datetime] = Field(None, description="Completion timestamp")
     last_reviewed_at: Optional[datetime] = Field(None, description="When project was last reviewed")
-    file_path: Optional[str] = Field(None, description="Path to project file in Second Brain")
+    file_path: Optional[str] = Field(None, description="Path to project file in synced notes")
     created_at: datetime
     updated_at: datetime
     area: Optional[AreaSummary] = Field(None, description="Associated area of responsibility")

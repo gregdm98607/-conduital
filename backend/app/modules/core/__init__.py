@@ -28,7 +28,7 @@ class CoreModule(ModuleBase):
         return ModuleInfo(
             name="core",
             display_name="Core",
-            description="Core functionality including users, areas, contexts, and GTD horizons",
+            description="Core functionality including users, areas, contexts, and planning horizons",
             category=ModuleCategory.CORE,
             version="1.0.0",
             dependencies=[],  # No dependencies - this is the base

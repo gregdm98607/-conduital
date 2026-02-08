@@ -30,8 +30,8 @@ class GTDInboxModule(ModuleBase):
     def info(self) -> ModuleInfo:
         return ModuleInfo(
             name="gtd_inbox",
-            display_name="GTD Inbox",
-            description="GTD workflow features: inbox, weekly review, waiting-for",
+            display_name="Inbox",
+            description="Workflow features: inbox, weekly review, waiting-for",
             category=ModuleCategory.FEATURE,
             version="1.0.0",
             dependencies=["core", "projects"],

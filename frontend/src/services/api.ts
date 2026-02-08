@@ -532,7 +532,7 @@ class APIClient {
   async downloadJSONExport(): Promise<void> {
     const response = await this.client.get('/export/json', { responseType: 'blob' });
     const disposition = response.headers['content-disposition'] || '';
-    const filename = disposition.match(/filename="?(.+)"?/)?.[1] || 'project_tracker_export.json';
+    const filename = disposition.match(/filename="?(.+)"?/)?.[1] || 'conduital_export.json';
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -546,7 +546,7 @@ class APIClient {
   async downloadDatabaseBackup(): Promise<void> {
     const response = await this.client.get('/export/backup', { responseType: 'blob' });
     const disposition = response.headers['content-disposition'] || '';
-    const filename = disposition.match(/filename="?(.+)"?/)?.[1] || 'project_tracker_backup.db';
+    const filename = disposition.match(/filename="?(.+)"?/)?.[1] || 'conduital_backup.db';
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -625,7 +625,7 @@ class APIClient {
   }
 
   // ============================================================================
-  // Inbox (GTD Capture)
+  // Inbox (Quick Capture)
   // ============================================================================
 
   async getInboxItems(processed: boolean = false, limit: number = 50): Promise<InboxItem[]> {

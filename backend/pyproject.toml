@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "project-tracker"
+name = "conduital"
 version = "1.0.0-alpha"
-description = "GTD + Manage Your Now project management system with Second Brain integration"
+description = "Intelligent momentum system for independent operators with markdown file sync"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
 packages = [{include = "app"}]

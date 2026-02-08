@@ -361,7 +361,7 @@ export function Settings() {
           <SettingsIcon className="w-8 h-8 text-primary-600" />
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
         </div>
-        <p className="text-gray-600 dark:text-gray-400">Configure your Project Tracker</p>
+        <p className="text-gray-600 dark:text-gray-400">Configure your Conduital settings</p>
       </header>
 
       {/* Settings Sections */}
@@ -641,7 +641,7 @@ export function Settings() {
                 <input
                   type="text"
                   className="input"
-                  value="~/.project-tracker/tracker.db"
+                  value="~/.conduital/tracker.db"
                   disabled
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -660,16 +660,16 @@ export function Settings() {
           >
             {collapsedSections.has('sync') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
             <RefreshCw className="w-6 h-6 text-primary-600" />
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Second Brain Sync</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">File Sync</h2>
           </button>
           {!collapsedSections.has('sync') && (
             <div className="space-y-4 mt-4">
               <div>
-                <label className="label">Second Brain Root</label>
+                <label className="label">Sync Folder Root</label>
                 <input
                   type="text"
                   className="input"
-                  placeholder="/path/to/your/second-brain"
+                  placeholder="/path/to/your/notes"
                   disabled
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

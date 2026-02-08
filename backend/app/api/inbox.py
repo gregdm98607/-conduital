@@ -1,5 +1,5 @@
 """
-Inbox API endpoints - GTD Capture
+Inbox API endpoints - Quick Capture
 """
 
 from datetime import datetime, timezone
@@ -60,7 +60,7 @@ def list_inbox_items(
     db: Session = Depends(get_db),
 ):
     """
-    List inbox items (GTD capture)
+    List inbox items
 
     By default shows only unprocessed items
     """
@@ -85,7 +85,7 @@ def get_inbox_item(item_id: int, db: Session = Depends(get_db)):
 @router.post("", response_model=InboxItem, status_code=201)
 def create_inbox_item(item: InboxItemCreate, db: Session = Depends(get_db)):
     """
-    Quick capture to inbox (GTD Capture phase)
+    Quick capture to inbox
 
     Capture anything that has your attention - process later
     """
@@ -126,7 +126,7 @@ def process_inbox_item(
     db: Session = Depends(get_db),
 ):
     """
-    Process an inbox item (GTD Clarify phase)
+    Process an inbox item (Clarify phase)
 
     Creates the appropriate entity (project, task) and links back to the inbox item.
     Supports optional title and description overrides for the created entity.

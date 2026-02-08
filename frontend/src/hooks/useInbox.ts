@@ -1,5 +1,5 @@
 /**
- * React Query hooks for Inbox (GTD Capture)
+ * React Query hooks for Inbox (Quick Capture)
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';

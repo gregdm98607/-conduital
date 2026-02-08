@@ -68,7 +68,7 @@ def export_json(db: Session = Depends(get_db)):
 
         # Generate filename with timestamp
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        filename = f"project_tracker_export_{timestamp}.json"
+        filename = f"conduital_export_{timestamp}.json"
 
         # Convert to dict for JSON response
         # Using model_dump() instead of .dict() (Pydantic v2)
@@ -109,7 +109,7 @@ def export_database_backup():
 
         # Generate filename with timestamp
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        filename = f"project_tracker_backup_{timestamp}.db"
+        filename = f"conduital_backup_{timestamp}.db"
 
         # Return file for download
         # background=BackgroundTask will delete file after response is sent
@@ -222,7 +222,7 @@ def export_ai_context(
 
         else:
             # Full overview export
-            lines.append("# Project Tracker AI Context")
+            lines.append("# Conduital AI Context")
             lines.append(f"**Exported:** {now.strftime('%Y-%m-%d %H:%M UTC')}")
             lines.append("")
 

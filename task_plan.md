@@ -1,78 +1,41 @@
-# Task Plan: v1.0.0 Release Preparation — Code & Infrastructure Work
+# Task Plan: v1.0.0 Release Prep — Round 2 (Branding + Polish)
 
-**Goal:** Execute all distribution-checklist items that are code/config tasks (no human decisions required).
-**Status:** `in_progress`
-**Created:** 2026-02-07
+**Goal:** Apply the Conduital branding decision, clean remaining trademark references, and complete all Phase 0–1 engineering work that doesn't require external accounts or human decisions.
+**Status:** `complete`
+**Created:** 2026-02-07 (Session 2)
 
 ---
 
-## Scope: What Can Be Done Now
+## Context
 
-From findings.md Tier 2 + distribution-checklist Phases 0-1, these items are concrete engineering work:
+Round 1 (commit 0662006) completed: JWT auto-gen, static serving, Alembic startup, run.py launcher, GTD UI cleanup, LICENSE, THIRD_PARTY_LICENSES.txt.
 
-### Selected Items (7 tasks)
+The naming decision was made: **Conduital** — "The Conduit for Intelligent Momentum"
 
-| # | Source | Description | Effort |
+## Completed Tasks (7 items)
+
+| # | Source | Description | Status |
 |---|--------|-------------|--------|
-| 1 | Checklist 0.5 | **JWT secret auto-generation on first run** | 30 min |
-| 2 | Checklist 1.1 | **FastAPI static file serving for React build** (DIST-011) | 45 min |
-| 3 | Checklist 1.2 | **Auto-run Alembic migrations on startup** | 20 min |
-| 4 | Checklist 1.6 | **Single-process launcher script** (run.py) | 30 min |
-| 5 | Checklist 4.4 | **GTD trademark audit — replace in UI text** | 30 min |
-| 6 | Findings Tier 2 | **Dependency license audit** (DIST-020) | 20 min |
-| 7 | Checklist 4.5 | **LICENSE file + THIRD_PARTY_LICENSES.txt** | 20 min |
+| 1 | Checklist 0.6 | **Rebrand "Project Tracker" → "Conduital"** — 56 occurrences across 25+ files | ✅ |
+| 2 | Checklist 4.4 | **Clean remaining GTD references** — 20+ instances in schemas, API tags, modules | ✅ |
+| 3 | Checklist 4.4 | **Clean "PARA" and "Second Brain"** — Settings, Layout, Projects, schemas | ✅ |
+| 4 | Checklist 0.6 | **Update index.html** — title "Conduital — Intelligent Momentum" | ✅ |
+| 5 | Checklist 1.1/1.2 | **Build verification** — TypeScript clean, Vite clean, Python 88 files 0 errors | ✅ |
+| 6 | Checklist 0.2 | **Clean branding research blob** — removed 1,603 lines from distribution-checklist.md | ✅ |
+| 7 | All | **Update tracking docs** — progress.md, distribution-checklist.md, task_plan.md | ✅ |
 
-**Total estimated: ~3.5 hours**
-
-### Out of Scope (requires human decisions)
-- 0.6 Product naming (Operaxis research done, awaiting final decision)
-- Phase 2-3 PyInstaller/installer (requires naming + logo first)
-- Phase 4.1-4.3 Legal documents (EULA, privacy policy, license key system)
-- Phase 5 Gumroad setup (requires all above)
-
----
-
-## Phase 1: JWT Secret Auto-Generation `pending`
-- [ ] Review current config.py SECRET_KEY default behavior
-- [ ] Add auto-generation using secrets.token_urlsafe(64) when no SECRET_KEY in env
-- [ ] Persist generated secret to .env file on first run
-- [ ] Remove weak default from config
-
-## Phase 2: FastAPI Static File Serving `pending`
-- [ ] Configure StaticFiles mount for frontend/dist/
-- [ ] Add catch-all route for SPA client-side routing
-- [ ] Test full app with only backend running
-- [ ] Update vite.config.ts base path if needed
-
-## Phase 3: Auto-Run Alembic Migrations `pending`
-- [ ] Check if already wired in lifespan
-- [ ] Handle first-run (no DB file yet)
-- [ ] Handle already-current (no-op)
-- [ ] Add error handling + logging
-
-## Phase 4: Single-Process Launcher `pending`
-- [ ] Create run.py entry point
-- [ ] Port detection + browser auto-open
-- [ ] Clean shutdown handling
-
-## Phase 5: GTD Trademark Cleanup in UI `pending`
-- [ ] Audit all "GTD" instances in frontend .tsx files
-- [ ] Replace user-facing text with generic alternatives
-- [ ] Keep internal code identifiers (module names, etc.)
-
-## Phase 6: Dependency License Audit `pending`
-- [ ] Scan all Python deps for license types
-- [ ] Scan all npm deps for license types
-- [ ] Flag any non-commercial-compatible licenses
-- [ ] Generate THIRD_PARTY_LICENSES.txt
-
-## Phase 7: LICENSE File `pending`
-- [ ] Create proprietary LICENSE file
-- [ ] Commit THIRD_PARTY_LICENSES.txt
+### Still Out of Scope (requires external action)
+- Domain registration (conduital.com) — user action
+- Social handle claims (@conduital) — user action
+- Icon/favicon design — deferred to Phase 5
+- Phase 1.3: User data directory (%LOCALAPPDATA%)
+- Phase 1.4: First-run setup wizard
+- Phase 1.5: Graceful AI degradation testing
+- Phase 2-5: PyInstaller, installer, legal docs, Gumroad
 
 ---
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |-------|---------|------------|
-| (none yet) | | |
+| (none) | | |

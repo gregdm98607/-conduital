@@ -345,7 +345,7 @@ def create_unstuck_task(
 @router.get("/weekly-review", response_model=WeeklyReviewResponse)
 def get_weekly_review(db: Session = Depends(get_db)):
     """
-    Generate GTD weekly review data
+    Generate weekly review data
 
     Returns:
     - Active project count

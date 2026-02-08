@@ -3,7 +3,7 @@ FastAPI application entry point
 
 Supports modular architecture with commercial configurations:
 - basic: Core + Projects
-- gtd: Core + Projects + GTD Inbox
+- gtd: Core + Projects + Inbox
 - proactive_assistant: Core + Projects + Memory Layer + AI Context
 - full: All modules
 
@@ -202,7 +202,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
-    description="Intelligent momentum system for independent operators, with Second Brain integration. "
+    description="Intelligent momentum system for independent operators, with markdown file sync. "
                 f"Commercial mode: {settings.COMMERCIAL_MODE}",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -302,7 +302,7 @@ app.include_router(
     discovery.router, prefix=f"{settings.API_V1_PREFIX}/discovery", tags=["Discovery"]
 )
 
-# GTD Inbox (always mounted, but could be gated in future)
+# Inbox module (always mounted, but could be gated in future)
 app.include_router(inbox.router, prefix=f"{settings.API_V1_PREFIX}/inbox", tags=["Inbox"])
 
 # Data Export (BACKLOG-074: Data portability)

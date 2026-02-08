@@ -20,7 +20,7 @@ router = APIRouter()
 
 # Include the existing inbox endpoints under this module
 # The inbox router is now gated by the gtd_inbox module being enabled
-router.include_router(inbox.router, prefix="/inbox", tags=["GTD Inbox"])
+router.include_router(inbox.router, prefix="/inbox", tags=["Inbox"])
 
 
 # Additional GTD-specific endpoints can be added here

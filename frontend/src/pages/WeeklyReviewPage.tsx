@@ -457,7 +457,7 @@ export function WeeklyReviewPage() {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Projects Without Area</h2>
           </div>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            These projects are not assigned to any Area. Assign them to maintain a complete PARA structure.
+            These projects are not assigned to any Area. Assign them to maintain a complete project-area structure.
           </p>
           <div className="space-y-3">
             {orphanProjects.map((project) => (

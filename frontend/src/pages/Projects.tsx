@@ -330,7 +330,7 @@ export function Projects() {
                 {orphanProjects.length} project{orphanProjects.length !== 1 ? 's' : ''} without an area
               </h3>
               <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-                PARA methodology recommends assigning every project to an Area of Responsibility.
+                Best practice is to assign every project to an Area of Responsibility.
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 {orphanProjects.slice(0, 5).map((p) => (

@@ -60,7 +60,7 @@ def setup_logging(
 
     # File handler with rotation
     if log_to_file:
-        log_file = log_dir / "project_tracker.log"
+        log_file = log_dir / "conduital.log"
         file_handler = RotatingFileHandler(
             filename=str(log_file),
             maxBytes=max_bytes,
@@ -72,7 +72,7 @@ def setup_logging(
         root_logger.addHandler(file_handler)
 
         # Also create an error-only log file
-        error_log_file = log_dir / "project_tracker_errors.log"
+        error_log_file = log_dir / "conduital_errors.log"
         error_handler = RotatingFileHandler(
             filename=str(error_log_file),
             maxBytes=max_bytes,
@@ -99,9 +99,9 @@ def setup_logging(
 
 def get_log_file_path() -> Path:
     """Get the path to the main log file."""
-    return Path(__file__).parent.parent.parent / "logs" / "project_tracker.log"
+    return Path(__file__).parent.parent.parent / "logs" / "conduital.log"
 
 
 def get_error_log_file_path() -> Path:
     """Get the path to the error log file."""
-    return Path(__file__).parent.parent.parent / "logs" / "project_tracker_errors.log"
+    return Path(__file__).parent.parent.parent / "logs" / "conduital_errors.log"

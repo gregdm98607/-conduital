@@ -9,8 +9,8 @@ export interface Project {
   id: number;
   title: string;
   description?: string;
-  outcome_statement?: string; // GTD: What does "done" look like?
-  // GTD Natural Planning Model fields
+  outcome_statement?: string; // What does "done" look like?
+  // Natural Planning Model fields
   purpose?: string; // NPM Step 1: Why are we doing this?
   vision_statement?: string; // NPM Step 2: What does wild success look like?
   brainstorm_notes?: string; // NPM Step 3: Raw ideas, no judgment
@@ -23,7 +23,7 @@ export interface Project {
   last_activity_at?: string;
   stalled_since?: string;
   target_completion_date?: string;
-  next_review_date?: string; // GTD: When to review this project
+  next_review_date?: string; // When to review this project
   last_reviewed_at?: string; // When project was last reviewed
   file_path?: string;
   created_at: string;

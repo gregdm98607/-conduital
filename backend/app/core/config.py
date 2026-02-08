@@ -3,7 +3,7 @@ Application configuration
 
 Supports commercial module configurations:
 - basic: Core + Projects (default)
-- gtd: Core + Projects + GTD Inbox
+- gtd: Core + Projects + Inbox
 - proactive_assistant: Core + Projects + Memory Layer + AI Context
 - full: All modules enabled
 """
@@ -93,7 +93,7 @@ class Settings(BaseSettings):
     )
 
     # Application
-    APP_NAME: str = "Project Tracker"
+    APP_NAME: str = "Conduital"
     VERSION: str = "1.0.0-alpha"
     DEBUG: bool = False
 
@@ -110,7 +110,7 @@ class Settings(BaseSettings):
     ENABLED_MODULES: Optional[list[str]] = None
 
     # Database
-    DATABASE_PATH: str = str(Path.home() / ".project-tracker" / "tracker.db")
+    DATABASE_PATH: str = str(Path.home() / ".conduital" / "tracker.db")
     DATABASE_ECHO: bool = False  # Log SQL queries
 
     # Second Brain Integration
@@ -195,7 +195,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
     LOG_TO_FILE: bool = True  # Write logs to file
     LOG_TO_CONSOLE: bool = True  # Output logs to console
-    LOG_DIR: Optional[str] = None  # Custom log directory (default: ~/.project-tracker/logs)
+    LOG_DIR: Optional[str] = None  # Custom log directory (default: ~/.conduital/logs)
     LOG_MAX_BYTES: int = 10 * 1024 * 1024  # 10 MB max per log file
     LOG_BACKUP_COUNT: int = 5  # Number of backup log files to keep
 

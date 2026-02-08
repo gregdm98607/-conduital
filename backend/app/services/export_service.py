@@ -159,7 +159,7 @@ class ExportService:
         temp_file = tempfile.NamedTemporaryFile(
             delete=False,
             suffix=".db",
-            prefix="project_tracker_backup_",
+            prefix="conduital_backup_",
         )
         temp_path = Path(temp_file.name)
         temp_file.close()

@@ -42,7 +42,7 @@ class ExportData(BaseModel):
     areas: list[dict[str, Any]] = Field(default_factory=list, description="Areas of responsibility")
     goals: list[dict[str, Any]] = Field(default_factory=list, description="Goals (1-3 year)")
     visions: list[dict[str, Any]] = Field(default_factory=list, description="Visions (3-5 year)")
-    contexts: list[dict[str, Any]] = Field(default_factory=list, description="GTD contexts")
+    contexts: list[dict[str, Any]] = Field(default_factory=list, description="Contexts")
     projects: list[dict[str, Any]] = Field(default_factory=list, description="Projects with tasks")
     inbox_items: list[dict[str, Any]] = Field(default_factory=list, description="Inbox items")
 

@@ -67,3 +67,30 @@
 - Bumped version to 1.0.0-alpha in pyproject.toml, package.json, config.py, .env.example **Done**
 - Created annotated git tag `v1.0.0-alpha` **Done**
 - Frontend build: CLEAN (576KB, 0 TS errors) | Working tree: CLEAN
+
+### 0.6 Product Naming & Branding — 2026-02-07
+- Researched 11 candidate names across web, app stores, Gumroad, domains, USPTO, GitHub, social media
+- Used parallel subagents for efficient research (6 names in Round 1, 3+3 in Rounds 2+3)
+- **Key finding:** User's #1 pick "Operaxis" is taken by OperAxis LLC (active US tech staffing company)
+- Other eliminated names: Moventis (HIGH), Operant (HIGH), Axiomatic (HIGH), Vectis (HIGH), Kinetic (HIGH), Axionaut (MED-HIGH), Opivot (MEDIUM)
+- **Final decision: Conduital** — complete blank slate, .com available ($5), zero USPTO filings, all namespace open
+- Typography: Title case "Conduital"
+- Tagline: "The Conduit for Intelligent Momentum"
+- Logo: Wordmark only for now; icon mark deferred to pre-distribution
+- Updated distribution-checklist.md section 0.6 with all decisions
+- Updated findings.md with full research results and final decisions
+- **Remaining:** Register domains, claim social handles
+
+### v1.0.0 Release Prep Round 2 — Conduital Rebrand & Polish — 2026-02-07
+- Rebranded all user-facing "Project Tracker" references to "Conduital" (56 occurrences across 25+ files) **Done**
+- Cleaned 20+ remaining GTD references in backend schemas, API descriptions, module display names **Done**
+- Cleaned "Second Brain" and "PARA" references in user-facing text (Settings, Layout, Projects, WeeklyReview, schemas) **Done**
+- Updated index.html `<title>` to "Conduital — Intelligent Momentum" **Done**
+- Renamed export/backup filenames from `project_tracker_*` to `conduital_*` **Done**
+- Renamed log files from `project_tracker*.log` to `conduital*.log` **Done**
+- Updated default database path from `~/.project-tracker/` to `~/.conduital/` **Done**
+- Updated pyproject.toml package name to "conduital" **Done**
+- Cleaned 1,603 lines of ChatGPT branding research from distribution-checklist.md **Done**
+- Updated distribution-checklist.md title, completed items, trademark compliance section **Done**
+- TypeScript: clean | Vite build: clean (576KB) | Python syntax: 88 files, 0 errors
+- **Remaining:** Register domains (conduital.com/$5), claim social handles, design icon mark

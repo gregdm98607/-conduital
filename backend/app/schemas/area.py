@@ -23,9 +23,9 @@ class AreaBase(BaseModel):
     def strip_title(cls, v: str) -> str:
         return strip_whitespace(v)
     description: Optional[str] = Field(None, max_length=5000, description="Area description")
-    folder_path: Optional[str] = Field(None, max_length=1000, description="Folder path in Second Brain")
+    folder_path: Optional[str] = Field(None, max_length=1000, description="Folder path in synced notes")
     standard_of_excellence: Optional[str] = Field(
-        None, max_length=2000, description="GTD: What does good look like?"
+        None, max_length=2000, description="What does good look like?"
     )
     review_frequency: ReviewFrequencyEnum = Field(
         ReviewFrequencyEnum.WEEKLY, description="Review frequency: daily, weekly, monthly"

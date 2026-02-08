@@ -112,8 +112,8 @@ export function Layout() {
               <Zap className="w-4.5 h-4.5 text-white" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-white tracking-tight">Project Tracker</h1>
-              <p className="text-[11px] text-gray-500 font-medium tracking-wide uppercase">Intelligent Momentum</p>
+              <h1 className="text-base font-bold text-white tracking-tight">Conduital</h1>
+              <p className="text-[11px] text-gray-500 font-medium tracking-wide uppercase">The Conduit for Intelligent Momentum</p>
             </div>
           </div>
         </div>
@@ -187,7 +187,7 @@ export function Layout() {
         <div className="px-4 py-3 border-t border-gray-800/60">
           <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-600">
             <CloudCog className="w-3 h-3" />
-            <span>Second Brain Sync</span>
+            <span>File Sync</span>
             <span className="text-gray-700">·</span>
             <span className="text-gray-700">v1.0</span>
           </div>

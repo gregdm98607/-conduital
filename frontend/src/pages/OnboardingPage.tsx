@@ -126,7 +126,7 @@ export function OnboardingPage() {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900/30 mb-4">
           <Sparkles className="w-8 h-8 text-primary-600" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Welcome to Project Tracker</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Welcome to Conduital</h1>
         <p className="text-gray-600 dark:text-gray-400">
           Let's set up your AI memory so the assistant can help you better.
         </p>

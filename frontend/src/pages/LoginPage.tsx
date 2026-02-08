@@ -57,7 +57,7 @@ export function LoginPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
               <CheckCircle2 className="w-8 h-8 text-primary-600" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Project Tracker</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Conduital</h1>
             <p className="mt-2 text-gray-600 dark:text-gray-400">Sign in to manage your projects</p>
           </div>
 
