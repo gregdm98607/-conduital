@@ -2,7 +2,7 @@
 FastAPI authentication dependencies
 
 Provides get_current_user and related dependencies for protecting API endpoints.
-Shared infrastructure module - can be used by both Project Tracker and Proactive Assistant.
+Shared infrastructure module - can be used by both Conduital and Proactive Assistant.
 """
 
 from typing import Optional

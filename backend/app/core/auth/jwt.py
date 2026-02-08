@@ -1,7 +1,7 @@
 """
 JWT token generation and validation
 
-Shared infrastructure module - can be used by both Project Tracker and Proactive Assistant.
+Shared infrastructure module - can be used by both Conduital and Proactive Assistant.
 """
 
 from datetime import datetime, timedelta, timezone

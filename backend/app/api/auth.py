@@ -2,7 +2,7 @@
 Authentication API routes
 
 Handles Google OAuth login flow and token management.
-Shared infrastructure module - designed for use by both Project Tracker and Proactive Assistant.
+Shared infrastructure module - designed for use by both Conduital and Proactive Assistant.
 """
 
 import logging

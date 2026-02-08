@@ -160,15 +160,15 @@ Present the user with three viable options, acknowledging that none perfectly re
 - About page
 
 ### Immediate Next Steps
-1. Register conduital.com ($4.99) + conduital.app ($19.99) — **user action**
-2. Claim @conduital on Twitter/X, GitHub — **user action**
-3. Claim conduital on Gumroad — **user action**
-4. Update codebase references from "Project Tracker" to "Conduital" — **engineering task**
+1. ~~Register conduital.com~~ — **DONE** ✅ (purchased 2026-02-07)
+2. ~~Claim @conduital on Twitter/X, GitHub~~ — **DONE** ✅ (both claimed 2026-02-07, GitHub: gregdm98607/conduital)
+3. ~~Claim conduital on Gumroad~~ — **DONE** ✅ (claimed 2026-02-07)
+4. ~~Update codebase references from "Project Tracker" to "Conduital"~~ — **DONE** ✅ (commit d9b538e)
 5. Design icon mark / favicon — **deferred to Phase 5 prep**
 
 ### Domain Registration Priority
-| Domain | Priority | Cost | Action |
+| Domain | Priority | Cost | Status |
 |--------|----------|------|--------|
-| conduital.com | **P0** | $4.99 | Register immediately |
-| conduital.app | P1 | $19.99 | Register soon |
-| conduital.io | P2 | ~$1 | Optional backup |
+| conduital.com | **P0** | $4.99 | ✅ Purchased |
+| conduital.app | P1 | $19.99 | Available |
+| conduital.io | P2 | ~$1 | Available |

@@ -1,5 +1,5 @@
 /**
- * API Client for Project Tracker Backend
+ * API Client for Conduital Backend
  */
 
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';

@@ -19,13 +19,13 @@ registry = ModuleRegistry()
 # =============================================================================
 
 COMMERCIAL_PRESETS: dict[str, set[str]] = {
-    # Project Tracker Basic: Core functionality only
+    # Conduital Basic: Core functionality only
     "basic": {
         "core",
         "projects",
     },
 
-    # Project Tracker GTD: Full GTD workflow support
+    # Conduital GTD: Full workflow support
     "gtd": {
         "core",
         "projects",

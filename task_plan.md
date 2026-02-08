@@ -1,8 +1,8 @@
-# Task Plan: v1.0.0 Release Prep — Round 2 (Branding + Polish)
+# Task Plan: v1.0.0 Release Prep — Round 3 (Deep Cleanup)
 
-**Goal:** Apply the Conduital branding decision, clean remaining trademark references, and complete all Phase 0–1 engineering work that doesn't require external accounts or human decisions.
+**Goal:** Find and fix all remaining pre-Conduital references, verify builds, clean distribution checklist.
 **Status:** `complete`
-**Created:** 2026-02-07 (Session 2)
+**Created:** 2026-02-07 (Session 3)
 
 ---
 
@@ -10,25 +10,29 @@
 
 Round 1 (commit 0662006) completed: JWT auto-gen, static serving, Alembic startup, run.py launcher, GTD UI cleanup, LICENSE, THIRD_PARTY_LICENSES.txt.
 
-The naming decision was made: **Conduital** — "The Conduit for Intelligent Momentum"
+Round 2 (commit d9b538e) completed: Full Conduital rebrand (56 user-facing occurrences), GTD/PARA/Second Brain trademark cleanup, branding research blob removal. 30 files changed, +306/-1,801.
 
-## Completed Tasks (7 items)
+Namespace claims completed: conduital.com purchased, @conduital claimed on GitHub/X/Gumroad.
+
+## Completed Tasks (6 items)
 
 | # | Source | Description | Status |
 |---|--------|-------------|--------|
-| 1 | Checklist 0.6 | **Rebrand "Project Tracker" → "Conduital"** — 56 occurrences across 25+ files | ✅ |
-| 2 | Checklist 4.4 | **Clean remaining GTD references** — 20+ instances in schemas, API tags, modules | ✅ |
-| 3 | Checklist 4.4 | **Clean "PARA" and "Second Brain"** — Settings, Layout, Projects, schemas | ✅ |
-| 4 | Checklist 0.6 | **Update index.html** — title "Conduital — Intelligent Momentum" | ✅ |
-| 5 | Checklist 1.1/1.2 | **Build verification** — TypeScript clean, Vite clean, Python 88 files 0 errors | ✅ |
-| 6 | Checklist 0.2 | **Clean branding research blob** — removed 1,603 lines from distribution-checklist.md | ✅ |
-| 7 | All | **Update tracking docs** — progress.md, distribution-checklist.md, task_plan.md | ✅ |
+| 1 | Audit | **Clean 18 internal "Project Tracker" references** — docstrings/comments across 15 Python/TypeScript files | ✅ |
+| 2 | Testing | **Fix FastAPI title** — local .env had stale APP_NAME override (Pydantic BaseSettings precedence) | ✅ |
+| 3 | Audit | **Fix alembic.ini path** — `.project-tracker/` → `.conduital/` database path | ✅ |
+| 4 | Audit | **Fix package.json name** — `project-tracker-frontend` → `conduital-frontend` | ✅ |
+| 5 | Audit | **Clean distribution-checklist.md** — 8 stale "ProjectTracker" refs + 1 "Second Brain" in future phases | ✅ |
+| 6 | All | **Build verification + commit + update tracking docs** | ✅ |
+
+### Build Verification
+- TypeScript: clean (0 errors)
+- Vite build: clean (576KB)
+- Python compile: PASS (all backend files)
 
 ### Still Out of Scope (requires external action)
-- Domain registration (conduital.com) — user action
-- Social handle claims (@conduital) — user action
 - Icon/favicon design — deferred to Phase 5
-- Phase 1.3: User data directory (%LOCALAPPDATA%)
+- Phase 1.3: User data directory (%LOCALAPPDATA%\Conduital\)
 - Phase 1.4: First-run setup wizard
 - Phase 1.5: Graceful AI degradation testing
 - Phase 2-5: PyInstaller, installer, legal docs, Gumroad
@@ -38,4 +42,4 @@ The naming decision was made: **Conduital** — "The Conduit for Intelligent Mom
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |-------|---------|------------|
-| (none) | | |
+| .env APP_NAME override | Discovered via static serving test | Updated local .env (gitignored) from "Project Tracker" to "Conduital" |

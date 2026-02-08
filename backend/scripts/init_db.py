@@ -21,7 +21,7 @@ from app.core.database import enable_wal_mode, engine
 
 
 def main():
-    print("🚀 Initializing Project Tracker Database...\n")
+    print("🚀 Initializing Conduital Database...\n")
 
     # 1. Create database directory
     db_path = Path(settings.DATABASE_PATH)

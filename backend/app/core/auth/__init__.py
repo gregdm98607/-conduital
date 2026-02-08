@@ -1,5 +1,5 @@
 """
-Authentication module for Project Tracker
+Authentication module for Conduital
 
 Provides Google OAuth authentication with JWT tokens.
 Designed as shared infrastructure for Proactive Assistant integration.

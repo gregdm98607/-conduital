@@ -2,7 +2,7 @@
 Google OAuth integration
 
 Handles Google OAuth 2.0 authentication flow.
-Shared infrastructure module - can be used by both Project Tracker and Proactive Assistant.
+Shared infrastructure module - can be used by both Conduital and Proactive Assistant.
 """
 
 import logging

@@ -64,11 +64,11 @@
   - [x] Domain available (or acceptable alternative)
 - [x] Decide on final product name: **Conduital**
   - Etymology: Conduit + -al ("of or relating to a conduit")
-  - conduital.com AVAILABLE ($4.99), conduital.io AVAILABLE, conduital.app AVAILABLE ($19.99)
+  - conduital.com PURCHASED ✅, conduital.io AVAILABLE, conduital.app AVAILABLE ($19.99)
   - USPTO: ZERO results (no live or dead filings)
-  - GitHub @conduital: AVAILABLE
-  - Twitter/X @conduital: AVAILABLE
-  - Gumroad: AVAILABLE
+  - GitHub @conduital: CLAIMED ✅ (gregdm98607/conduital)
+  - Twitter/X @conduital: CLAIMED ✅
+  - Gumroad: CLAIMED ✅
   - Risk level: LOW — complete blank slate
   - Key eliminated candidates: Operaxis (active US tech company), Velocient (.com blocked), Moventis (Spanish transport giant), Kinetic (Epicor + productivity app), all others HIGH risk
 - [x] Decide on product name representation in the app:
@@ -109,7 +109,7 @@
 - [x] Add error handling and logging for migration failures *(done — try/except with fallback to create_all)*
 
 ### 1.3 Define User Data Directory
-- [ ] Choose a standard Windows location for app data (e.g., `%LOCALAPPDATA%\ProjectTracker\`)
+- [ ] Choose a standard Windows location for app data (e.g., `%LOCALAPPDATA%\Conduital\`)
 - [ ] Store the following in this directory:
   - [ ] SQLite database file (`tracker.db`)
   - [ ] Generated JWT secret
@@ -121,7 +121,7 @@
 ### 1.4 Build First-Run Setup Wizard
 - [ ] Design a setup flow as a page/modal in the React frontend
 - [ ] Step 1: Welcome screen explaining what the app does
-- [ ] Step 2: Second Brain folder selection
+- [ ] Step 2: Sync folder selection
   - [ ] Implement a folder picker (either native dialog via API endpoint or manual path entry)
   - [ ] Validate the selected path exists and is accessible
   - [ ] Explain what the app will do with this folder
@@ -163,7 +163,7 @@
 
 ### 2.1 Initial PyInstaller Setup
 - [ ] Install PyInstaller in the project (`pip install pyinstaller`)
-- [ ] Create an initial `.spec` file by running `pyinstaller --name ProjectTracker run.py`
+- [ ] Create an initial `.spec` file by running `pyinstaller --name Conduital run.py`
 - [ ] Configure the `.spec` file:
   - [ ] Add `frontend/dist/` as a data directory (the built static files)
   - [ ] Add Alembic migration files as data
@@ -189,7 +189,7 @@
 ### 2.3 System Tray Integration
 - [ ] Add `pystray` (or similar) as a dependency
 - [ ] Create a system tray icon with menu:
-  - [ ] "Open Project Tracker" — opens/focuses the browser tab
+  - [ ] "Open Conduital" — opens/focuses the browser tab
   - [ ] "Settings" — opens settings page in browser
   - [ ] Separator
   - [ ] "About" — shows version info
@@ -225,27 +225,27 @@
 - [ ] Purchase the certificate
 - [ ] Set up signing tools (`signtool.exe` from Windows SDK)
 - [ ] Sign the main `.exe` with the certificate
-- [ ] Verify the signature (`signtool verify /pa ProjectTracker.exe`)
+- [ ] Verify the signature (`signtool verify /pa Conduital.exe`)
 
 ### 3.2 Create Installer with Inno Setup
 - [ ] Download and install Inno Setup
 - [ ] Create the installer script (`.iss` file) covering:
   - [ ] App name, version, publisher info
-  - [ ] Installation directory (default: `C:\Program Files\ProjectTracker\`)
+  - [ ] Installation directory (default: `C:\Program Files\Conduital\`)
   - [ ] All files from the PyInstaller output
   - [ ] Start Menu shortcut creation
   - [ ] Optional Desktop shortcut
   - [ ] Uninstaller registration in Windows "Apps & Features"
   - [ ] Application icon
   - [ ] License agreement screen (display EULA during install)
-  - [ ] Optional: "Launch Project Tracker" checkbox on final screen
+  - [ ] Optional: "Launch Conduital" checkbox on final screen
 - [ ] Build the installer
 - [ ] Sign the installer `.exe` with the code signing certificate
 - [ ] Test the full install → launch → use → uninstall cycle on clean VMs:
   - [ ] Windows 10 VM
   - [ ] Windows 11 VM
 - [ ] Verify uninstaller removes all files from Program Files
-- [ ] Decide: should uninstall remove user data (`%LOCALAPPDATA%\ProjectTracker\`) or leave it? (Standard practice: leave it, with optional "remove all data" checkbox)
+- [ ] Decide: should uninstall remove user data (`%LOCALAPPDATA%\Conduital\`) or leave it? (Standard practice: leave it, with optional "remove all data" checkbox)
 
 ### 3.3 Version Management
 - [x] Establish a versioning scheme *(SemVer per STRAT-008: Major.Minor.Patch)*
@@ -383,7 +383,7 @@
 - [ ] Set up a dedicated support email address
 - [ ] Create a basic FAQ / troubleshooting document covering:
   - [ ] Installation issues (SmartScreen warnings, antivirus false positives)
-  - [ ] How to configure Second Brain path
+  - [ ] How to configure sync folder path
   - [ ] How to set up Anthropic API key
   - [ ] How to migrate data / back up database
   - [ ] Common error messages and solutions

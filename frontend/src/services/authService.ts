@@ -1,5 +1,5 @@
 /**
- * Authentication Service for Project Tracker
+ * Authentication Service for Conduital
  *
  * Handles:
  * - Token storage and retrieval

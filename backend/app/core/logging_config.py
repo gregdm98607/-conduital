@@ -1,5 +1,5 @@
 """
-Logging configuration for Project Tracker
+Logging configuration for Conduital
 
 Sets up file-based logging with rotation and console output.
 """

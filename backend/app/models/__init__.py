@@ -1,5 +1,5 @@
 """
-Database models for Project Tracker
+Database models for Conduital
 """
 
 from app.models.base import Base

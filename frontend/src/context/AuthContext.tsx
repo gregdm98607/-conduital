@@ -1,5 +1,5 @@
 /**
- * Authentication Context for Project Tracker
+ * Authentication Context for Conduital
  *
  * Provides:
  * - Current user state

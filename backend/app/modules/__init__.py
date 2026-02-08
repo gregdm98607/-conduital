@@ -1,5 +1,5 @@
 """
-Module system for Project Tracker
+Module system for Conduital
 
 This module system enables commercial feature flags and modular architecture.
 Each module can contain models, routes, services, and schemas.

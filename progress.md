@@ -94,3 +94,19 @@
 - Updated distribution-checklist.md title, completed items, trademark compliance section **Done**
 - TypeScript: clean | Vite build: clean (576KB) | Python syntax: 88 files, 0 errors
 - **Remaining:** Register domains (conduital.com/$5), claim social handles, design icon mark
+
+### Namespace Claims — 2026-02-07
+- conduital.com: PURCHASED ✅
+- @conduital on Twitter/X: CLAIMED ✅
+- conduital on Gumroad: CLAIMED ✅
+- @conduital on GitHub (gregdm98607/conduital): CLAIMED ✅
+
+### v1.0.0 Release Prep Round 3 — Deep Cleanup — 2026-02-07
+- Cleaned 18 remaining "Project Tracker" references in internal docstrings/comments across 15 files **Done**
+- Fixed FastAPI title override: local .env had stale APP_NAME="Project Tracker" (Pydantic BaseSettings precedence) **Done**
+- Fixed alembic.ini database path: `.project-tracker/` → `.conduital/` **Done**
+- Fixed package.json name: `project-tracker-frontend` → `conduital-frontend` **Done**
+- Cleaned 8 stale "ProjectTracker" references in distribution-checklist.md future phases (installer paths, system tray, data directory) **Done**
+- Cleaned 1 stale "Second Brain" reference in distribution-checklist.md (setup wizard step) **Done**
+- Verified static file serving end-to-end: Vite build → FastAPI StaticFiles mount → catch-all SPA route (6/6 checks pass) **Done**
+- TypeScript: clean | Vite build: clean (576KB) | Python syntax: PASS
