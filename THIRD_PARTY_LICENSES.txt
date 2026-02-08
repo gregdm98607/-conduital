@@ -1,0 +1,191 @@
+Third-Party Software Licenses
+==============================
+
+This file lists the open-source software components included in or
+used by Project Tracker, along with their respective licenses.
+
+All components listed below are compatible with commercial use.
+
+=== Python Dependencies ===
+
+fastapi (MIT License)
+  Copyright (c) 2018-present Sebastian Ramirez
+  https://github.com/tiangolo/fastapi
+
+uvicorn (BSD 3-Clause License)
+  Copyright (c) 2017-present Tom Christie
+  https://github.com/encode/uvicorn
+
+sqlalchemy (MIT License)
+  Copyright (c) 2005-present Michael Bayer
+  https://github.com/sqlalchemy/sqlalchemy
+
+alembic (MIT License)
+  Copyright (c) 2009-present Michael Bayer
+  https://github.com/sqlalchemy/alembic
+
+pydantic (MIT License)
+  Copyright (c) 2017-present Samuel Colvin
+  https://github.com/pydantic/pydantic
+
+pydantic-settings (MIT License)
+  Copyright (c) 2022-present Samuel Colvin
+  https://github.com/pydantic/pydantic-settings
+
+python-dotenv (BSD 3-Clause License)
+  Copyright (c) 2014 Saurabh Kumar
+  https://github.com/theskumar/python-dotenv
+
+python-frontmatter (MIT License)
+  Copyright (c) 2014 Chris Amico
+  https://github.com/eyeseast/python-frontmatter
+
+watchdog (Apache License 2.0)
+  Copyright (c) 2011-present Yesudeep Mangalapilly
+  https://github.com/gorakhargosh/watchdog
+
+anthropic (MIT License)
+  Copyright (c) 2023-present Anthropic, PBC
+  https://github.com/anthropics/anthropic-sdk-python
+
+python-socketio (MIT License)
+  Copyright (c) 2015-present Miguel Grinberg
+  https://github.com/miguelgrinberg/python-socketio
+
+aiofiles (Apache License 2.0)
+  Copyright (c) 2017-present Tin Tvrtkovic
+  https://github.com/Tinche/aiofiles
+
+httpx (BSD 3-Clause License)
+  Copyright (c) 2019-present Tom Christie
+  https://github.com/encode/httpx
+
+python-multipart (Apache License 2.0)
+  Copyright (c) 2012-present Andrew Dunham
+  https://github.com/andrew-d/python-multipart
+
+markdown-it-py (MIT License)
+  Copyright (c) 2020-present ExecutableBookProject
+  https://github.com/executablebooks/markdown-it-py
+
+pyyaml (MIT License)
+  Copyright (c) 2017-present Ingy dot Net, Kirill Simonov
+  https://github.com/yaml/pyyaml
+
+python-jose (MIT License)
+  Copyright (c) 2015-present Michael Davis
+  https://github.com/mpdavis/python-jose
+
+cryptography (Apache License 2.0 / BSD 3-Clause License)
+  Copyright (c) Individual contributors
+  https://github.com/pyca/cryptography
+
+authlib (BSD 3-Clause License)
+  Copyright (c) 2017-present Hsiaoming Yang
+  https://github.com/lepture/authlib
+
+itsdangerous (BSD 3-Clause License)
+  Copyright (c) 2011-present Armin Ronacher
+  https://github.com/pallets/itsdangerous
+
+apscheduler (MIT License)
+  Copyright (c) 2009-present Alex Gronholm
+  https://github.com/agronholm/apscheduler
+
+typer (MIT License)
+  Copyright (c) 2019-present Sebastian Ramirez
+  https://github.com/tiangolo/typer
+
+rich (MIT License)
+  Copyright (c) 2020-present Will McGugan
+  https://github.com/Textualize/rich
+
+starlette (BSD 3-Clause License)
+  Copyright (c) 2018-present Tom Christie
+  https://github.com/encode/starlette
+  (Transitive dependency of FastAPI)
+
+=== JavaScript/TypeScript Dependencies ===
+
+react (MIT License)
+  Copyright (c) Meta Platforms, Inc. and affiliates
+  https://github.com/facebook/react
+
+react-dom (MIT License)
+  Copyright (c) Meta Platforms, Inc. and affiliates
+  https://github.com/facebook/react
+
+react-router-dom (MIT License)
+  Copyright (c) React Training LLC
+  https://github.com/remix-run/react-router
+
+@tanstack/react-query (MIT License)
+  Copyright (c) 2021-present Tanner Linsley
+  https://github.com/TanStack/query
+
+axios (MIT License)
+  Copyright (c) 2014-present Matt Zabriskie
+  https://github.com/axios/axios
+
+date-fns (MIT License)
+  Copyright (c) 2021-present Sasha Koss
+  https://github.com/date-fns/date-fns
+
+lucide-react (ISC License)
+  Copyright (c) 2020-present Lucide Contributors
+  https://github.com/lucide-icons/lucide
+
+react-hot-toast (MIT License)
+  Copyright (c) 2020-present Timo Lins
+  https://github.com/timolins/react-hot-toast
+
+recharts (MIT License)
+  Copyright (c) 2015-present recharts team
+  https://github.com/recharts/recharts
+
+tailwindcss (MIT License)
+  Copyright (c) Tailwind Labs, Inc.
+  https://github.com/tailwindlabs/tailwindcss
+
+typescript (Apache License 2.0)
+  Copyright (c) Microsoft Corporation
+  https://github.com/microsoft/TypeScript
+
+vite (MIT License)
+  Copyright (c) 2019-present Evan You
+  https://github.com/vitejs/vite
+
+=== License Texts ===
+
+MIT License:
+  Permission is hereby granted, free of charge, to any person obtaining
+  a copy of this software and associated documentation files, to deal in
+  the Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, subject to the following conditions:
+  The above copyright notice and this permission notice shall be included
+  in all copies or substantial portions of the Software.
+
+BSD 3-Clause License:
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are
+  met: Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+Apache License 2.0:
+  Licensed under the Apache License, Version 2.0. You may obtain a copy
+  at http://www.apache.org/licenses/LICENSE-2.0
+
+ISC License:
+  Permission to use, copy, modify, and/or distribute this software for
+  any purpose with or without fee is hereby granted, provided that the
+  above copyright notice and this permission notice appear in all copies.
+
+=== Summary ===
+
+All dependencies use permissive licenses (MIT, BSD, Apache 2.0, ISC)
+that are fully compatible with commercial distribution. No GPL or
+copyleft-licensed components are included.
+
+Attribution is satisfied by inclusion of this file with the distributed
+software.

@@ -8,11 +8,67 @@ Supports commercial module configurations:
 - full: All modules enabled
 """
 
+import secrets
 from pathlib import Path
 from typing import Optional, Literal
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _get_or_generate_secret_key() -> str:
+    """
+    Get JWT secret from environment, or auto-generate and persist one.
+
+    On first run, generates a cryptographically secure secret and writes it
+    to the .env file so it persists across restarts. This prevents shipping
+    a weak default secret in the codebase.
+    """
+    import os
+
+    # If already set in environment, use it
+    env_key = os.environ.get("SECRET_KEY")
+    if env_key and env_key != "change-me-in-production-use-openssl-rand-hex-32":
+        return env_key
+
+    # Check if it's in the .env file already
+    env_file = Path(__file__).parent.parent.parent / ".env"
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if stripped.startswith("SECRET_KEY=") and not stripped.startswith("#"):
+                value = stripped.split("=", 1)[1].strip().strip('"').strip("'")
+                if value and value != "change-me-in-production-use-openssl-rand-hex-32":
+                    return value
+
+    # Generate a new secret
+    new_secret = secrets.token_urlsafe(64)
+
+    # Persist to .env file
+    try:
+        if env_file.exists():
+            content = env_file.read_text(encoding="utf-8")
+            # Replace existing placeholder or append
+            if "SECRET_KEY=" in content:
+                lines = content.splitlines()
+                for i, line in enumerate(lines):
+                    stripped = line.strip()
+                    if stripped.startswith("SECRET_KEY=") or stripped.startswith("# SECRET_KEY="):
+                        lines[i] = f"SECRET_KEY={new_secret}"
+                        break
+                env_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            else:
+                with open(env_file, "a", encoding="utf-8") as f:
+                    f.write(f"\n# Auto-generated JWT signing key\nSECRET_KEY={new_secret}\n")
+        else:
+            env_file.write_text(
+                f"# Auto-generated JWT signing key\nSECRET_KEY={new_secret}\n",
+                encoding="utf-8",
+            )
+    except OSError:
+        pass  # If we can't persist, still use the generated secret for this session
+
+    return new_secret
 
 
 # Commercial configuration presets
@@ -145,7 +201,7 @@ class Settings(BaseSettings):
 
     # Authentication (ROADMAP-009)
     AUTH_ENABLED: bool = False  # Set True to enable auth (False for backwards compat during migration)
-    SECRET_KEY: str = "change-me-in-production-use-openssl-rand-hex-32"  # JWT signing key
+    SECRET_KEY: str = _get_or_generate_secret_key()  # Auto-generated on first run
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 30

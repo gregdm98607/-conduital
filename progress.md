@@ -58,3 +58,12 @@
 - Logged 2 new BACKLOG items (BACKLOG-111, BACKLOG-112)
 - Updated lessons.md with 5 lessons from this session
 - Root-caused test venv issue: `python` on PATH is system Python (no sqlalchemy), but `backend/venv/` has all deps. Must use explicit venv path.
+
+### v1.0.0-alpha Release Prep — 2026-02-07
+- Committed Batch 6 work (15 files, 660 insertions) **Done**
+- Deleted `backend/Anthropic API Key.txt` from working tree (was already gitignored) **Done**
+- Cleaned hardcoded `G:/My Drive/999_SECOND_BRAIN` paths from 22 documentation files **Done**
+- Updated .env.example with generic path placeholders **Done**
+- Bumped version to 1.0.0-alpha in pyproject.toml, package.json, config.py, .env.example **Done**
+- Created annotated git tag `v1.0.0-alpha` **Done**
+- Frontend build: CLEAN (576KB, 0 TS errors) | Working tree: CLEAN

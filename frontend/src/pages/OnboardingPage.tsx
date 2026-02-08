@@ -33,7 +33,7 @@ const STEPS = [
 
 const CONTEXT_OPTIONS = ['@computer', '@desk', '@phone', '@home', '@office', '@errands', '@anywhere'];
 const METHODOLOGY_OPTIONS = [
-  { value: 'gtd', label: 'GTD (Getting Things Done)' },
+  { value: 'gtd', label: 'Getting Things Done®' },
   { value: 'eisenhower', label: 'Eisenhower Matrix' },
   { value: 'timeblocking', label: 'Time Blocking' },
   { value: 'other', label: 'Other / None' },
@@ -271,7 +271,7 @@ export function OnboardingPage() {
           <div className="space-y-5">
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Your Contexts</h2>
             <div>
-              <label className="label">Available Contexts (GTD)</label>
+              <label className="label">Available Contexts</label>
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Select the contexts where you can work on tasks</p>
               <div className="flex flex-wrap gap-2">
                 {CONTEXT_OPTIONS.map((ctx) => (

@@ -113,7 +113,7 @@ export function Layout() {
             </div>
             <div>
               <h1 className="text-base font-bold text-white tracking-tight">Project Tracker</h1>
-              <p className="text-[11px] text-gray-500 font-medium tracking-wide uppercase">GTD + Momentum</p>
+              <p className="text-[11px] text-gray-500 font-medium tracking-wide uppercase">Intelligent Momentum</p>
             </div>
           </div>
         </div>

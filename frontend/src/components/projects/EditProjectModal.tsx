@@ -170,7 +170,7 @@ export function EditProjectModal({ isOpen, onClose, project }: EditProjectModalP
             placeholder="What does successful completion look like? (e.g., 'Website live with all pages, mobile-first, under 2s load time')"
             disabled={updateProject.isPending}
           />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">GTD: Define what "done" looks like</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Define what "done" looks like</p>
         </div>
 
         {/* Natural Planning Model (collapsible) */}
@@ -182,7 +182,7 @@ export function EditProjectModal({ isOpen, onClose, project }: EditProjectModalP
           >
             {showNPM ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             Natural Planning Model
-            <span className="text-xs text-gray-400 font-normal">(GTD planning framework)</span>
+            <span className="text-xs text-gray-400 font-normal">(structured planning)</span>
           </button>
           {showNPM && (
             <div className="px-3 pb-3 space-y-3">
@@ -352,7 +352,7 @@ export function EditProjectModal({ isOpen, onClose, project }: EditProjectModalP
             }
             disabled={updateProject.isPending}
           />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">GTD: When should this project be reviewed?</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">When should this project be reviewed?</p>
         </div>
 
         {/* Form Actions */}

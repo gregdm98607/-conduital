@@ -155,7 +155,7 @@ export function CreateProjectModal({ isOpen, onClose, defaultAreaId }: CreatePro
             placeholder="What does successful completion look like? (e.g., 'Website live with all pages, mobile-first, under 2s load time')"
             disabled={createProject.isPending}
           />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">GTD: Define what "done" looks like</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Define what "done" looks like</p>
         </div>
 
         {/* Status and Priority Row */}
@@ -268,7 +268,7 @@ export function CreateProjectModal({ isOpen, onClose, defaultAreaId }: CreatePro
             }
             disabled={createProject.isPending}
           />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">GTD: When should this project be reviewed?</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">When should this project be reviewed?</p>
         </div>
 
         {/* Form Actions */}

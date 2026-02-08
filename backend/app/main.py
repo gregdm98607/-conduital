@@ -14,8 +14,10 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 # Core API routers (always loaded for backwards compatibility)
 from app.api import (
@@ -55,6 +57,22 @@ logger = logging.getLogger(__name__)
 # Module System Initialization
 # =============================================================================
 
+def run_migrations():
+    """Run Alembic migrations on startup (idempotent — no-ops if already current)."""
+    try:
+        from alembic.config import Config
+        from alembic import command
+
+        alembic_cfg = Config(str(Path(__file__).parent.parent / "alembic.ini"))
+        alembic_cfg.set_main_option(
+            "script_location", str(Path(__file__).parent.parent / "alembic")
+        )
+        command.upgrade(alembic_cfg, "head")
+        logger.info("Database migrations: up to date")
+    except Exception as e:
+        logger.warning(f"Alembic migration skipped: {e} (falling back to create_all)")
+
+
 def register_modules():
     """Register all available modules with the module registry"""
     from app.modules.registry import register_all_modules, set_enabled_modules
@@ -93,6 +111,14 @@ def mount_module_routers(app: FastAPI, enabled_modules: set[str]):
 async def lifespan(app: FastAPI):
     """Application lifespan: startup logic before yield, shutdown after."""
     # --- Startup ---
+    # Ensure database directory exists
+    db_dir = Path(settings.DATABASE_PATH).parent
+    db_dir.mkdir(parents=True, exist_ok=True)
+
+    # Run Alembic migrations first (creates/updates schema)
+    run_migrations()
+
+    # Fallback: create_all for any tables not covered by migrations
     from app.core.database import init_db
     init_db()
 
@@ -176,7 +202,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
-    description="GTD + Manage Your Now project management system with Second Brain integration. "
+    description="Intelligent momentum system for independent operators, with Second Brain integration. "
                 f"Commercial mode: {settings.COMMERCIAL_MODE}",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -286,6 +312,43 @@ app.include_router(export.router, prefix=f"{settings.API_V1_PREFIX}/export", tag
 app.include_router(
     settings_api.router, prefix=f"{settings.API_V1_PREFIX}/settings", tags=["Settings"]
 )
+
+
+# =============================================================================
+# Static File Serving (Production: serve React build from FastAPI)
+# =============================================================================
+
+# Serve frontend build if it exists (eliminates Node.js requirement for end users)
+_frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
+if _frontend_dist.is_dir():
+    # Serve static assets (JS, CSS, images)
+    app.mount(
+        "/assets",
+        StaticFiles(directory=str(_frontend_dist / "assets")),
+        name="static-assets",
+    )
+
+    # Catch-all: serve index.html for client-side routing (SPA)
+    @app.get("/{full_path:path}")
+    async def serve_spa(request: Request, full_path: str):
+        """Serve the React SPA for any unmatched routes."""
+        # Don't serve SPA for API routes (they should 404 naturally)
+        if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("redoc"):
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
+
+        # Serve specific static files (favicon, manifest, etc.)
+        file_path = _frontend_dist / full_path
+        if file_path.is_file():
+            return FileResponse(str(file_path))
+
+        # Default: serve index.html for client-side routing
+        index_path = _frontend_dist / "index.html"
+        if index_path.is_file():
+            return FileResponse(str(index_path))
+
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
 
 
 # =============================================================================

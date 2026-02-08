@@ -208,7 +208,7 @@ export function WeeklyReviewPage() {
               <ListChecks className="w-6 h-6 text-primary-600" />
               <div>
                 <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  GTD Review Checklist
+                  Weekly Review Checklist
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {completedSteps}/{totalSteps} steps complete

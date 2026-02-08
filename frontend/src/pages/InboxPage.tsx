@@ -206,7 +206,7 @@ export function InboxPage() {
             Inbox
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Capture everything, process later (GTD Capture + Clarify)
+            Capture everything, process later
           </p>
         </div>
         <button

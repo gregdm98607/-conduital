@@ -125,7 +125,7 @@ export function LoginPage() {
         {/* Additional Info */}
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            GTD + MYN powered productivity system
+            Intelligent momentum for independent operators
           </p>
         </div>
       </div>
