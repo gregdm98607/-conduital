@@ -278,7 +278,7 @@ APP_NAME=Project Tracker
 DEBUG=false
 
 # Second Brain
-SECOND_BRAIN_ROOT=G:/My Drive/999_SECOND_BRAIN
+SECOND_BRAIN_ROOT=/path/to/your/second-brain
 WATCH_DIRECTORIES=10_Projects,20_Areas
 
 # AI (Optional)

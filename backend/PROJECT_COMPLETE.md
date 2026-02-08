@@ -249,7 +249,7 @@ DATABASE_PATH=/path/to/tracker.db  # Default: ~/.project-tracker/tracker.db
 DATABASE_ECHO=false
 
 # Second Brain
-SECOND_BRAIN_ROOT=G:/My Drive/999_SECOND_BRAIN
+SECOND_BRAIN_ROOT=/path/to/your/second-brain
 WATCH_DIRECTORIES=10_Projects,20_Areas
 SYNC_INTERVAL=30
 CONFLICT_STRATEGY=prompt  # prompt, file_wins, db_wins

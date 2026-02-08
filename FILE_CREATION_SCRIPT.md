@@ -29,7 +29,7 @@ When a project folder doesn't have a markdown file:
 Project(
     title="The Lund Covenant",
     description="Discovered from folder: 01.01 The_Lund_Covenant\nNo markdown file found.",
-    file_path="G:/My Drive/.../01.01 The_Lund_Covenant.md",  # Points to non-existent file
+    file_path="/path/to/your/second-brain/.../01.01 The_Lund_Covenant.md",  # Points to non-existent file
     # No tasks, limited metadata
 )
 ```
@@ -59,7 +59,7 @@ Project(
     description="Project description from markdown",
     status="active",
     priority=3,
-    file_path="G:/My Drive/.../01.01 The_Lund_Covenant.md",
+    file_path="/path/to/your/second-brain/.../01.01 The_Lund_Covenant.md",
     tasks=[...],  # Tasks from markdown
     momentum_score=0.75,  # Calculated and persisted
 )
@@ -125,7 +125,7 @@ poetry run python scripts\create_project_files.py --dry-run
 ```
 📝 Create Project Markdown Files
 ====================================
-📁 Scanning: G:\My Drive\999_SECOND_BRAIN\10_Projects
+📁 Scanning: /path/to/your/second-brain/10_Projects
 
 🔍 DRY RUN MODE - No files will be created
 
@@ -141,8 +141,8 @@ poetry run python scripts\create_project_files.py --dry-run
      Title: AI Use Cases
 
 Would create files:
-   📄 G:\My Drive\...\01.01 The_Lund_Covenant.md
-   📄 G:\My Drive\...\10.06_AI_Use_Cases.md
+   📄 /path/to/your/second-brain/.../01.01 The_Lund_Covenant.md
+   📄 /path/to/your/second-brain/.../10.06_AI_Use_Cases.md
 ```
 
 ### Create Mode
@@ -157,7 +157,7 @@ poetry run python scripts\create_project_files.py
 ```
 📝 Create Project Markdown Files
 ====================================
-📁 Scanning: G:\My Drive\999_SECOND_BRAIN\10_Projects
+📁 Scanning: /path/to/your/second-brain/10_Projects
 
 📊 Summary:
    Total project folders: 14
@@ -174,9 +174,9 @@ Create 6 markdown files? (y/n): y
 📝 Creating files...
 
 ✅ Created: 01.01 The_Lund_Covenant.md
-   Path: G:\My Drive\...\01.01 The_Lund_Covenant.md
+   Path: /path/to/your/second-brain/.../01.01 The_Lund_Covenant.md
 ✅ Created: 10.06_AI_Use_Cases.md
-   Path: G:\My Drive\...\10.06_AI_Use_Cases.md
+   Path: /path/to/your/second-brain/.../10.06_AI_Use_Cases.md
 
 ====================================
 📈 Results

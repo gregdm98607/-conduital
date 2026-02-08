@@ -27,7 +27,7 @@ cp .env.example .env
 
 Edit `.env` and set:
 ```env
-SECOND_BRAIN_ROOT=G:/My Drive/999_SECOND_BRAIN
+SECOND_BRAIN_ROOT=/path/to/your/second-brain
 ```
 
 ### 3. Initialize Database

@@ -669,7 +669,7 @@ export function Settings() {
                 <input
                   type="text"
                   className="input"
-                  placeholder="G:/My Drive/999_SECOND_BRAIN"
+                  placeholder="/path/to/your/second-brain"
                   disabled
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

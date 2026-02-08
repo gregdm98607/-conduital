@@ -1392,7 +1392,7 @@ project_tracker:
     backup_retention: 30
 
   second_brain:
-    root_path: G:/My Drive/999_SECOND_BRAIN
+    root_path: /path/to/your/second-brain
     watch_directories:
       - 10_Projects
       - 20_Areas

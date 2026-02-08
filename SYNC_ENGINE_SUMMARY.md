@@ -235,7 +235,7 @@ After sync → Database task status = "completed"!
 # .env file
 
 # Second Brain root
-SECOND_BRAIN_ROOT=G:/My Drive/999_SECOND_BRAIN
+SECOND_BRAIN_ROOT=/path/to/your/second-brain
 
 # Directories to watch
 WATCH_DIRECTORIES=10_Projects,20_Areas

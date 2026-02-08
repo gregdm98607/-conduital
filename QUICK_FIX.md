@@ -74,7 +74,7 @@ INFO:     Started server process
 INFO:     Waiting for application startup.
 🚀 Project Tracker v0.1.0 started
 📊 Database: C:\Users\YourName\.project-tracker\tracker.db
-📁 Second Brain: G:/My Drive/999_SECOND_BRAIN
+📁 Second Brain: /path/to/your/second-brain
 INFO:     Application startup complete.
 ```
 

@@ -18,7 +18,7 @@ The Project Discovery system automatically scans your Second Brain folder struct
 Your Second Brain should follow this structure:
 
 ```
-999_SECOND_BRAIN/
+your-second-brain/
 ├── 10_Projects/
 │   ├── 01.01 The_Lund_Covenant/
 │   │   └── The_Lund_Covenant.md
@@ -133,7 +133,7 @@ python scripts/discover_projects.py
 ```
 🔍 Project Discovery Tool
 ====================================
-📁 Second Brain Root: G:/My Drive/999_SECOND_BRAIN
+📁 Second Brain Root: /path/to/your/second-brain
 🗂️  Scanning directory: 10_Projects
 
 📊 Current Area Mappings:

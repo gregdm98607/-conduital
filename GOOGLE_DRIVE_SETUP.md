@@ -9,7 +9,7 @@ Your Project Tracker is now integrated with your Google Drive Second Brain via p
 Based on your screenshot, here's your current structure:
 
 ```
-G:\My Drive\999_SECOND_BRAIN\10_Projects\
+/path/to/your/second-brain/10_Projects/
 ├── _Project_Templates/
 ├── 01.01 The_Lund_Covenant/
 ├── 01.02 Winter Fire, Summer Ash/
@@ -129,7 +129,7 @@ curl http://localhost:8000/api/v1/intelligence/stalled
 Make sure your `.env` has the correct path:
 
 ```env
-SECOND_BRAIN_ROOT=G:/My Drive/999_SECOND_BRAIN
+SECOND_BRAIN_ROOT=/path/to/your/second-brain
 ```
 
 #### 2. Check for Unmapped Prefixes

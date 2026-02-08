@@ -117,7 +117,7 @@ npm run dev
 ```bash
 # Check path
 echo $env:SECOND_BRAIN_ROOT  # PowerShell
-# Should be: G:\My Drive\999_SECOND_BRAIN
+# Should be: /path/to/your/second-brain
 ```
 
 **Need help?**

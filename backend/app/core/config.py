@@ -38,7 +38,7 @@ class Settings(BaseSettings):
 
     # Application
     APP_NAME: str = "Project Tracker"
-    VERSION: str = "0.2.0"  # Bumped for module system
+    VERSION: str = "1.0.0-alpha"
     DEBUG: bool = False
 
     # ==========================================================================

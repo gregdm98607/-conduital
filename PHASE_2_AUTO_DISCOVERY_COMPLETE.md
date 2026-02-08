@@ -184,7 +184,7 @@ poetry run python -m app.main
 ```
 🚀 Project Tracker v0.1.0 started
 📊 Database: C:\Users\...\.project-tracker\tracker.db
-📁 Second Brain: G:/My Drive/999_SECOND_BRAIN
+📁 Second Brain: /path/to/your/second-brain
 📁 Watching for new project folders in: G:\My Drive\...\10_Projects
 🔍 Auto-discovery enabled
 ```

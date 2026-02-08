@@ -53,7 +53,7 @@ poetry run alembic upgrade head
 
 Edit `backend/.env` to point to your Second Brain:
 ```env
-SECOND_BRAIN_ROOT=G:/My Drive/999_SECOND_BRAIN
+SECOND_BRAIN_ROOT=/path/to/your/second-brain
 ```
 
 ### Step 4: Start Backend

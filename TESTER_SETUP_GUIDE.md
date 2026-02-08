@@ -81,7 +81,7 @@ DEBUG=true
 COMMERCIAL_MODE=basic
 
 # Optional: Second Brain path (for sync features)
-# SECOND_BRAIN_ROOT=G:/My Drive/999_SECOND_BRAIN
+# SECOND_BRAIN_ROOT=/path/to/your/second-brain
 
 # Optional: Google OAuth (see Authentication section)
 # AUTH_ENABLED=true

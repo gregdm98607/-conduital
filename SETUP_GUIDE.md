@@ -26,7 +26,7 @@ Edit `.env` and update these key settings:
 
 ```env
 # Point to your Second Brain
-SECOND_BRAIN_ROOT=G:/My Drive/999_SECOND_BRAIN
+SECOND_BRAIN_ROOT=/path/to/your/second-brain
 
 # Optional: Enable AI features
 ANTHROPIC_API_KEY=your_api_key_here

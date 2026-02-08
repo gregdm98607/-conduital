@@ -74,7 +74,7 @@ Interactive command-line tool for initial setup:
 ## Architecture
 
 ```
-Google Drive File Stream (G:\My Drive\999_SECOND_BRAIN)
+Google Drive File Stream (/path/to/your/second-brain)
                     ↓
          10_Projects/xx.xx Project_Name/
                     ↓

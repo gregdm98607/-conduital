@@ -278,7 +278,7 @@ stats = engine.scan_and_sync()
 print(f"Synced {stats['synced']} files")
 
 # Sync specific file
-file_path = Path("G:/My Drive/999_SECOND_BRAIN/10_Projects/My_Project.md")
+file_path = Path("/path/to/your/second-brain/10_Projects/My_Project.md")
 project = engine.sync_file_to_database(file_path)
 print(f"Synced: {project.title}")
 
@@ -404,7 +404,7 @@ curl http://localhost:8000/api/v1/sync/status
 
 ```env
 # Second Brain root path
-SECOND_BRAIN_ROOT=G:/My Drive/999_SECOND_BRAIN
+SECOND_BRAIN_ROOT=/path/to/your/second-brain
 
 # Directories to watch (comma-separated)
 WATCH_DIRECTORIES=10_Projects,20_Areas

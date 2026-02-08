@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "project-tracker"
-version = "0.1.0"
+version = "1.0.0-alpha"
 description = "GTD + Manage Your Now project management system with Second Brain integration"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"

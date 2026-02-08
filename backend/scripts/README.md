@@ -90,7 +90,7 @@ poetry run python scripts/discover_projects.py
 ```
 🔍 Project Discovery Tool
 ====================================
-📁 Second Brain Root: G:/My Drive/999_SECOND_BRAIN
+📁 Second Brain Root: /path/to/your/second-brain
 🗂️  Scanning directory: 10_Projects
 
 📊 Current Area Mappings:
@@ -177,7 +177,7 @@ curl -X POST http://localhost:8000/api/v1/sync/scan
 
 Check `SECOND_BRAIN_ROOT` in `.env` or `config.py`:
 ```python
-SECOND_BRAIN_ROOT = "G:/My Drive/999_SECOND_BRAIN"
+SECOND_BRAIN_ROOT = "/path/to/your/second-brain"
 ```
 
 ### "No project folders found"

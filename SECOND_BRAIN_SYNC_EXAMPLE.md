@@ -5,13 +5,13 @@
 The sync engine looks in directories you specify in your `.env` file:
 
 ```env
-SECOND_BRAIN_ROOT=G:/My Drive/999_SECOND_BRAIN
+SECOND_BRAIN_ROOT=/path/to/your/second-brain
 WATCH_DIRECTORIES=10_Projects,20_Areas
 ```
 
 It will scan:
-- `G:/My Drive/999_SECOND_BRAIN/10_Projects/**/*.md`
-- `G:/My Drive/999_SECOND_BRAIN/20_Areas/**/*.md`
+- `/path/to/your/second-brain/10_Projects/**/*.md`
+- `/path/to/your/second-brain/20_Areas/**/*.md`
 
 **All markdown files** in these directories (and subdirectories) are candidates for syncing.
 
@@ -21,7 +21,7 @@ It will scan:
 
 ### Your Existing Markdown File
 
-**Location:** `G:/My Drive/999_SECOND_BRAIN/10_Projects/01_Active/01.01_The_Lund_Covenant/Project.md`
+**Location:** `/path/to/your/second-brain/10_Projects/01_Active/01.01_The_Lund_Covenant/Project.md`
 
 ```markdown
 # The Lund Covenant
@@ -289,7 +289,7 @@ Edit `backend/.env`:
 
 ```env
 # Your Second Brain location
-SECOND_BRAIN_ROOT=G:/My Drive/999_SECOND_BRAIN
+SECOND_BRAIN_ROOT=/path/to/your/second-brain
 
 # Which folders to watch (comma-separated)
 WATCH_DIRECTORIES=10_Projects,20_Areas
@@ -341,7 +341,7 @@ Begin with one project file, sync it, verify it works before syncing all files.
 ### 2. Backup First
 Make a backup of your Second Brain before first sync:
 ```powershell
-Copy-Item -Recurse "G:/My Drive/999_SECOND_BRAIN" "G:/My Drive/999_SECOND_BRAIN_BACKUP"
+Copy-Item -Recurse "/path/to/your/second-brain" "/path/to/your/second-brain-backup"
 ```
 
 ### 3. Use Frontmatter Minimally
