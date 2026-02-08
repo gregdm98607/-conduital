@@ -2,7 +2,7 @@
 
 **Name:** daily-planning
 
-**Description:** Combined skill that loads Proactive-Assistance context, fetches Project-Tracker next actions, and creates a focused daily plan. Integrates both systems for comprehensive planning.
+**Description:** Combined skill that loads Proactive-Assistance context, fetches Conduital next actions, and creates a focused daily plan. Integrates both systems for comprehensive planning.
 
 **Trigger phrases:** "Plan my day", "Daily planning", "What's my day look like?", "Help me plan today"
 
@@ -28,8 +28,8 @@ Extract:
 - Active threads that need continuation
 - Energy patterns and preferences
 
-### Step 2: Fetch Project-Tracker Data
-From Project-Tracker (C:/Dev/project-tracker/):
+### Step 2: Fetch Conduital Data
+From Conduital (C:/Dev/project-tracker/):
 
 ```
 GET /api/next-actions?limit=15
@@ -64,7 +64,7 @@ Extract:
 - [Any active threads to continue]
 - [Goals this connects to]
 
-**From Project Tracker:**
+**From Conduital:**
 - 🔴 [X] stalled projects need attention
 - 📥 [X] inbox items to process
 - ✅ [X] tasks ready for today

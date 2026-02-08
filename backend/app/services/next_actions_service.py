@@ -45,8 +45,9 @@ class NextActionsService:
             List of prioritized tasks
         """
         # Build query for next actions
-        # Note: We include deferred tasks so they appear in the Over the Horizon zone.
-        # The urgency_zone field (recalculated daily) determines which zone they display in.
+        # Exclude deferred tasks (defer_until in the future) — they aren't actionable yet.
+        # Over the Horizon display is handled by the urgency_zone field on tasks.
+        today = date.today()
         query = (
             select(Task)
             .join(Project)
@@ -54,6 +55,7 @@ class NextActionsService:
                 Task.is_next_action.is_(True),
                 Task.status.in_(["pending", "in_progress"]),
                 Project.status == "active",
+                (Task.defer_until.is_(None)) | (Task.defer_until <= today),
             )
         )
 
@@ -74,14 +76,9 @@ class NextActionsService:
         tasks = list(db.execute(query).unique().scalars().all())
 
         # Sort by priority (using custom logic)
-        today = date.today()
 
         def priority_key(task: Task) -> tuple:
             project = task.project
-
-            # Priority tier 6: Over the Horizon - deferred to the future (sort last)
-            if task.defer_until and task.defer_until > today:
-                return (6, task.defer_until, task.priority, -project.momentum_score)
 
             # Priority tier 0: Unstuck tasks for stalled projects
             if include_stalled and project.stalled_since and task.is_unstuck_task:

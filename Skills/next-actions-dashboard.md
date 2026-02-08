@@ -23,7 +23,7 @@ If not specified, ask briefly or use defaults:
 - Or proceed with no filters for full view
 
 ### Step 2: Fetch Prioritized Actions
-Call the Project-Tracker API:
+Call the Conduital API:
 
 ```
 GET /api/next-actions?context=[context]&energy=[level]&limit=10

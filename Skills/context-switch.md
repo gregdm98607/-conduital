@@ -64,7 +64,7 @@ From Memory files, load context-relevant information:
 - Family-related threads
 - Personal goals
 
-### Step 5: Load New Context - Project-Tracker
+### Step 5: Load New Context - Conduital
 Fetch context-filtered tasks:
 
 ```

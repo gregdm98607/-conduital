@@ -487,6 +487,83 @@ For SQLAlchemy self-referential relationships:
 
 ---
 
+## 2026-02-07: Release Prep Round 4 — Tech Debt, End-to-End Testing, Tracking Reconciliation
+
+### What Went Well
+1. **End-to-end testing caught 3 real bugs** — root endpoint serving, migration idempotency, Windows encoding. All 3 would have affected first-time users.
+2. **Backlog reconciliation** — 11 stale DIST items updated from "Open" to "Done", keeping tracking accurate.
+3. **Subagent strategy** — 4 parallel explore agents at session start gathered version refs, dependency status, unused imports, and DIST item status simultaneously, saving ~3 minutes.
+
+### Lessons Learned
+
+#### 1. Repair Migrations Must Be Idempotent
+**Issue:** Migration 010 (repair_user_id) unconditionally added `user_id` to `goals` and `visions` tables. On a fresh install, auth migration 007 already adds these columns. When 010 runs, `batch_alter_table` creates `_alembic_tmp_goals` which conflicts with the already-correct schema.
+**Fix:** Added `_column_exists()` helper using `PRAGMA table_info` to check before altering. Both `upgrade()` and `downgrade()` now guard on column existence.
+**Rule:** Any "repair" or "fixup" migration MUST check whether the repair is actually needed before applying it. Use `PRAGMA table_info(table_name)` on SQLite to check column existence. This makes migrations safe for both fresh installs and existing databases with partial state.
+
+#### 2. FastAPI Route Priority — First Match Wins
+**Issue:** Root `/` had a JSON API info endpoint defined before the SPA catch-all `/{full_path:path}`. The catch-all pattern doesn't match empty string, so root always served JSON even in production with the frontend build present.
+**Fix:** Updated root endpoint to conditionally serve `index.html` when `frontend/dist/index.html` exists, falling back to API info JSON for development.
+**Rule:** In FastAPI, the first defined route matching a path wins. The `{path:path}` parameter matches one or more path segments, NOT the empty string. Always test the root `/` path separately from catch-all patterns.
+
+#### 3. Windows Console Encoding Is Not UTF-8 by Default
+**Issue:** `run.py` used Unicode box-drawing character `─` (U+2500) in the startup banner. On Windows, the default console encoding is `cp1252`, which doesn't support this character. Result: `UnicodeEncodeError` on `print()`.
+**Fix:** Changed to ASCII `-` character for cross-platform compatibility.
+**Rule:** Any `print()` output that might run on Windows must use ASCII-safe characters unless `sys.stdout.encoding` is verified. Common offenders: box-drawing characters (`─│┌┐`), checkmarks (`✓✗`), arrows (`→←`). Use ASCII alternatives or wrap in `try/except UnicodeEncodeError`.
+
+#### 4. Pydantic BaseSettings .env Overrides Defaults
+**Issue:** `config.py` had `VERSION: str = "1.0.0-alpha"` but local `.env` file had `VERSION=0.1.0` (stale from early development). Pydantic BaseSettings reads `.env` first, so the stale value won.
+**Fix:** Updated local `.env` to `1.0.0-alpha`. Also a distribution lesson: the `.env.example` should always reflect the correct version.
+**Rule:** When bumping version numbers, check ALL locations: config.py default, .env.example template, AND the local .env file. Pydantic BaseSettings precedence: env vars > .env file > class defaults.
+
+### Technical Debt Identified
+- [x] DEBT-068: ~~Pydantic V1 deprecations~~ → FIXED (9 instances across 3 files)
+- [x] DEBT-071: ~~Unused `get_db` import~~ → FIXED (removed from main.py)
+- [x] DEBT-072: ~~`Path` unused in main.py~~ → N/A (actively used in 5 locations)
+
+### Potential Backlog Items
+1. **BUG-024 (candidate):** Pre-existing test failure — `test_excludes_deferred_tasks` asserts `len(results) == 2` but gets 3 (deferred task not filtered)
+2. **DEBT-079 (candidate):** Root endpoint dual behavior should be documented in API docs or removed from OpenAPI schema when SPA is active
+
+---
+
+## 2026-02-07: Release Prep Round 5 — BUG-024, DEBT-049/077, DIST-010, Phase 1.5
+
+### What Went Well
+1. **100% test pass rate achieved** — BUG-024 fix brought tests from 173/174 to 174/174, eliminating the last pre-existing failure
+2. **Parallel subagent triage** — 3 explore agents at session start identified all open items (deferred bug, branding refs, AI degradation status) simultaneously
+3. **Clean distribution prep** — .gitignore approach for dev artifacts is simpler and more maintainable than build-time exclusion scripts
+
+### Lessons Learned
+
+#### 1. Deferred Tasks Need SQL-Level Filtering, Not Just Sort-Level
+**Issue:** `get_prioritized_next_actions()` included deferred tasks (where `defer_until > today`) in query results and tried to handle them via sort tier 6 (sort to bottom). But the test expected them excluded entirely, and the UX intent was to hide them until their defer date arrives.
+**Fix:** Added `(Task.defer_until.is_(None)) | (Task.defer_until <= today)` to the SQL WHERE clause. Removed the now-dead sort tier 6 code.
+**Rule:** When a task has a "don't show until date X" field, filter it out at the SQL level, not at the sort level. Sort tiers are for ordering visible items; WHERE clauses are for excluding invisible ones. If you find yourself sorting items to the bottom to "hide" them, you should be filtering them out instead.
+
+#### 2. Toggle Buttons Need `type="button"` to Prevent Form Submission
+**Issue:** Collapsible section toggle buttons in Settings.tsx and NextActions.tsx lacked `type="button"`. Inside a form context, the default `type="submit"` could cause unintended form submission on click.
+**Fix:** Added `type="button"` to all 8 toggle buttons. Also added `aria-expanded={!collapsed}` for screen reader accessibility.
+**Rule:** Any `<button>` that toggles UI state (collapse/expand, show/hide) must have `type="button"`. Also add `aria-expanded` to communicate state to assistive technology. Grep for `onClick.*collapsed\|onClick.*toggle` to find candidates.
+
+#### 3. Dev Artifact Exclusion via .gitignore Is Simpler Than Build Scripts
+**Issue:** DIST-010 required excluding dev-only files (CLAUDE.md, MODULE_SYSTEM.md, diagnose.py, distribution-checklist.md, tasks/) from distribution builds.
+**Fix:** Added entries to .gitignore rather than creating build-time exclusion scripts. Since distribution is via git-based packaging, .gitignore naturally excludes these files.
+**Rule:** For projects distributed via git (or built from git checkouts), .gitignore is the simplest mechanism to exclude dev artifacts. Reserve build-time exclusion for files that must be in git but not in the distribution (rare case).
+
+#### 4. AI Feature Degradation Should Be a Boolean Flag, Not Try/Catch Everywhere
+**Issue:** Needed to verify that the app works gracefully when AI features are unavailable (no API key, optional dependency).
+**Finding:** The codebase already handles this well — `AI_FEATURES_ENABLED` flag checked at startup, `create_provider()` raises clean ValueError, API endpoints return HTTP 400 with descriptive messages. No silent failures or stack traces.
+**Rule:** For optional integrations (AI, external APIs), use a single boolean flag at startup to gate feature availability. Don't scatter try/catch blocks across individual endpoints. Check the flag once, set it at startup, and have endpoints check it before attempting operations.
+
+### Technical Debt Resolved
+- [x] BUG-024: ~~Deferred tasks not filtered in next actions~~ → FIXED (SQL WHERE clause)
+- [x] DEBT-049: ~~Collapsible buttons missing type/aria~~ → FIXED (8 buttons)
+- [x] DEBT-077: ~~pytest-asyncio mode warning~~ → FIXED (removed from pyproject.toml)
+- [x] DIST-010: ~~Dev artifacts in distribution~~ → FIXED (.gitignore)
+
+---
+
 ## Template for Future Sessions
 
 ```markdown

@@ -39,7 +39,7 @@ class AreaMappingUpdate(BaseModel):
     mappings: dict[str, str] = Field(
         ...,
         description="Dictionary of prefix to area name",
-        example={"01": "Literary Projects", "10": "Tech Projects"}
+        examples=[{"01": "Literary Projects", "10": "Tech Projects"}]
     )
 
 
@@ -85,7 +85,7 @@ def get_area_mappings(db: Session = Depends(get_db)):
 
 @router.post("/mappings")
 def update_area_mappings(
-    mappings: dict[str, str] = Body(..., example={"01": "Literary Projects"}),
+    mappings: dict[str, str] = Body(..., examples=[{"01": "Literary Projects"}]),
     db: Session = Depends(get_db)
 ):
     """
@@ -139,7 +139,7 @@ def suggest_area_mappings(db: Session = Depends(get_db)):
 
 @router.post("/scan-folder")
 def scan_specific_folder(
-    folder_name: str = Body(..., embed=True, example="01.01 The_Lund_Covenant"),
+    folder_name: str = Body(..., embed=True, examples=["01.01 The_Lund_Covenant"]),
     db: Session = Depends(get_db)
 ):
     """
@@ -204,7 +204,7 @@ def discover_areas(db: Session = Depends(get_db)):
 
 @router.post("/scan-area-folder")
 def scan_specific_area_folder(
-    folder_name: str = Body(..., embed=True, example="20.05 AI_Systems"),
+    folder_name: str = Body(..., embed=True, examples=["20.05 AI_Systems"]),
     db: Session = Depends(get_db)
 ):
     """

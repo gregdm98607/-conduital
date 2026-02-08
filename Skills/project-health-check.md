@@ -13,7 +13,7 @@
 When the user triggers this skill, provide a comprehensive project health assessment:
 
 ### Step 1: Fetch Project Health Data
-Call the Project-Tracker API:
+Call the Conduital API:
 
 ```
 GET /api/projects/health

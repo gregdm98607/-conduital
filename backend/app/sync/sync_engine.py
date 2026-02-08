@@ -36,7 +36,7 @@ class SyncEngine:
     """
     Bidirectional sync engine
 
-    Handles synchronization between database and Second Brain markdown files
+    Handles synchronization between database and synced markdown files
     """
 
     def __init__(self, db: Session, root_path: Optional[Path] = None):
@@ -45,7 +45,7 @@ class SyncEngine:
 
         Args:
             db: Database session
-            root_path: Second Brain root path (default from settings)
+            root_path: Synced notes root path (default from settings)
         """
         self.db = db
         self.root_path = Path(root_path) if root_path else settings.SECOND_BRAIN_PATH
@@ -314,12 +314,12 @@ class SyncEngine:
 
     def scan_and_sync(self) -> dict:
         """
-        Scan Second Brain and sync all markdown files
+        Scan synced notes folder and sync all markdown files
 
         Returns:
             Statistics dict
         """
-        logger.info(f"Scanning Second Brain: {self.root_path}")
+        logger.info(f"Scanning synced notes folder: {self.root_path}")
 
         stats = {
             "scanned": 0,

@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class NamespaceBase(BaseModel):
     """Base namespace schema"""
-    name: str = Field(..., description="Namespace name (dot notation)", example="core.identity")
+    name: str = Field(..., description="Namespace name (dot notation)", examples=["core.identity"])
     description: Optional[str] = Field(None, description="Namespace description")
     parent_namespace: Optional[str] = Field(None, description="Parent namespace name")
     default_priority: int = Field(50, ge=0, le=100, description="Default priority for objects")
@@ -41,8 +41,8 @@ class NamespaceResponse(NamespaceBase):
 
 class MemoryObjectBase(BaseModel):
     """Base memory object schema"""
-    object_id: str = Field(..., description="Unique object identifier", example="user-profile-001")
-    namespace: str = Field(..., description="Namespace", example="core.identity")
+    object_id: str = Field(..., description="Unique object identifier", examples=["user-profile-001"])
+    namespace: str = Field(..., description="Namespace", examples=["core.identity"])
     version: str = Field("1.0.0", description="Version (semver)")
     priority: int = Field(50, ge=0, le=100, description="Priority for retrieval (0-100)")
     effective_from: date = Field(..., description="Start of effective period")

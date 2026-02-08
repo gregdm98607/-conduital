@@ -37,7 +37,7 @@ from app.api import (
     settings as settings_api,
 )
 from app.core.config import settings
-from app.core.database import enable_wal_mode, get_db
+from app.core.database import enable_wal_mode
 from app.core.logging_config import setup_logging, get_log_file_path
 
 # Initialize logging before anything else
@@ -130,7 +130,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"Commercial mode: {settings.COMMERCIAL_MODE}")
     logger.info(f"Enabled modules: {', '.join(sorted(enabled_modules))}")
     logger.info(f"Database: {settings.DATABASE_PATH}")
-    logger.info(f"Second Brain: {settings.SECOND_BRAIN_ROOT}")
+    logger.info(f"Synced notes folder: {settings.SECOND_BRAIN_ROOT}")
     logger.info(f"Authentication: {'Enabled' if settings.AUTH_ENABLED else 'Disabled'}")
     if settings.LOG_TO_FILE:
         logger.info(f"Log file: {get_log_file_path()}")
@@ -236,7 +236,13 @@ async def health_check():
 
 @app.get("/")
 async def root():
-    """Root endpoint"""
+    """Root endpoint — serves SPA if frontend build exists, otherwise API info."""
+    # In production (frontend build present), serve the SPA
+    _dist = Path(__file__).parent.parent.parent / "frontend" / "dist" / "index.html"
+    if _dist.is_file():
+        return FileResponse(str(_dist))
+
+    # In development (no build), return API info
     return {
         "message": f"Welcome to {settings.APP_NAME}",
         "version": settings.VERSION,

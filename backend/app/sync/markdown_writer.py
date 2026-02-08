@@ -1,5 +1,5 @@
 """
-Markdown writer for generating Second Brain files from database data
+Markdown writer for generating synced markdown files from database data
 """
 
 from datetime import datetime
@@ -225,7 +225,7 @@ class MarkdownWriter:
 
         Args:
             project: Project model instance
-            root_path: Second Brain root path
+            root_path: Synced notes root path
 
         Returns:
             Path object for project file

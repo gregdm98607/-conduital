@@ -2,9 +2,9 @@
 
 **Name:** sync-brain
 
-**Description:** Trigger bidirectional sync between Project-Tracker database and Second Brain markdown files. Ensures task completions, project updates, and status changes flow both directions.
+**Description:** Trigger bidirectional sync between Conduital database and synced notes folder markdown files. Ensures task completions, project updates, and status changes flow both directions.
 
-**Trigger phrases:** "Sync brain", "Sync my files", "Update second brain", "Bidirectional sync", "Sync markdown"
+**Trigger phrases:** "Sync brain", "Sync my files", "Update synced notes", "Bidirectional sync", "Sync markdown"
 
 ---
 
@@ -21,7 +21,7 @@ GET /api/sync/status
 
 Present status:
 ```
-## Second Brain Sync
+## File Sync
 
 ### Current Status
 - Last sync: [timestamp]
@@ -41,7 +41,7 @@ GET /api/sync/scan
 ### Changes Detected
 
 **Files → Database (Markdown changed):**
-- 📄 10_Projects/Project-Tracker.md - 3 tasks checked off
+- 📄 10_Projects/Conduital.md - 3 tasks checked off
 - 📄 10_Projects/Lund-Covenant.md - Status updated to "editing"
 - 📄 20_Areas/Health.md - New task added
 
@@ -57,7 +57,7 @@ If conflicts exist (both sides changed):
 ```
 ### ⚠️ Conflicts Detected
 
-**Project-Tracker.md**
+**Conduital.md**
 - File says: Task "Fix bug" is incomplete
 - Database says: Task "Fix bug" completed 2 hours ago
 - Recommendation: Trust database (more recent)
@@ -108,7 +108,7 @@ POST /api/sync/execute
 ✅ 1 new project file created
 
 **File Markers Updated:**
-- Project-Tracker.md: 3 task markers refreshed
+- Conduital.md: 3 task markers refreshed
 - Lund-Covenant.md: tracker_id confirmed
 
 **Summary:**

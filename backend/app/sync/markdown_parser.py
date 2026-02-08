@@ -1,5 +1,5 @@
 """
-Markdown parser for extracting project and task data from Second Brain files
+Markdown parser for extracting project and task data from synced markdown files
 """
 
 import re

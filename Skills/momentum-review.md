@@ -13,7 +13,7 @@
 When the user triggers this skill, provide momentum analysis:
 
 ### Step 1: Fetch Momentum Data
-Call the Project-Tracker API:
+Call the Conduital API:
 
 ```
 GET /api/intelligence/momentum-summary

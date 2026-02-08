@@ -1,5 +1,5 @@
 """
-File system watcher for monitoring Second Brain changes
+File system watcher for monitoring markdown file changes
 """
 
 import logging
@@ -107,7 +107,7 @@ class DebounceHandler(FileSystemEventHandler):
 
 class FileWatcher:
     """
-    Watch Second Brain directories for changes
+    Watch synced notes directories for changes
 
     Monitors specified directories and triggers sync when files change
     """
@@ -122,7 +122,7 @@ class FileWatcher:
         Initialize file watcher
 
         Args:
-            root_path: Second Brain root path (default from settings)
+            root_path: Synced notes root path (default from settings)
             watch_dirs: List of subdirectories to watch (default from settings)
             debounce_seconds: Debounce time in seconds
         """

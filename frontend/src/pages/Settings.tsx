@@ -369,7 +369,9 @@ export function Settings() {
         {/* Appearance Section */}
         <section className="card">
           <button
+            type="button"
             onClick={() => toggleSection('appearance')}
+            aria-expanded={!collapsedSections.has('appearance')}
             className="flex items-center gap-3 w-full text-left"
           >
             {collapsedSections.has('appearance') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -409,7 +411,9 @@ export function Settings() {
         <section className="card">
           <div className="flex items-center justify-between">
             <button
+              type="button"
               onClick={() => toggleSection('area-mappings')}
+              aria-expanded={!collapsedSections.has('area-mappings')}
               className="flex items-center gap-3 text-left"
             >
               {collapsedSections.has('area-mappings') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -627,7 +631,9 @@ export function Settings() {
         {/* Database Section */}
         <section className="card">
           <button
+            type="button"
             onClick={() => toggleSection('database')}
+            aria-expanded={!collapsedSections.has('database')}
             className="flex items-center gap-3 w-full text-left"
           >
             {collapsedSections.has('database') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -655,7 +661,9 @@ export function Settings() {
         {/* Sync Section */}
         <section className="card">
           <button
+            type="button"
             onClick={() => toggleSection('sync')}
+            aria-expanded={!collapsedSections.has('sync')}
             className="flex items-center gap-3 w-full text-left"
           >
             {collapsedSections.has('sync') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -692,7 +700,9 @@ export function Settings() {
         {/* AI Configuration Section */}
         <section className="card">
           <button
+            type="button"
             onClick={() => toggleSection('ai')}
+            aria-expanded={!collapsedSections.has('ai')}
             className="flex items-center gap-3 w-full text-left"
           >
             {collapsedSections.has('ai') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -855,7 +865,9 @@ export function Settings() {
         {/* Momentum Section */}
         <section className="card">
           <button
+            type="button"
             onClick={() => toggleSection('momentum')}
+            aria-expanded={!collapsedSections.has('momentum')}
             className="flex items-center gap-3 w-full text-left"
           >
             {collapsedSections.has('momentum') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -928,7 +940,9 @@ export function Settings() {
         {/* Data Export Section */}
         <section className="card">
           <button
+            type="button"
             onClick={() => toggleSection('export')}
+            aria-expanded={!collapsedSections.has('export')}
             className="flex items-center gap-3 w-full text-left"
           >
             {collapsedSections.has('export') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}

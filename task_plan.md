@@ -1,45 +1,60 @@
-# Task Plan: v1.0.0 Release Prep — Round 3 (Deep Cleanup)
+# Task Plan: v1.0.0 Release Prep -- Round 7
 
-**Goal:** Find and fix all remaining pre-Conduital references, verify builds, clean distribution checklist.
+**Goal:** Deep branding cleanup, strategic consistency fix, backlog hygiene, package-lock rebrand, backend docstring cleanup.
 **Status:** `complete`
-**Created:** 2026-02-07 (Session 3)
+**Created:** 2026-02-07 (Session 7)
 
 ---
 
 ## Context
 
-Round 1 (commit 0662006) completed: JWT auto-gen, static serving, Alembic startup, run.py launcher, GTD UI cleanup, LICENSE, THIRD_PARTY_LICENSES.txt.
+Rounds 1-6 completed: static serving, rebrand, migrations, Pydantic cleanup, end-to-end testing, bug fixes, accessibility, AI degradation, docs rebrand, test infra, version SSoT, 174/174 tests passing. Round 7 addresses deeper branding issues (backend docstrings, Skills directory, backlog Second Brain refs), strategic inconsistency (STRAT-001), backlog hygiene (22 done items cluttering active tables), and package-lock.json rebrand.
 
-Round 2 (commit d9b538e) completed: Full Conduital rebrand (56 user-facing occurrences), GTD/PARA/Second Brain trademark cleanup, branding research blob removal. 30 files changed, +306/-1,801.
-
-Namespace claims completed: conduital.com purchased, @conduital claimed on GitHub/X/Gumroad.
-
-## Completed Tasks (6 items)
+## Tasks (8 items)
 
 | # | Source | Description | Status |
 |---|--------|-------------|--------|
-| 1 | Audit | **Clean 18 internal "Project Tracker" references** — docstrings/comments across 15 Python/TypeScript files | ✅ |
-| 2 | Testing | **Fix FastAPI title** — local .env had stale APP_NAME override (Pydantic BaseSettings precedence) | ✅ |
-| 3 | Audit | **Fix alembic.ini path** — `.project-tracker/` → `.conduital/` database path | ✅ |
-| 4 | Audit | **Fix package.json name** — `project-tracker-frontend` → `conduital-frontend` | ✅ |
-| 5 | Audit | **Clean distribution-checklist.md** — 8 stale "ProjectTracker" refs + 1 "Second Brain" in future phases | ✅ |
-| 6 | All | **Build verification + commit + update tracking docs** | ✅ |
-
-### Build Verification
-- TypeScript: clean (0 errors)
-- Vite build: clean (576KB)
-- Python compile: PASS (all backend files)
-
-### Still Out of Scope (requires external action)
-- Icon/favicon design — deferred to Phase 5
-- Phase 1.3: User data directory (%LOCALAPPDATA%\Conduital\)
-- Phase 1.4: First-run setup wizard
-- Phase 1.5: Graceful AI degradation testing
-- Phase 2-5: PyInstaller, installer, legal docs, Gumroad
+| 1 | STRAT-001 | **Fix strategic decision inconsistency** -- STRAT-001 said "SaaS Web-Only" but actual strategy is "Desktop-first"; corrected in backlog.md | Complete |
+| 2 | Branding | **Clean Second Brain refs from backlog.md** -- 4 user-facing instances replaced (R1 target, R1 features x2, distribution model description) | Complete |
+| 3 | Branding | **Clean backend Python docstrings** -- 10 files: Second Brain -> synced notes folder, PARA naming conventions -> numbered prefix conventions, logger messages updated | Complete |
+| 4 | Branding | **Clean Skills directory** -- 17 replacements across 7 skill files: Project Tracker/Project-Tracker -> Conduital, Second Brain -> synced notes/file sync | Complete |
+| 5 | Hygiene | **Backlog table cleanup** -- moved 22 Done/N/A items from Medium and Low priority debt tables to Completed Items table; removed 8 done items from Parking Lot; cleaned BACKLOG-113 description | Complete |
+| 6 | Branding | **Expand .gitignore** -- added 5 missing dev files: MODULE_SYSTEM.md, Skills/, backend/diagnose.py, frontend/FRONTEND_IMPLEMENTATION_GUIDE.md, frontend/SETUP_AND_TEST.md | Complete |
+| 7 | Branding | **Regenerate package-lock.json** -- name updated from "project-tracker-frontend" to "conduital-frontend" | Complete |
+| 8 | All | **Build verification** -- TypeScript OK, Vite build OK (576KB), Python compile OK, 174/174 tests pass | Complete |
 
 ---
 
+## Files Modified
+
+### Direct edits
+- `backlog.md` -- STRAT-001 fix, Second Brain cleanup (4 refs), 22 done items moved, Parking Lot cleaned, BACKLOG-113 condensed, last-updated line
+- `.gitignore` -- added 5 missing dev file exclusions
+
+### Background agent: Python docstrings (10 files)
+- `backend/app/services/discovery_service.py` -- docstring cleanup
+- `backend/app/services/area_discovery_service.py` -- docstring cleanup
+- `backend/app/sync/file_watcher.py` -- module/class/param docstrings
+- `backend/app/sync/folder_watcher.py` -- param docstring
+- `backend/app/sync/markdown_parser.py` -- module docstring
+- `backend/app/sync/markdown_writer.py` -- module/param docstrings
+- `backend/app/sync/sync_engine.py` -- docstrings + logger message
+- `backend/app/sync/__init__.py` -- module docstring
+- `backend/app/core/config.py` -- comment + property docstring
+- `backend/app/main.py` -- logger message
+
+### Background agent: Skills directory (7 files)
+- `Skills/capture-inbox.md` -- 3 replacements
+- `Skills/context-switch.md` -- 1 replacement
+- `Skills/daily-planning.md` -- 4 replacements
+- `Skills/momentum-review.md` -- 1 replacement
+- `Skills/next-actions-dashboard.md` -- 1 replacement
+- `Skills/project-health-check.md` -- 1 replacement
+- `Skills/sync-brain.md` -- 6 replacements
+
+### Package regeneration
+- `frontend/package-lock.json` -- name "project-tracker-frontend" -> "conduital-frontend"
+
 ## Errors Encountered
-| Error | Attempt | Resolution |
-|-------|---------|------------|
-| .env APP_NAME override | Discovered via static serving test | Updated local .env (gitignored) from "Project Tracker" to "Conduital" |
+
+None.

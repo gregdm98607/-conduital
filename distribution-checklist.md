@@ -96,15 +96,15 @@
 - [x] Configure FastAPI to serve the static frontend files: *(done 2026-02-07 — added to main.py)*
   - [x] Mount `StaticFiles` for the built assets directory
   - [x] Add a catch-all route that serves `index.html` for client-side routing
-- [ ] Test the full app running with only the Python backend (no `npm run dev`)
-- [ ] Verify all frontend routes, API calls, and assets load correctly from the static build
+- [x] Test the full app running with only the Python backend (no `npm run dev`) *(verified 2026-02-07 — health, root SPA, /projects, static JS, API, /docs all return 200)*
+- [x] Verify all frontend routes, API calls, and assets load correctly from the static build *(verified 2026-02-07 — 6/6 endpoint checks pass; fixed root "/" to serve SPA when build exists)*
 - [x] Update `vite.config.ts` if needed to set correct `base` path for production *(N/A — default "/" is correct)*
 
 ### 1.2 Auto-Run Database Migrations on Startup
 - [x] Wire Alembic `upgrade head` into the FastAPI startup lifecycle event *(done 2026-02-07 — `run_migrations()` in lifespan)*
 - [x] Handle the case where the database file doesn't exist yet (first run) — create the directory and file *(done — `db_dir.mkdir(parents=True, exist_ok=True)` in lifespan)*
 - [x] Handle the case where migrations are already current (no-op, no errors) *(Alembic handles this natively)*
-- [ ] Test upgrading from an empty state to fully migrated
+- [x] Test upgrading from an empty state to fully migrated *(verified 2026-02-07 — 12 migrations, 17 tables, user_id columns present; fixed repair migration 010 to check column existence before adding)*
 - [ ] Test upgrading from a mid-point (simulating an app update with new migrations)
 - [x] Add error handling and logging for migration failures *(done — try/except with fallback to create_all)*
 
@@ -138,13 +138,13 @@
 - [ ] Provide a way to re-run setup or edit settings later from within the app
 
 ### 1.5 Verify Graceful AI Degradation
-- [ ] Launch the app with no Anthropic API key configured
-- [ ] Test every AI-powered feature and confirm:
-  - [ ] No unhandled exceptions or crashes
-  - [ ] UI elements for AI features show a clear "requires API key" or "set up in settings" state
-  - [ ] Non-AI features all function normally
-- [ ] Test with an invalid API key — confirm helpful error message, not a stack trace
-- [ ] Test with a valid key that has exceeded its quota — confirm graceful handling
+- [x] Launch the app with no Anthropic API key configured *(verified 2026-02-07 — AI_FEATURES_ENABLED=false, key empty)*
+- [x] Test every AI-powered feature and confirm: *(verified 2026-02-07 — code audit + functional test)*
+  - [x] No unhandled exceptions or crashes *(create_provider raises clean ValueError; endpoints return HTTP 400 with message)*
+  - [x] UI elements for AI features show a clear "requires API key" or "set up in settings" state *(Settings page shows "Not set" badge with WifiOff icon)*
+  - [x] Non-AI features all function normally *(momentum scoring, project health, discovery all work without key)*
+- [x] Test with an invalid API key — confirm helpful error message, not a stack trace *(verified: /ai/test returns `{success: false, message: "..."}` with Pydantic response model)*
+- [ ] Test with a valid key that has exceeded its quota — confirm graceful handling *(requires intentional quota exhaustion — deferred)*
 
 ### 1.6 Single-Process Launch Architecture
 - [x] Create a Python entry point script *(done 2026-02-07 — `backend/run.py`)*
@@ -422,6 +422,45 @@
 - [ ] Offline license validation (for users with intermittent internet)
 - [ ] Multi-device sync (would require a cloud component)
 - [ ] Docker distribution for self-hosting / NAS users
+
+### Marketing & Launch (Post-MVP)
+
+#### Pre-Launch Assets
+- [ ] Build waitlist / landing page on conduital.com
+- [ ] Prepare press kit (screenshots, product description, founder bio)
+- [ ] Draft ProductHunt and Show HN launch posts
+- [ ] Create 5–8 polished app screenshots for Gumroad / marketing
+
+#### Content & Community
+- [ ] Start "building in public" content on X (@conduital)
+- [ ] Write 2–3 foundational blog posts (philosophy: local-first, data ownership, AI as optional layer)
+- [ ] Create launch blog post for conduital.com
+- [ ] Set up email newsletter (ConvertKit / Buttondown) with waitlist integration
+- [ ] Establish community channel (Discord or GitHub Discussions)
+
+#### Launch Sequence
+- [ ] Invite early adopter cohort (50–100 users) for beta feedback
+- [ ] Collect testimonials and user workflow examples before public launch
+- [ ] Execute staggered launch: ProductHunt → HN → Reddit (r/productivity, r/selfhosted, r/PKMS) → LinkedIn
+- [ ] Run launch week engagement (respond to all comments, daily updates)
+
+#### Ongoing Marketing
+- [ ] Identify and pitch relevant podcasts (productivity, indie maker, local-first)
+- [ ] Cross-post technical content to Dev.to / Hashnode
+- [ ] Create YouTube tutorials (feature demos, workflow walkthroughs)
+- [ ] Monitor brand mentions and category keywords across platforms
+
+#### Content Pillars (for reference)
+1. **Education** (40%) — Workflow guides, migration guides, productivity system comparisons
+2. **Philosophy** (25%) — Local-first, data ownership, productivity without surveillance
+3. **Technical** (20%) — Architecture decisions, AI integration patterns, sync design
+4. **Community** (15%) — User workflows, success stories, weekly review rituals
+
+#### Metrics to Track Post-Launch
+- Social followers, blog traffic, newsletter subscribers
+- Gumroad conversion rate, trial-to-purchase ratio
+- Community size and engagement
+- Content performance by platform and pillar
 
 ---
 

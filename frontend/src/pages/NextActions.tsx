@@ -307,7 +307,9 @@ export function NextActions() {
                 <div key={zoneConfig.zone} className={`rounded-lg border ${zoneConfig.bgColor}`}>
                   {/* Zone Header - Clickable to toggle collapse */}
                   <button
+                    type="button"
                     onClick={() => toggleZoneCollapsed(zoneConfig.zone)}
+                    aria-expanded={!isCollapsed}
                     className={`w-full px-4 py-3 ${isCollapsed ? '' : 'border-b'} ${zoneConfig.headerColor} rounded-t-lg flex items-center justify-between cursor-pointer select-none transition-colors hover:opacity-90`}
                   >
                     <div className="flex items-center gap-2">

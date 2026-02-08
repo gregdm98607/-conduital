@@ -1,8 +1,8 @@
 """
 Project Discovery Service
 
-Scans Second Brain folder structure and discovers projects based on
-PARA naming conventions (xx.xx Project_Name).
+Scans synced notes folder structure and discovers projects based on
+numbered prefix conventions (xx.xx Project_Name).
 """
 
 import re
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 class ProjectDiscoveryService:
     """
-    Service for discovering and importing projects from Second Brain folder structure.
+    Service for discovering and importing projects from synced notes folder structure.
     """
 
     def __init__(self, db: Session):

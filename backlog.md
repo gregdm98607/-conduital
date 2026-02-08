@@ -1,4 +1,4 @@
-# Project Tracker - Release-Based Backlog
+# Conduital — Release-Based Backlog
 
 This backlog is organized by commercial release milestones. Each release builds on the previous, enabling incremental delivery.
 
@@ -10,24 +10,24 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 | Release | Modules | Target Audience | Status |
 |---------|---------|-----------------|--------|
-| **R1: PT Basic** | `core` + `projects` | Project managers, individuals | **User Testing** (2026-02-03) |
-| **R2: PT GTD** | + `gtd_inbox` | GTD practitioners | Planned |
+| **R1: Conduital Basic** | `core` + `projects` | Project managers, individuals | **User Testing** (2026-02-03) |
+| **R2: Conduital GTD** | + `gtd_inbox` | GTD practitioners | Planned |
 | **R3: Proactive Assistant** | + `memory_layer` + `ai_context` | AI-augmented users | Planned |
 | **R4: Full Suite** | All modules | Power users | Planned |
 
 ---
 
-## R1: Project Tracker Basic
+## R1: Conduital Basic
 
 **Modules:** `core` + `projects`
-**Target:** Production-ready project and task management with Second Brain sync.
+**Target:** Production-ready project and task management with markdown file sync.
 **Status:** 🧪 **User Testing** | Released: 2026-02-03
 
 ### R1 Release Notes
 
 **What's Included:**
 - Core CRUD for projects, tasks, areas, contexts, goals, visions
-- Second Brain folder sync (Google Drive compatible)
+- Markdown file sync (Google Drive compatible)
 - Auto-discovery of projects and areas from markdown files
 - Momentum scoring and stalled project detection
 - Next actions prioritization with MYN urgency zones
@@ -40,12 +40,11 @@ This backlog is organized by commercial release milestones. Each release builds 
 - DOC-005: Module System Documentation (user-facing docs)
 
 **Known Limitations:**
-- 15 API integration tests failing (test harness issue, not production)
 - Single-user only (no multi-user/teams)
 
 ### R1 Current State
 - Core CRUD for projects, tasks, areas, contexts, goals, visions
-- Second Brain folder sync (Google Drive)
+- Markdown file sync (Google Drive)
 - Auto-discovery of projects and areas
 - Momentum scoring and stalled detection
 - Next actions prioritization
@@ -69,7 +68,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 ---
 
-## R2: Project Tracker GTD
+## R2: Conduital GTD
 
 **Modules:** `core` + `projects` + `gtd_inbox`
 **Target:** Complete GTD workflow implementation.
@@ -176,14 +175,14 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 ### Release Planning & Distribution
 
-**Distribution Model:** Desktop-first (Option A). Local-first personal productivity tool aligns with SQLite architecture and Second Brain philosophy. SaaS (Option B) is a future consideration requiring PostgreSQL + multi-tenancy.
+**Distribution Model:** Desktop-first (Option A). Local-first personal productivity tool aligns with SQLite architecture and local-first philosophy. SaaS (Option B) is a future consideration requiring PostgreSQL + multi-tenancy.
 
 #### Build & Packaging
 
 | ID | Description | Status | Target | Notes |
 |----|-------------|--------|--------|-------|
-| DIST-010 | Strip development artifacts from build | Open | Pre-R1 | Remove CLAUDE.md, .claude/, conversation logs, dev configs |
-| DIST-011 | FastAPI static file serving for React build | Open | Pre-R1 | Serve frontend `build/` from backend — single process, single port |
+| DIST-010 | Strip development artifacts from build | ✅ Done | Pre-R1 | 32 dev-only files added to .gitignore; .claude/ already excluded (2026-02-07) |
+| DIST-011 | FastAPI static file serving for React build | ✅ Done | Pre-R1 | StaticFiles mount + catch-all SPA route in main.py (verified 2026-02-07) |
 | DIST-012 | PyInstaller backend bundling | Open | R1 | Bundle FastAPI + SQLAlchemy + deps into standalone .exe; handle hidden imports (Pydantic, SQLAlchemy dynamic imports) |
 | DIST-013 | Production React build pipeline | Open | R1 | `npm run build` optimization, env-specific config, asset hashing |
 | DIST-014 | Desktop wrapper (Tauri) | Open | R1 | Native window via Tauri (~5MB installer); launches FastAPI as sidecar, renders React in webview |
@@ -193,9 +192,9 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 | ID | Description | Status | Target | Notes |
 |----|-------------|--------|--------|-------|
-| DIST-020 | Dependency license audit | Open | Pre-R1 | Verify all deps permit commercial use |
-| DIST-021 | Lock dependency versions | Open | Pre-R1 | Freeze requirements.txt + package-lock.json for reproducible builds |
-| DIST-022 | Semantic versioning setup | Open | Pre-R1 | Per STRAT-008: SemVer `Major.Minor.Patch`, first public version `1.0.0-beta` |
+| DIST-020 | Dependency license audit | ✅ Done | Pre-R1 | All deps permissive (MIT/BSD/Apache 2.0/ISC); THIRD_PARTY_LICENSES.txt created 2026-02-07 |
+| DIST-021 | Lock dependency versions | ✅ Done | Pre-R1 | requirements.txt (pinned ==), poetry.lock, package-lock.json all present (verified 2026-02-07) |
+| DIST-022 | Semantic versioning setup | ✅ Done | Pre-R1 | SemVer established; v1.0.0-alpha set in pyproject.toml, package.json, config.py, .env.example (2026-02-07) |
 | DIST-023 | Path resolution for packaged exe | Open | R1 | .env/config paths must resolve relative to executable, not source tree |
 | DIST-024 | Fix deprecated on_event → lifespan handlers | ✅ Done | Pre-R1 | FastAPI modernization required before packaging (DEBT-067) |
 
@@ -215,13 +214,13 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 | ID | Description | Status | Target | Notes |
 |----|-------------|--------|--------|-------|
-| DIST-050 | Register conduital.com domain | Open | **P0 — Immediate** | $4.99, confirmed available 2026-02-07 |
+| DIST-050 | Register conduital.com domain | ✅ Done | **P0 — Immediate** | Purchased 2026-02-07 |
 | DIST-051 | Register conduital.app domain | Open | P1 | $19.99, confirmed available |
-| DIST-052 | Claim @conduital on Twitter/X | Open | P1 | Confirmed available 2026-02-07 |
-| DIST-053 | Claim conduital on GitHub | Open | P1 | github.com/conduital confirmed available |
-| DIST-054 | Claim conduital on Gumroad | Open | P1 | conduital.gumroad.com confirmed available |
-| DIST-055 | Remove ChatGPT branding notes from distribution-checklist.md | Open | Pre-R1 | Clean up consumed reference material below line 424 |
-| DIST-056 | Update all codebase references from "Project Tracker" to "Conduital" | Open | Pre-R1 | Title bar, sidebar, login page, About page, HTML title, documentation |
+| DIST-052 | Claim @conduital on Twitter/X | ✅ Done | P1 | Claimed 2026-02-07 |
+| DIST-053 | Claim conduital on GitHub | ✅ Done | P1 | Claimed as gregdm98607/conduital 2026-02-07 |
+| DIST-054 | Claim conduital on Gumroad | ✅ Done | P1 | Claimed conduital.gumroad.com 2026-02-07 |
+| DIST-055 | Remove ChatGPT branding notes from distribution-checklist.md | ✅ Done | Pre-R1 | 1,603 lines of research blob removed 2026-02-07 |
+| DIST-056 | Update all codebase references from "Project Tracker" to "Conduital" | ✅ Done | Pre-R1 | 56+ occurrences updated across 3 rounds (commits d9b538e, 54c5b7f) |
 
 #### CI/CD (when source hosting is established)
 
@@ -230,7 +229,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DIST-040 | Initialize git repository | ✅ Done | Pre-R1 | Git init + .gitignore created (awaiting initial commit — needs git config) |
 | DIST-041 | GitHub repo setup + .gitignore | Open | Pre-R1 | Remote hosting, issue tracking, PR workflow |
 | DIST-042 | CI/CD pipeline (GitHub Actions) | Open | R1 | Automated tests, build, produce installer on release tag |
-| DIST-043 | Automated test suite stabilization | **Unblocked** | Pre-R1 | DEBT-024 fixed — 18/18 API tests pass. Ready for CI integration |
+| DIST-043 | Automated test suite stabilization | **Unblocked** | Pre-R1 | 174/174 tests pass (DEBT-024, 069, 070 fixed). Ready for CI integration |
 
 ---
 
@@ -249,21 +248,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-021 | Area discovery direct DB session | `auto_discovery_service.py` | Open |
 | DEBT-022 | Area folder pattern reuses project pattern | `auto_discovery_service.py` | Open |
 | DEBT-023 | Memory migration down_revision | `006_add_memory_layer_tables.py` | Open |
-| DEBT-024 | Test infrastructure broken - API tests don't init DB | `tests/test_api_basic.py` | ✅ Done — fixture-based TestClient, StaticPool, startup patches, 18/18 pass |
-| DEBT-027 | ESLint `no-console` rule to prevent debug logging in production | Frontend | **Done** |
-| DEBT-028 | Inbox "Processed Today" stat inaccurate (shows 0 or all-time count) | `InboxPage.tsx` | ✅ Done — filters processed_at by today's date |
 | DEBT-041 | `create_unstuck_task` commits inside potentially larger transaction | `intelligence_service.py:494` | Open |
-| DEBT-042 | `_persist_to_env` race condition on concurrent .env writes | `settings.py:73-98` | **Done** — threading.Lock added |
-| DEBT-043 | `_persist_to_env` no value sanitization (newlines/special chars in API keys) | `settings.py:83-86` | **Done** — _sanitize_env_value() added |
-| DEBT-044 | Unused imports: `os` in settings.py, `PlainTextResponse`/`Task` in export.py | `settings.py:8`, `export.py:20,27` | **Done** |
-| DEBT-045 | AI context export N+1: overview fetches all active projects twice | `export.py:231-236,316-322` | **Done** — Single `all_active` query, stalled/counts derived from it |
-| DEBT-046 | ContextExportModal setState-in-render anti-pattern (same as DEBT-030) | `ContextExportModal.tsx:59-61` | ✅ Done — moved to useEffect |
-| DEBT-047 | ContextExportModal stale data on reopen + memory leak on unmount | `ContextExportModal.tsx:15-39` | ✅ Done — reset on close + AbortController cleanup |
-| DEBT-048 | SQLAlchemy `== False` should use `.is_(False)` in export.py | `export.py:272` | ✅ Done — also fixed in areas.py + intelligence_service.py |
-| DEBT-053 | Projects.tsx early return before hooks — violates React rules of hooks | `Projects.tsx:64` | **Done** (BUG-021) |
-| DEBT-055 | ContextExportModal missing backdrop overlay — page content visible and scrollable behind modal | `ContextExportModal.tsx` | ✅ N/A — uses shared Modal component which has backdrop |
-| DEBT-056 | Toast notifications stack without deduplication — identical error toasts pile up (10+ visible) | Frontend (react-hot-toast config) | **Done** |
-| DEBT-057 | Project list API missing task counts — `/projects` response lacks `task_count`/`completed_task_count`, ProjectCard shows "Tasks 0/0" | `projects.py` API + `ProjectCard.tsx` | **Done** (BACKLOG-106) |
 
 ### Low Priority (Address when touched)
 
@@ -278,30 +263,16 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-018 | Google Drive network interruptions | `folder_watcher.py` | Open |
 | DEBT-019 | Silent auto-discovery failures | Auto-discovery service | Open |
 | DEBT-039 | MemoryPage priority input allows out-of-range values client-side | `MemoryPage.tsx:447` | Open |
-| DEBT-049 | Collapsible section buttons missing `type="button"` and `aria-expanded` | `Settings.tsx` | Open |
-| DEBT-050 | Unused `timedelta` import | `ai_service.py:12` | **Done** |
-| DEBT-051 | Inconsistent BaseModel naming (`PydanticBaseModel` alias) | `memory_layer/routes.py` | **Done** |
 | DEBT-052 | Empty model dropdown edge case when provider_models not yet loaded | `Settings.tsx` | Open |
-| DEBT-058 | `get_by_id` returns `task_count: 0` — detail pages show misleading task counts | `project_service.py` | **Done** |
-| DEBT-059 | Raw `fetch('/modules')` bypasses API client (auth, error handling, AbortController) | `Layout.tsx` | **Done** |
-| DEBT-060 | ErrorBoundary "Try Again" can infinite-loop on deterministic errors | `ErrorBoundary.tsx` | **Done** |
 | DEBT-061 | Dynamic attribute assignment on ORM objects for task counts (fragile) | `project_service.py` | Open |
 | DEBT-062 | Redundant task_count fields in ProjectWithTasks schema | `project.py` | Open |
 | DEBT-063 | `/modules` proxy needs production server configuration (Vite dev proxy only) | `vite.config.ts` | Open |
 | DEBT-064 | "Processed Today" count shows 0 on unprocessed tab — needs dedicated API endpoint | `InboxPage.tsx`, backend inbox API | Open |
 | DEBT-065 | API client methods don't accept AbortSignal — prevents true HTTP request cancellation | `api.ts` (all methods) | Open |
-| DEBT-066 | SQLAlchemy `== True` pattern in 8 locations — should use `.is_(True)` | `intelligence_service.py` ×3, `next_actions_service.py` ×3, `task_service.py` ×1, `memory_layer/services.py` ×1 | **Done** |
-| DEBT-067 | FastAPI `@app.on_event("startup"/"shutdown")` deprecated — migrate to lifespan context manager | `main.py:110,178` | **Done** — asynccontextmanager lifespan, helpers moved before app creation |
-| DEBT-068 | Pydantic V1-style `class Config` + `Field(example=...)` deprecated — migrate to `ConfigDict` + `json_schema_extra` | Multiple schema files | Open |
-| DEBT-069 | conftest.py `in_memory_engine` fixture missing `StaticPool` — inconsistent with test_api_basic.py | `tests/conftest.py` | Open |
-| DEBT-070 | conftest.py and test_api_basic.py duplicate engine/session setup — consolidate into shared conftest | `tests/conftest.py`, `tests/test_api_basic.py` | Open |
-| DEBT-071 | `get_db` imported but unused in main.py after lifespan refactor | `main.py:38` | Open |
-| DEBT-072 | `Path` imported but unused in main.py (only used in setup_logging call which can use string) | `main.py:15` — verify if still needed | Open |
 | DEBT-073 | Momentum section missing icon — other Settings sections have colored icons, Momentum has none | `Settings.tsx:862` | Open |
 | DEBT-074 | `recalculateInterval` state variable loaded from API but never exposed in UI — hidden from user | `Settings.tsx:69` | Open |
 | DEBT-075 | Momentum PUT endpoint mutates the singleton `settings` object in-memory — not safe if Pydantic Settings is frozen | `settings.py:282-292` | Open |
 | DEBT-076 | `downloadJSONExport` and `downloadDatabaseBackup` duplicate blob download logic — extract shared helper | `api.ts:532-558` | Open |
-| DEBT-077 | Tests use `pytest-asyncio` but test_api_basic.py uses sync TestClient — `asyncio: mode=AUTO` warning in pytest config | `pyproject.toml` | Open |
 | DEBT-078 | Test run requires explicit venv python — `python -m pytest` fails without venv activation | `backend/venv` exists but PATH doesn't include it | Open |
 
 ---
@@ -324,13 +295,13 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 | ID | Description | Status | Notes |
 |----|-------------|--------|-------|
-| STRAT-001 | **Distribution: SaaS Web-Only** | Decided | Recurring revenue, single codebase |
+| STRAT-001 | **Distribution: Desktop-first** | Decided | Local-first personal productivity; SQLite + file sync architecture; Gumroad distribution |
 | STRAT-002 | **Monetization Model** | Open | TBD: Open Source, Book, SaaS, Certification |
 | STRAT-003 | **BYOS (Bring Your Own Storage)** | Decided | User-owned cloud storage |
 | STRAT-004 | **Multi-AI Provider Support** | Decided | Claude, ChatGPT, provider-agnostic |
 | STRAT-005 | **Unified Codebase Architecture** | Implemented | Module system (2026-02-02) |
 | STRAT-006 | **Commercial Configuration Presets** | Implemented | basic, gtd, proactive_assistant, full |
-| STRAT-007 | **PT Leads Shared Infrastructure** | Implemented | Single codebase for all features |
+| STRAT-007 | **Conduital Leads Shared Infrastructure** | Implemented | Single codebase for all features |
 | STRAT-008 | **Semantic Versioning (SemVer)** | Decided | `Major.Minor.Patch` — Major: breaking/incompatible changes; Minor: backward-compatible features; Patch: backward-compatible bug fixes. First public version: `1.0.0-beta` |
 
 ---
@@ -378,24 +349,16 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-061 | Register Claude Code Skills | Developer tooling |
 | BACKLOG-066 | Automated Urgency Zone (Phase 3) | Zone lock capability |
 | BACKLOG-090 | Data Import from JSON Backup | Complement to export feature |
-| BACKLOG-091 | ~~Export UI in Frontend~~ | **Done** — Export section in Settings with preview, JSON download, DB backup |
 | BACKLOG-093 | Quick Capture Success Animation | Visual flash/animation feedback on Capture & Next for consecutive entries |
-| BACKLOG-094 | ~~Whitespace-Only Content Validation~~ | **Done** — strip_whitespace validator on inbox, task, project, area schemas |
 | BACKLOG-095 | Collapsible Sections Pattern Extension | Apply collapsible pattern to Weekly Review checklist and ProjectDetail task sections |
-| BACKLOG-098 | ~~Momentum Settings PUT Endpoint~~ | **Done** — PUT /settings/momentum + editable controls in Settings UI |
 | BACKLOG-099 | Archive Area Confirmation Dialog | Warn when area has active projects, offer cascade options |
 | BACKLOG-101 | Dashboard Stats Block Visual Consistency | Active Projects, Pending Tasks, Avg Momentum blocks mix bold text and color-coded badges for counts — pick one treatment and apply consistently |
 | BACKLOG-103 | Project Review Frequency + Mark Reviewed Next Date |
-| BACKLOG-104 | Area Health Score "How is this calculated?" Drill-Down | Add a "How is this calculated?" expandable section beneath the Health bar on AreaDetail, mirroring the existing Momentum Score drill-down on ProjectDetail (BACKLOG-058). Show the weighted factor breakdown (project health, review cadence, activity, standards). | 1) Add `review_frequency` field to Project model (matching Area model pattern: daily/weekly/monthly). 2) Display review frequency badge and review status on ProjectDetail (matching AreaDetail pattern). 3) Fix both Area and Project `mark-reviewed` endpoints to calculate and set `next_review_date` based on frequency when marked reviewed. Currently neither endpoint sets a future review target. |
-| BACKLOG-105 | ~~Sidebar Module-Aware Navigation~~ | **Done** — Nav items filtered by enabled modules via `/modules` API |
-| BACKLOG-106 | ~~Project Card Task Counts~~ | **Done** — SQL subquery annotations on list endpoint |
-| BACKLOG-107 | ~~Weekly Review vs Dashboard Stalled Count Inconsistency~~ | **Done** — Dashboard now shows both stalled + at-risk projects via `include_at_risk` param |
-| BACKLOG-108 | ~~Global React Error Boundary~~ | **Done** — ErrorBoundary wraps App root |
-| BACKLOG-109 | ~~CORS Origins from Environment Variable~~ | **Done** — field_validator parses comma-separated or JSON array from .env |
+| BACKLOG-104 | Area Health Score "How is this calculated?" Drill-Down | Add expandable section beneath Health bar on AreaDetail, mirroring Momentum Score drill-down on ProjectDetail (BACKLOG-058). Show weighted factor breakdown. |
 | BACKLOG-110 | Auto-Discovery as Optional Setting | Add a user setting on the Settings page to toggle on/off Project discovery, Area discovery, and Project Prefix discovery independently. Design what "off" means (skip on startup, ignore file changes, preserve existing data vs. clear). |
 | BACKLOG-111 | Momentum Settings: Validate stalled > at_risk | Frontend allows saving stalled_threshold < at_risk_threshold, which is logically invalid (a project can't be at-risk before it's stalled). Add client-side + server-side validation. |
 | BACKLOG-112 | Export Preview: Refresh after download | After downloading JSON export or DB backup, the export preview data doesn't refresh. Add a re-fetch or stale indicator. |
-| BACKLOG-113 | **Website Redesign & Product Launch Content (gregmaxfield.com → conduital.com)** | **⚠️ Depends on:** DIST-050 (conduital.com domain), DIST-056 (rebrand to Conduital). Redesign and deploy new content to announce, promote, and demo **Conduital** (formerly Project Tracker). Current site at gregmaxfield.com (GoDaddy); target migration to conduital.com once acquired. Use AI agents liberally for content generation, design iteration, and deployment. **Content Plan:** **Sitemap:** Home (hero + features + CTA) → Features (GTD Workflow, MYN, AI Assistant, Second Brain Integration) → How It Works (3-step onboarding) → Pricing (free/open-source + cost transparency) → Docs → Blog → About → Get Started/Download. **Hero messaging:** "Your Second Brain Meets Intelligent Task Management" — 3 pillars: Your Data Your Control, Proven Productivity Methods, AI That Actually Helps. **Demo strategy:** 8 priority annotated screenshots (dashboard, inbox processing, urgency zones, AI chat, sync, weekly review, project hierarchy, module selection) + 2-3 min demo video + GIF animations. **SEO targets:** GTD software, Second Brain integration, local-first productivity app, AI task manager, MYN productivity system, PARA method digital organization, Conduital. **Trust elements:** GitHub star count (github.com/conduital), open-source transparency, "your data never leaves your computer" messaging, founder bio, tech stack disclosure. **CTA strategy:** Primary "Download Conduital" on every page, secondary contextual CTAs (Watch Demo, View on GitHub, Star on GitHub). **Implementation phases:** Phase 1 (MVP): Home + Get Started + Features + About (can start on gregmaxfield.com). Phase 2 (Launch): Migrate to conduital.com + How It Works + Pricing + Demo video + SEO. Phase 3 (Growth): Blog + Expanded docs + Community showcase + Testimonials. |
+| BACKLOG-113 | **Website Redesign & Product Launch Content (conduital.com)** | **⚠️ Depends on:** DIST-050 ✅, DIST-056 ✅. Deploy content to announce, promote, and demo **Conduital**. **Sitemap:** Home → Features → How It Works → Pricing → Docs → Blog → About → Download. **Hero:** "Intelligent Momentum for Independent Operators" — pillars: Your Data Your Control, Proven Productivity Methods, AI That Actually Helps. **Demo:** 8 screenshots + 2-3 min video + GIFs. **SEO targets:** local-first productivity, AI task manager, intelligent momentum, Conduital. **Implementation phases:** Phase 1 (MVP): Home + Get Started + Features. Phase 2 (Launch): conduital.com + Pricing + Demo. Phase 3 (Growth): Blog + Community + Testimonials. |
 | BACKLOG-114 | **AI-Agentic-First Social Media & Marketing Content Plan (Conduital)** | **⚠️ Depends on:** DIST-052 (@conduital on Twitter/X), DIST-053 (conduital on GitHub), DIST-054 (conduital on Gumroad), DIST-056 (rebrand to Conduital). Envision and deploy an AI-agentic-first social media and marketing content strategy for **Conduital** awareness, promotion, engagement, and marketing. **Platform strategy:** Priority 1: Twitter/X as @conduital (productivity/PKM community) + Reddit (r/gtd, r/productivity, r/ObsidianMD, r/PKMS). Priority 2: LinkedIn (professional audience) + Hacker News + YouTube (tutorials/demos). **Content pillars:** 40% Education/How-To, 25% Philosophy/Thought Leadership (local-first, data ownership, methodology), 20% Technical Deep-Dives (architecture, AI integration), 15% Community/UGC. **AI agent automation:** Content repurposing agents (blog → tweets/threads/LinkedIn/Reddit), engagement monitoring + response drafting agents, performance analytics + optimization agents, launch timing + A/B testing agents, SEO content generation agents, newsletter curation agents. **Cadence:** Twitter 1-2x/day, Reddit 2-3x/week, LinkedIn 2-3x/week, YouTube 1-2x/month, Blog 1-2x/week, Newsletter weekly. **Launch sequence:** 30-day countdown — Week 4: teaser campaign + "building in public" threads under Conduital brand. Week 3: feature spotlights + beta signups. Week 2: demo videos + influencer outreach. Week 1: daily countdown + launch prep. Launch day: coordinated multi-platform push. Post-launch: sustained engagement + community building. **Metrics:** Awareness (followers, impressions), Engagement (replies, shares, saves), Conversion (conduital.com visits, downloads, GitHub stars at github.com/conduital), Agent efficiency (content throughput, response time). **Extended channels:** Blog/SEO on conduital.com, email newsletter funnel, YouTube tutorial series, podcast guest appearances, developer relations via github.com/conduital, Gumroad storefront at conduital.gumroad.com. **Ratio:** 10:1 value-to-promotion. Emphasize authentic community building, transparency about AI use, privacy-first/local-first differentiation. |
 
 ---
@@ -412,7 +375,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | INT-001 through INT-004 | PA integration items | 2026-02-02 |
 | TECH-008 | Shared module architecture | 2026-02-02 |
 | ROADMAP-004 | Proactive Assistant Integration | 2026-02-02 |
-| DEBT-004 | Configuration Externalization (SERVER_HOST/PORT, SECOND_BRAIN_ROOT, VITE vars) | 2026-02-02 |
+| DEBT-004 | Configuration Externalization (SERVER_HOST/PORT, sync root, VITE vars) | 2026-02-02 |
 | BACKLOG-069 | Scheduled Momentum Recalculation (APScheduler, daily at 2AM) | 2026-02-02 |
 | DEBT-006 | Input Validation (Pydantic validators, max_length, enum validation) | 2026-02-02 |
 | BACKLOG-070 | Dashboard Stalled Projects Widget (MomentumBar, Unstuck action) | 2026-02-02 |
@@ -499,6 +462,34 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-066 | SQLAlchemy `== True` → `.is_(True)` in 8 locations across 4 files | 2026-02-07 |
 | DEBT-067 | FastAPI on_event → lifespan context manager migration | 2026-02-07 |
 | DIST-024 | Fix deprecated on_event → lifespan handlers (same as DEBT-067) | 2026-02-07 |
+| DEBT-068 | Pydantic V1 deprecations: class Config→ConfigDict, example=→examples= (9 instances in auth.py, discovery.py, memory_layer/schemas.py) | 2026-02-07 |
+| DEBT-071 | Unused `get_db` import removed from main.py | 2026-02-07 |
+| DIST-011 | FastAPI static file serving for React build (StaticFiles mount + catch-all SPA route) | 2026-02-07 |
+| DIST-020 | Dependency license audit (all permissive: MIT/BSD/Apache 2.0/ISC; THIRD_PARTY_LICENSES.txt) | 2026-02-07 |
+| DIST-021 | Dependency versions locked (requirements.txt pinned, poetry.lock, package-lock.json) | 2026-02-07 |
+| DIST-022 | Semantic versioning setup (v1.0.0-alpha across 4 files) | 2026-02-07 |
+| DIST-050 | conduital.com domain registered | 2026-02-07 |
+| DIST-052 | @conduital on Twitter/X claimed | 2026-02-07 |
+| DIST-053 | conduital on GitHub claimed (gregdm98607/conduital) | 2026-02-07 |
+| DIST-054 | conduital on Gumroad claimed | 2026-02-07 |
+| DIST-055 | ChatGPT branding notes removed from distribution-checklist.md (1,603 lines) | 2026-02-07 |
+| DIST-056 | All codebase references updated from "Project Tracker" to "Conduital" (56+ occurrences) | 2026-02-07 |
+| BUG-024 | Deferred tasks not filtered from next actions (defer_until SQL filter added to query) | 2026-02-07 |
+| DEBT-049 | Collapsible section buttons: added `type="button"` + `aria-expanded` to 8 buttons (Settings + NextActions) | 2026-02-07 |
+| DEBT-077 | pytest-asyncio `asyncio_mode = "auto"` warning removed from pyproject.toml | 2026-02-07 |
+| DIST-010 | Dev artifacts stripped: 32 dev-only files added to .gitignore | 2026-02-07 |
+| DEBT-069 | conftest.py StaticPool fix (consistent with test_api_basic.py) | 2026-02-07 |
+| DEBT-070 | Test infrastructure consolidation (shared in_memory_engine from conftest.py) | 2026-02-07 |
+| DIST-056b | Documentation rebrand: README.md rewritten, backlog.md, .gitignore, scripts/README.md, 5 skill files updated | 2026-02-07 |
+| DIST-022b | Version single source of truth: run.py reads from config.py Settings.VERSION | 2026-02-07 |
+| DEBT-024 | Test infrastructure fixed (fixture-based TestClient, StaticPool, 18/18 pass) | 2026-02-07 |
+| DEBT-028 | Inbox "Processed Today" stat filters by today's date | 2026-02-07 |
+| DEBT-046 | ContextExportModal setState-in-render moved to useEffect | 2026-02-07 |
+| DEBT-047 | ContextExportModal stale data + memory leak fixed (reset on close, AbortController) | 2026-02-07 |
+| DEBT-048 | SQLAlchemy `== False` → `.is_(False)` in export.py, areas.py, intelligence_service.py | 2026-02-07 |
+| DEBT-053 | Projects.tsx early return before hooks fixed (BUG-021) | 2026-02-07 |
+| DEBT-055 | ContextExportModal backdrop — N/A (already uses shared Modal) | 2026-02-07 |
+| DEBT-072 | Path import in main.py — N/A (actively used in 5 locations) | 2026-02-07 |
 
 *See git history for detailed completion notes.*
 
@@ -536,5 +527,5 @@ For each release, verify:
 
 ---
 
-*Last updated: 2026-02-07 (DIST-050–056: Conduital branding & identity items)*
+*Last updated: 2026-02-07 (Round 7: STRAT-001 corrected to Desktop-first, backlog hygiene — 22 done items moved from active tables, Second Brain refs cleaned, .gitignore expanded, backend docstring rebrand)*
 *Reorganized by commercial release milestones*

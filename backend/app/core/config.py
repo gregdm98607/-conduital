@@ -113,7 +113,7 @@ class Settings(BaseSettings):
     DATABASE_PATH: str = str(Path.home() / ".conduital" / "tracker.db")
     DATABASE_ECHO: bool = False  # Log SQL queries
 
-    # Second Brain Integration
+    # Markdown File Sync Integration
     # NOTE: Set SECOND_BRAIN_ROOT in .env - this default may not exist on your system
     SECOND_BRAIN_ROOT: Optional[str] = None  # Required for sync features
     WATCH_DIRECTORIES: list[str] = ["10_Projects", "20_Areas"]
@@ -221,7 +221,7 @@ class Settings(BaseSettings):
 
     @property
     def SECOND_BRAIN_PATH(self) -> Optional[Path]:
-        """Get Second Brain root as Path object"""
+        """Get synced notes root as Path object"""
         if self.SECOND_BRAIN_ROOT:
             return Path(self.SECOND_BRAIN_ROOT)
         return None

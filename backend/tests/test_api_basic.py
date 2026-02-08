@@ -6,45 +6,38 @@ Fixed test infrastructure (DEBT-024):
 - Database override applied BEFORE TestClient triggers startup
 - In-memory SQLite for speed and isolation
 - Startup side-effects (scheduler, folder watcher) patched out
+
+Consolidated (DEBT-070): Uses shared in_memory_engine from conftest.py
 """
 
 import pytest
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
 from app.core.database import get_db
 from app.models.base import Base
 
 
-# Test database (in-memory SQLite)
-TEST_DATABASE_URL = "sqlite:///:memory:"
-
-
 @pytest.fixture(scope="function")
-def test_client():
+def test_client(in_memory_engine):
     """
     Create a TestClient with proper database override.
 
+    Uses the shared in_memory_engine fixture from conftest.py (DEBT-070).
+
     This fixture:
-    1. Creates an in-memory SQLite engine
+    1. Reuses the shared in-memory SQLite engine (with StaticPool)
     2. Creates all tables
     3. Overrides get_db dependency BEFORE creating TestClient
     4. Patches startup side-effects (scheduler, folder watcher, urgency recalc)
     5. Yields the TestClient for the test
     6. Cleans up after
     """
-    engine = create_engine(
-        TEST_DATABASE_URL,
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,  # Share single connection for in-memory SQLite
-    )
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=in_memory_engine)
 
     # Create all tables before anything else
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=in_memory_engine)
 
     def override_get_db():
         try:
@@ -74,7 +67,7 @@ def test_client():
 
     # Cleanup
     app.dependency_overrides.clear()
-    Base.metadata.drop_all(bind=engine)
+    Base.metadata.drop_all(bind=in_memory_engine)
 
 
 class TestHealthEndpoints:
@@ -90,13 +83,19 @@ class TestHealthEndpoints:
         assert "version" in data
 
     def test_root_endpoint(self, test_client):
-        """Test root endpoint"""
+        """Test root endpoint — serves SPA (HTML) if build exists, otherwise JSON API info"""
         response = test_client.get("/")
         assert response.status_code == 200
-        data = response.json()
-        assert "message" in data
-        assert "version" in data
-        assert "docs" in data
+        content_type = response.headers.get("content-type", "")
+        if "text/html" in content_type:
+            # Static build exists — root serves SPA
+            assert len(response.content) > 0
+        else:
+            # No static build — root returns API info JSON
+            data = response.json()
+            assert "message" in data
+            assert "version" in data
+            assert "docs" in data
 
 
 class TestProjectEndpoints:

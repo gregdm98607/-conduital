@@ -125,7 +125,7 @@ def test_api_schema():
         return False
 
 def main():
-    print("\n🔍 Running Project Tracker Diagnostics\n")
+    print("\nRunning Conduital Diagnostics\n")
 
     results = []
 

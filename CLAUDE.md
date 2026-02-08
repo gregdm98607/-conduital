@@ -1,10 +1,10 @@
-# Project Tracker - Claude Code Instructions
+# Conduital — Claude Code Instructions
 
 This file provides context and instructions for Claude Code when working on this project.
 
 ## Project Overview
 
-**Project Tracker** is a GTD + Manage Your Now productivity system with Second Brain integration. Built with FastAPI (backend) and React + TypeScript (frontend).
+**Conduital** is an intelligent momentum-based productivity system with markdown file sync. Built with FastAPI (backend) and React + TypeScript (frontend).
 
 ### Tech Stack
 - **Backend**: Python 3.11+, FastAPI, SQLAlchemy 2.0, SQLite, Alembic

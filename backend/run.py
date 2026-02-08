@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Project Tracker — Single-Process Launcher
+Conduital — Single-Process Launcher
 
 Starts the full application:
 1. Ensures database directory exists
@@ -51,7 +51,7 @@ def open_browser_delayed(url: str, delay: float = 1.5):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Project Tracker Launcher")
+    parser = argparse.ArgumentParser(description="Conduital Launcher")
     parser.add_argument("--port", type=int, default=None, help="Port to run on (default: auto-detect from 52140)")
     parser.add_argument("--host", type=str, default="127.0.0.1", help="Host to bind to (default: 127.0.0.1)")
     parser.add_argument("--no-browser", action="store_true", help="Don't open browser on startup")
@@ -67,12 +67,16 @@ def main():
 
     url = f"http://{args.host}:{port}"
 
-    print(f"\n  Project Tracker v1.0.0-alpha")
-    print(f"  {'─' * 36}")
+    # Read version from config (single source of truth)
+    from app.core.config import settings
+    version = settings.VERSION
+
+    print(f"\n  Conduital v{version}")
+    print(f"  {'-' * 36}")
     print(f"  Server:  {url}")
     print(f"  Docs:    {url}/docs")
     print(f"  Health:  {url}/health")
-    print(f"  {'─' * 36}")
+    print(f"  {'-' * 36}")
     print(f"  Press Ctrl+C to stop\n")
 
     # Open browser unless --no-browser

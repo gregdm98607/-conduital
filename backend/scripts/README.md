@@ -1,6 +1,6 @@
 # Backend Scripts
 
-Utility scripts for Project Tracker setup and maintenance.
+Utility scripts for Conduital setup and maintenance.
 
 ## Scripts
 

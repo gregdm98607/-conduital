@@ -1,5 +1,5 @@
 """
-Sync engine for bidirectional synchronization between database and Second Brain files
+Sync engine for bidirectional synchronization between database and markdown files
 """
 
 from app.sync.markdown_parser import MarkdownParser

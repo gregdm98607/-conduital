@@ -203,7 +203,7 @@ class FolderWatcher:
         Initialize folder watcher.
 
         Args:
-            root_path: Second Brain root path
+            root_path: Synced notes root path
             debounce_seconds: Debounce time in seconds
         """
         self.root_path = Path(root_path) if root_path else settings.SECOND_BRAIN_PATH

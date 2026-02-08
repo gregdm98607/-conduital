@@ -2,7 +2,7 @@
 
 ## Overview
 
-Project Tracker uses a modular architecture that enables commercial feature flags and flexible deployment configurations. Each module encapsulates related functionality (models, routes, services) and can be enabled or disabled via configuration.
+Conduital uses a modular architecture that enables commercial feature flags and flexible deployment configurations. Each module encapsulates related functionality (models, routes, services) and can be enabled or disabled via configuration.
 
 ## Commercial Configurations
 

@@ -2,7 +2,7 @@
 Area Discovery Service
 
 Scans 20_Areas folder structure and discovers areas based on
-PARA naming conventions (xx.xx Area_Name).
+numbered prefix conventions (xx.xx Area_Name).
 """
 
 import re
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class AreaDiscoveryService:
     """
-    Service for discovering and importing areas from Second Brain folder structure.
+    Service for discovering and importing areas from synced notes folder structure.
     """
 
     def __init__(self, db: Session):

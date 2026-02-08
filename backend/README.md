@@ -1,6 +1,6 @@
-# Project Tracker - Backend
+# Conduital — Backend
 
-GTD + Manage Your Now project management system with Second Brain integration.
+Intelligent momentum-based project management with markdown file sync.
 
 ## Setup
 

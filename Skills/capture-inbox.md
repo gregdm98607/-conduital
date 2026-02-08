@@ -29,7 +29,7 @@ Only if obvious or user provides it:
 Do NOT ask for these if not provided - the inbox is for raw capture.
 
 ### Step 3: Add to Inbox
-Call the Project-Tracker API:
+Call the Conduital API:
 
 ```
 POST /api/inbox
@@ -70,8 +70,8 @@ Assistant: ✓ Captured: Call mom about Sunday dinner
 
 **With context:**
 ```
-User: Quick add - review the PR for auth module, it's for Project Tracker
-Assistant: ✓ Captured → Project Tracker: Review the PR for auth module
+User: Quick add - review the PR for auth module, it's for Conduital
+Assistant: ✓ Captured → Conduital: Review the PR for auth module
 ```
 
 **Batch:**
