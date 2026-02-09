@@ -49,6 +49,10 @@ async def momentum_recalculation_job():
         # Update all momentum scores
         updated_count = IntelligenceService.update_all_momentum_scores(db)
 
+        # Create momentum snapshots for trend/sparkline data (BETA-023)
+        snapshot_count = IntelligenceService.create_momentum_snapshots(db)
+        logger.info(f"Momentum snapshots created: {snapshot_count}")
+
         # Update all area health scores
         area_stats = IntelligenceService.update_all_area_health_scores(db)
         logger.info(f"Area health scores updated: {area_stats.get('updated', 0)} areas")

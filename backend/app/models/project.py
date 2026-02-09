@@ -65,6 +65,9 @@ class Project(Base, TimestampMixin):
     momentum_score: Mapped[float] = mapped_column(
         Float, nullable=False, default=0.0, index=True
     )  # 0.0-1.0
+    previous_momentum_score: Mapped[Optional[float]] = mapped_column(
+        Float, nullable=True, default=None
+    )  # Previous score for delta/trend calculation
 
     # Timestamps
     last_activity_at: Mapped[Optional[datetime]] = mapped_column(

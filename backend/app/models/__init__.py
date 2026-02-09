@@ -15,6 +15,7 @@ from app.models.context import Context
 from app.models.activity_log import ActivityLog
 from app.models.sync_state import SyncState
 from app.models.inbox import InboxItem
+from app.models.momentum_snapshot import MomentumSnapshot
 
 __all__ = [
     "Base",
@@ -30,4 +31,5 @@ __all__ = [
     "ActivityLog",
     "SyncState",
     "InboxItem",
+    "MomentumSnapshot",
 ]

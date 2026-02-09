@@ -2,16 +2,25 @@
 IntelligenceService unit tests.
 
 DEBT-005: Test coverage improvement for R1 release.
+Updated for beta momentum formula (BETA-001 through BETA-004).
 """
 
 import pytest
+import math
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from unittest.mock import patch
 
-from app.models import Project, Task, Area
+from app.models import Project, Task, Area, MomentumSnapshot
 from app.models.activity_log import ActivityLog
-from app.services.intelligence_service import IntelligenceService, _ensure_tz_aware
+from app.services.intelligence_service import (
+    IntelligenceService,
+    _ensure_tz_aware,
+    _calc_graduated_next_action,
+    _calc_sliding_completion,
+    _calc_sliding_completion_from_tasks,
+    _next_action_detail_string,
+)
 
 
 class TestEnsureTzAware:
@@ -37,8 +46,190 @@ class TestEnsureTzAware:
         assert result.month == 1
 
 
+class TestGraduatedNextAction:
+    """Test BETA-001: Graduated next-action scoring helper."""
+
+    def test_no_next_action_returns_zero(self, db_session: Session, sample_area: Area):
+        """No pending next action → 0.0."""
+        project = Project(
+            title="No NA", status="active", priority=3, area_id=sample_area.id
+        )
+        db_session.add(project)
+        db_session.commit()
+
+        now = datetime.now(timezone.utc)
+        score = _calc_graduated_next_action(db_session, project.id, now)
+        assert score == 0.0
+
+    def test_fresh_next_action_returns_one(self, db_session: Session, sample_area: Area):
+        """Next action created <24h ago → 1.0."""
+        now = datetime.now(timezone.utc)
+        project = Project(
+            title="Fresh NA", status="active", priority=3, area_id=sample_area.id
+        )
+        db_session.add(project)
+        db_session.commit()
+
+        task = Task(
+            title="Fresh NA",
+            project_id=project.id,
+            status="pending",
+            priority=3,
+            is_next_action=True,
+            created_at=now - timedelta(hours=6),
+        )
+        db_session.add(task)
+        db_session.commit()
+
+        score = _calc_graduated_next_action(db_session, project.id, now)
+        assert score == 1.0
+
+    def test_recent_next_action_returns_0_7(self, db_session: Session, sample_area: Area):
+        """Next action created 1-7 days ago → 0.7."""
+        now = datetime.now(timezone.utc)
+        project = Project(
+            title="Recent NA", status="active", priority=3, area_id=sample_area.id
+        )
+        db_session.add(project)
+        db_session.commit()
+
+        task = Task(
+            title="Recent NA",
+            project_id=project.id,
+            status="pending",
+            priority=3,
+            is_next_action=True,
+            created_at=now - timedelta(days=3),
+        )
+        db_session.add(task)
+        db_session.commit()
+
+        score = _calc_graduated_next_action(db_session, project.id, now)
+        assert score == 0.7
+
+    def test_stale_next_action_returns_0_3(self, db_session: Session, sample_area: Area):
+        """Next action created >7 days ago → 0.3."""
+        now = datetime.now(timezone.utc)
+        project = Project(
+            title="Stale NA", status="active", priority=3, area_id=sample_area.id
+        )
+        db_session.add(project)
+        db_session.commit()
+
+        task = Task(
+            title="Stale NA",
+            project_id=project.id,
+            status="pending",
+            priority=3,
+            is_next_action=True,
+            created_at=now - timedelta(days=10),
+        )
+        db_session.add(task)
+        db_session.commit()
+
+        score = _calc_graduated_next_action(db_session, project.id, now)
+        assert score == 0.3
+
+
+class TestSlidingCompletion:
+    """Test BETA-003: Sliding completion window helper."""
+
+    def test_no_tasks_returns_zero(self, db_session: Session, sample_area: Area):
+        """No tasks → 0.0."""
+        project = Project(
+            title="Empty", status="active", priority=3, area_id=sample_area.id
+        )
+        db_session.add(project)
+        db_session.commit()
+
+        now = datetime.now(timezone.utc)
+        score = _calc_sliding_completion(db_session, project.id, now)
+        assert score == 0.0
+
+    def test_recent_completions_weighted_higher(self, db_session: Session, sample_area: Area):
+        """Tasks completed in last 7 days have higher weight than older ones."""
+        now = datetime.now(timezone.utc)
+        project = Project(
+            title="Weighted", status="active", priority=3, area_id=sample_area.id
+        )
+        db_session.add(project)
+        db_session.commit()
+
+        # 1 completed in recent window (weight 1.0)
+        t1 = Task(
+            title="Recent Complete",
+            project_id=project.id,
+            status="completed",
+            priority=3,
+            created_at=now - timedelta(days=2),
+        )
+        # 1 pending in recent window (weight 1.0)
+        t2 = Task(
+            title="Recent Pending",
+            project_id=project.id,
+            status="pending",
+            priority=3,
+            created_at=now - timedelta(days=3),
+        )
+        # 1 completed in old window (weight 0.25)
+        t3 = Task(
+            title="Old Complete",
+            project_id=project.id,
+            status="completed",
+            priority=3,
+            created_at=now - timedelta(days=20),
+        )
+        db_session.add_all([t1, t2, t3])
+        db_session.commit()
+
+        score = _calc_sliding_completion(db_session, project.id, now)
+        # weighted_completed = 1.0 + 0.25 = 1.25
+        # weighted_total = 1.0 + 1.0 + 0.25 = 2.25
+        # score = 1.25 / 2.25 ≈ 0.556
+        assert 0.5 < score < 0.6
+
+    def test_all_completed_returns_one(self, db_session: Session, sample_area: Area):
+        """All tasks completed → 1.0."""
+        now = datetime.now(timezone.utc)
+        project = Project(
+            title="All Done", status="active", priority=3, area_id=sample_area.id
+        )
+        db_session.add(project)
+        db_session.commit()
+
+        for i in range(3):
+            task = Task(
+                title=f"Task {i}",
+                project_id=project.id,
+                status="completed",
+                priority=3,
+                created_at=now - timedelta(days=i + 1),
+            )
+            db_session.add(task)
+        db_session.commit()
+
+        score = _calc_sliding_completion(db_session, project.id, now)
+        assert score == 1.0
+
+
+class TestNextActionDetailString:
+    """Test _next_action_detail_string helper."""
+
+    def test_fresh(self):
+        assert _next_action_detail_string(1.0) == "Fresh (<24h)"
+
+    def test_recent(self):
+        assert _next_action_detail_string(0.7) == "Recent (1-7d)"
+
+    def test_stale(self):
+        assert _next_action_detail_string(0.3) == "Stale (>7d)"
+
+    def test_missing(self):
+        assert _next_action_detail_string(0.0) == "Missing"
+
+
 class TestCalculateMomentumScore:
-    """Test IntelligenceService calculate_momentum_score."""
+    """Test IntelligenceService calculate_momentum_score with beta formula."""
 
     def test_zero_score_no_activity(self, db_session: Session, sample_area: Area):
         """Test that project with no activity has low score."""
@@ -58,7 +249,7 @@ class TestCalculateMomentumScore:
         assert score == 0.0
 
     def test_score_with_recent_activity(self, db_session: Session, sample_area: Area):
-        """Test that recent activity increases score."""
+        """Test that recent activity increases score via exponential decay."""
         now = datetime.now(timezone.utc)
         project = Project(
             title="Recent Activity Project",
@@ -72,7 +263,7 @@ class TestCalculateMomentumScore:
 
         score = IntelligenceService.calculate_momentum_score(db_session, project)
 
-        # 1 day ago: activity_score = 1 - 1/30 ~= 0.97, weight 0.4 -> ~0.39
+        # BETA-002: e^(-1/7) * 0.4 ≈ 0.867 * 0.4 ≈ 0.347
         assert score > 0.3
 
     def test_score_with_next_action(self, db_session: Session, sample_area: Area):
@@ -86,7 +277,7 @@ class TestCalculateMomentumScore:
         db_session.add(project)
         db_session.commit()
 
-        # Add next action
+        # Add next action (created now — will be "stale" since created_at is auto-set)
         next_action = Task(
             title="Next Action",
             project_id=project.id,
@@ -99,11 +290,11 @@ class TestCalculateMomentumScore:
 
         score = IntelligenceService.calculate_momentum_score(db_session, project)
 
-        # Next action adds 0.2
-        assert score >= 0.2
+        # BETA-001: graduated scoring — at minimum 0.3 * 0.2 = 0.06
+        assert score >= 0.06
 
     def test_score_with_completed_tasks(self, db_session: Session, sample_area: Area):
-        """Test that recent completions increase score."""
+        """Test that recent completions increase score via sliding window."""
         now = datetime.now(timezone.utc)
         project = Project(
             title="Project with Completions",
@@ -128,7 +319,7 @@ class TestCalculateMomentumScore:
 
         score = IntelligenceService.calculate_momentum_score(db_session, project)
 
-        # 50% completion rate (2/4), weight 0.3 -> 0.15
+        # BETA-003: 50% completion in 7d window (weight 1.0) → 0.5 * 0.3 = 0.15
         assert score >= 0.15
 
     def test_score_decays_over_time(self, db_session: Session, sample_area: Area):
@@ -159,6 +350,55 @@ class TestCalculateMomentumScore:
 
         # Recent project should have higher score
         assert recent_score > old_score
+
+    def test_exponential_decay_is_steeper_than_linear(self, db_session: Session, sample_area: Area):
+        """BETA-002: Exponential decay drops faster for stale activity."""
+        now = datetime.now(timezone.utc)
+        # Activity 20 days ago — linear would give 1-20/30 = 0.33,
+        # exponential gives e^(-20/7) ≈ 0.057
+        project = Project(
+            title="Stale Activity",
+            status="active",
+            priority=3,
+            area_id=sample_area.id,
+            last_activity_at=now - timedelta(days=20),
+        )
+        db_session.add(project)
+        db_session.commit()
+
+        score = IntelligenceService.calculate_momentum_score(db_session, project)
+        # e^(-20/7) * 0.4 ≈ 0.057 * 0.4 ≈ 0.023
+        assert score < 0.1  # Much lower than old linear would give (~0.13)
+
+    def test_logarithmic_frequency_diminishing_returns(self, db_session: Session, sample_area: Area):
+        """BETA-004: Each additional action is worth less."""
+        now = datetime.now(timezone.utc)
+        project = Project(
+            title="Freq Test",
+            status="active",
+            priority=3,
+            area_id=sample_area.id,
+        )
+        db_session.add(project)
+        db_session.commit()
+
+        # Add 10 activities in last 14 days
+        for i in range(10):
+            activity = ActivityLog(
+                entity_type="project",
+                entity_id=project.id,
+                action_type="test",
+                timestamp=now - timedelta(days=i),
+            )
+            db_session.add(activity)
+        db_session.commit()
+
+        score = IntelligenceService.calculate_momentum_score(db_session, project)
+
+        # log(1+10)/log(11) = log(11)/log(11) = 1.0 — fully saturated at 10
+        # So frequency contribution = 1.0 * 0.1 = 0.1
+        # Total includes frequency component
+        assert score >= 0.1
 
 
 class TestUpdateAllMomentumScores:
@@ -193,6 +433,23 @@ class TestUpdateAllMomentumScores:
         stats = IntelligenceService.update_all_momentum_scores(db_session)
 
         assert stats["updated"] == 2  # Only active projects
+
+    def test_saves_previous_momentum_score(self, db_session: Session, sample_area: Area):
+        """BETA-020: Previous score is preserved for delta calculation."""
+        project = Project(
+            title="Delta Test",
+            status="active",
+            priority=3,
+            area_id=sample_area.id,
+            momentum_score=0.75,
+        )
+        db_session.add(project)
+        db_session.commit()
+
+        IntelligenceService.update_all_momentum_scores(db_session)
+
+        db_session.refresh(project)
+        assert project.previous_momentum_score == 0.75
 
     def test_detects_stalled_projects(self, db_session: Session, sample_area: Area):
         """Test that stalled projects are detected."""
@@ -233,6 +490,55 @@ class TestUpdateAllMomentumScores:
         assert stats["unstalled"] >= 1
         db_session.refresh(recovered_project)
         assert recovered_project.stalled_since is None
+
+
+class TestCreateMomentumSnapshots:
+    """Test BETA-021/023: MomentumSnapshot creation."""
+
+    def test_creates_snapshots_for_active_projects(self, db_session: Session, sample_area: Area):
+        """Snapshots are created for each active project."""
+        p1 = Project(
+            title="P1", status="active", priority=3,
+            area_id=sample_area.id, momentum_score=0.5,
+        )
+        p2 = Project(
+            title="P2", status="active", priority=3,
+            area_id=sample_area.id, momentum_score=0.8,
+        )
+        p3 = Project(
+            title="P3 (completed)", status="completed", priority=3,
+            area_id=sample_area.id, momentum_score=1.0,
+        )
+        db_session.add_all([p1, p2, p3])
+        db_session.commit()
+
+        count = IntelligenceService.create_momentum_snapshots(db_session)
+
+        assert count == 2  # Only active projects
+
+        snapshots = db_session.query(MomentumSnapshot).all()
+        assert len(snapshots) == 2
+        scores = {s.project_id: s.score for s in snapshots}
+        assert scores[p1.id] == 0.5
+        assert scores[p2.id] == 0.8
+
+    def test_snapshot_contains_factors_json(self, db_session: Session, sample_area: Area):
+        """Snapshot factors_json contains score data."""
+        project = Project(
+            title="Snapshot Test", status="active", priority=3,
+            area_id=sample_area.id, momentum_score=0.6,
+            previous_momentum_score=0.55,
+        )
+        db_session.add(project)
+        db_session.commit()
+
+        IntelligenceService.create_momentum_snapshots(db_session)
+
+        import json
+        snapshot = db_session.query(MomentumSnapshot).first()
+        factors = json.loads(snapshot.factors_json)
+        assert factors["score"] == 0.6
+        assert factors["previous"] == 0.55
 
 
 class TestDetectStalledProjects:
@@ -542,6 +848,51 @@ class TestGenerateRecommendations:
         )
 
         assert any("too many" in r.lower() for r in recommendations)
+
+
+class TestGetMomentumBreakdown:
+    """Test IntelligenceService get_momentum_breakdown with beta formula."""
+
+    def test_breakdown_structure(self, db_session: Session, sample_area: Area):
+        """Test breakdown returns correct structure with updated factor names."""
+        project = Project(
+            title="Breakdown Test",
+            status="active",
+            priority=3,
+            area_id=sample_area.id,
+            momentum_score=0.5,
+        )
+        db_session.add(project)
+        db_session.commit()
+
+        breakdown = IntelligenceService.get_momentum_breakdown(db_session, project)
+
+        assert "total_score" in breakdown
+        assert "factors" in breakdown
+        assert len(breakdown["factors"]) == 4
+        factor_names = [f["name"] for f in breakdown["factors"]]
+        assert "Recent Activity" in factor_names
+        assert "Completion Rate" in factor_names
+        assert "Next Action" in factor_names
+        assert "Activity Frequency" in factor_names
+
+    def test_breakdown_next_action_detail_graduated(self, db_session: Session, sample_area: Area):
+        """BETA-001: Breakdown shows graduated next-action detail."""
+        now = datetime.now(timezone.utc)
+        project = Project(
+            title="NA Detail Test",
+            status="active",
+            priority=3,
+            area_id=sample_area.id,
+        )
+        db_session.add(project)
+        db_session.commit()
+
+        # No next action → "Missing"
+        breakdown = IntelligenceService.get_momentum_breakdown(db_session, project)
+        na_factor = [f for f in breakdown["factors"] if f["name"] == "Next Action"][0]
+        assert na_factor["detail"] == "Missing"
+        assert na_factor["raw_score"] == 0.0
 
 
 class TestGetWeeklyReviewData:

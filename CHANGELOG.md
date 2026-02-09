@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Graceful shutdown endpoint (`POST /api/v1/shutdown`) — localhost-only, cooperative with system tray and installer
 - AbortSignal support on all 27 API client getter methods — enables HTTP request cancellation on component unmount
 - Momentum settings validation — server returns HTTP 422 when at-risk threshold >= stalled threshold; client shows inline warning
+- **BETA-001:** Graduated next-action scoring — 4-tier scale (0, 0.3, 0.7, 1.0) based on next-action age replaces binary 0/1. Eliminates cliff effect.
+- **BETA-002:** Exponential activity decay — `e^(-days/7)` replaces linear `1-(days/30)`. Recent activity matters more; stale activity fades faster.
+- **BETA-003:** Sliding completion window — 30-day weighted window (7d×1.0, 14d×0.5, 15-30d×0.25) replaces hard 7-day cutoff.
+- **BETA-004:** Logarithmic frequency scaling — `log(1+count)/log(11)` replaces `min(1, count/10)`. Diminishing returns per action.
+- **BETA-020:** `previous_momentum_score` column on projects for trend/delta calculation
+- **BETA-021:** `MomentumSnapshot` table for daily momentum history (sparklines, trend data)
+- **BETA-022:** Alembic migration `011_momentum_snapshots`
+- **BETA-023:** Scheduled recalculation job now creates daily momentum snapshots
 
 ### Fixed
 - `build.bat` size reporting shows correct total (was always "~0 MB" due to broken findstr parsing)

@@ -1,5 +1,36 @@
 # Progress Log
 
+## Session: 2026-02-09 — Beta Session 1: Momentum Granularity (Backend)
+
+### Completed Items (8 BETA items)
+
+#### Formula Improvements (Phase 1A)
+- BETA-001: Graduated next-action scoring — replaced binary 0/1 with 4-tier scale (0, 0.3, 0.7, 1.0) based on next-action age (<24h fresh, 1-7d recent, >7d stale, none). Implemented in `_calc_graduated_next_action()` helper. **Done**
+- BETA-002: Exponential activity decay — replaced linear `1-(days/30)` with `e^(-days/7)`. Recent activity matters much more; 20-day-old activity drops to ~6% vs old ~33%. **Done**
+- BETA-003: Sliding completion window — replaced hard 7-day window with weighted 30-day window: 0-7d×1.0, 8-14d×0.5, 15-30d×0.25. Implemented in `_calc_sliding_completion_from_tasks()` helper. **Done**
+- BETA-004: Logarithmic frequency scaling — replaced `min(1, count/10)` with `log(1+count)/log(11)`. Diminishing returns per action, saturates at 10. **Done**
+
+#### Data Model Additions (Phase 1C)
+- BETA-020: Added `previous_momentum_score` column to projects table (nullable Float for delta/trend calculation) **Done**
+- BETA-021: Created `MomentumSnapshot` model (project_id, score, factors_json, snapshot_at) — daily snapshots for sparklines **Done**
+- BETA-022: Created Alembic migration `011_momentum_snapshots` (safe: checks column/table existence before creating) **Done**
+- BETA-023: Added `create_momentum_snapshots()` to scheduled recalculation job in scheduler_service.py **Done**
+
+#### Code Changes Summary
+- `intelligence_service.py`: New helpers (`_calc_graduated_next_action`, `_calc_sliding_completion`, `_calc_sliding_completion_from_tasks`, `_calc_sliding_completion_detail`, `_next_action_detail_string`); updated `calculate_momentum_score`, `get_momentum_breakdown`, `update_all_momentum_scores`; added `create_momentum_snapshots`
+- `models/momentum_snapshot.py`: NEW — MomentumSnapshot model
+- `models/project.py`: Added `previous_momentum_score` column
+- `models/__init__.py`: Registered MomentumSnapshot
+- `scheduler_service.py`: Calls `create_momentum_snapshots` after score updates
+- `alembic/versions/20260209_add_momentum_snapshots.py`: NEW — migration 011
+- `tests/test_intelligence_service.py`: Added 13 new tests (graduated NA, sliding completion, snapshots, exponential decay, log frequency); updated existing tests for new formula
+
+#### Test Results
+- **192/192 tests pass (100%)** — 18 net new tests added (from 174 to 192)
+- All existing tests updated for new formula (score thresholds adjusted)
+
+---
+
 ## Session: 2026-02-07 — Batch 2 (5 items)
 
 ### Batch 2 Complete

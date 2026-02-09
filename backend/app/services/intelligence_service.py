@@ -2,7 +2,9 @@
 Intelligence service - Momentum calculation, stalled detection, AI features
 """
 
+import json
 import logging
+import math
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -16,6 +18,7 @@ from app.core.db_utils import ensure_unique_file_marker, log_activity, update_pr
 from app.models.activity_log import ActivityLog
 from app.models.area import Area
 from app.models.inbox import InboxItem
+from app.models.momentum_snapshot import MomentumSnapshot
 from app.models.project import Project
 from app.models.task import Task
 
@@ -29,6 +32,142 @@ def _ensure_tz_aware(dt: datetime | None) -> datetime | None:
     return dt
 
 
+# =============================================================================
+# Momentum Formula Helpers (BETA-001 through BETA-004)
+# =============================================================================
+
+def _calc_graduated_next_action(db: Session, project_id: int, now: datetime) -> float:
+    """BETA-001: Graduated next-action scoring.
+
+    Returns:
+        0.0 — no pending next action
+        0.3 — has next action but stale (created >7 days ago)
+        0.7 — recent next action (created 1-7 days ago)
+        1.0 — fresh next action (created <24 hours ago)
+    """
+    next_action = db.execute(
+        select(Task)
+        .where(
+            Task.project_id == project_id,
+            Task.is_next_action.is_(True),
+            Task.status == "pending",
+        )
+        .order_by(Task.created_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+
+    if next_action is None:
+        return 0.0
+
+    created = _ensure_tz_aware(next_action.created_at) if next_action.created_at else None
+    if created is None:
+        return 0.3  # Has NA but no timestamp — treat as stale
+
+    age_days = (now - created).total_seconds() / 86400
+    if age_days < 1:
+        return 1.0
+    elif age_days <= 7:
+        return 0.7
+    else:
+        return 0.3
+
+
+def _calc_sliding_completion(db: Session, project_id: int, now: datetime) -> float:
+    """BETA-003: Sliding 30-day completion window.
+
+    Weighted by recency:
+        0-7 days:   weight 1.0
+        8-14 days:  weight 0.5
+        15-30 days: weight 0.25
+
+    Returns weighted completion ratio (0.0-1.0).
+    """
+    window_start = now - timedelta(days=30)
+    tasks = db.execute(
+        select(Task).where(
+            Task.project_id == project_id,
+            Task.created_at >= window_start,
+        )
+    ).scalars().all()
+
+    return _calc_sliding_completion_from_tasks(tasks, now)
+
+
+def _calc_sliding_completion_from_tasks(tasks: list, now: datetime) -> float:
+    """Calculate sliding completion from a pre-loaded task list."""
+    if not tasks:
+        return 0.0
+
+    weighted_completed = 0.0
+    weighted_total = 0.0
+
+    for t in tasks:
+        created = _ensure_tz_aware(t.created_at) if t.created_at else None
+        if created is None:
+            weight = 0.25  # Unknown age — lowest weight
+        else:
+            age_days = (now - created).total_seconds() / 86400
+            if age_days <= 7:
+                weight = 1.0
+            elif age_days <= 14:
+                weight = 0.5
+            else:
+                weight = 0.25
+
+        weighted_total += weight
+        if t.status == "completed":
+            weighted_completed += weight
+
+    return weighted_completed / weighted_total if weighted_total > 0 else 0.0
+
+
+def _calc_sliding_completion_detail(db: Session, project_id: int, now: datetime) -> str:
+    """Return a detail string for the sliding completion breakdown."""
+    window_start = now - timedelta(days=30)
+    tasks = db.execute(
+        select(Task).where(
+            Task.project_id == project_id,
+            Task.created_at >= window_start,
+        )
+    ).scalars().all()
+
+    if not tasks:
+        return "0 tasks (30d)"
+
+    # Count by window
+    buckets = {"7d": [0, 0], "14d": [0, 0], "30d": [0, 0]}  # [completed, total]
+    for t in tasks:
+        created = _ensure_tz_aware(t.created_at) if t.created_at else None
+        age = (now - created).total_seconds() / 86400 if created else 30
+        if age <= 7:
+            bucket = "7d"
+        elif age <= 14:
+            bucket = "14d"
+        else:
+            bucket = "30d"
+        buckets[bucket][1] += 1
+        if t.status == "completed":
+            buckets[bucket][0] += 1
+
+    parts = []
+    for label, (c, t) in buckets.items():
+        if t > 0:
+            parts.append(f"{c}/{t} ({label})")
+    return " + ".join(parts) if parts else "0 tasks (30d)"
+
+
+def _next_action_detail_string(score: float) -> str:
+    """Return a human-readable detail for next-action score."""
+    if score >= 1.0:
+        return "Fresh (<24h)"
+    elif score >= 0.7:
+        return "Recent (1-7d)"
+    elif score >= 0.3:
+        return "Stale (>7d)"
+    else:
+        return "Missing"
+
+
 class IntelligenceService:
     """Service for intelligent project management features"""
 
@@ -38,10 +177,10 @@ class IntelligenceService:
         Calculate project momentum score (0.0 to 1.0)
 
         Factors:
-        - Recent activity (40% weight): Days since last activity
-        - Completion rate (30% weight): Recent task completions
-        - Next action availability (20% weight): Has clear next action
-        - Activity frequency (10% weight): Number of recent activities
+        - Recent activity (40% weight): Exponential decay (BETA-002)
+        - Completion rate (30% weight): Sliding 30-day weighted window (BETA-003)
+        - Next action availability (20% weight): Graduated 4-tier scale (BETA-001)
+        - Activity frequency (10% weight): Logarithmic scaling (BETA-004)
 
         Args:
             db: Database session
@@ -53,58 +192,26 @@ class IntelligenceService:
         now = datetime.now(timezone.utc)
         score = 0.0
 
-        # Factor 1: Days since last activity (40% weight)
+        # Factor 1: Exponential activity decay (40% weight) — BETA-002
+        # e^(-days/7) gives recent activity much more weight than stale activity
         if project.last_activity_at:
             last_activity = _ensure_tz_aware(project.last_activity_at)
-            days_since = (now - last_activity).days
-            # Decay over MOMENTUM_ACTIVITY_DECAY_DAYS (default 30)
-            decay_days = settings.MOMENTUM_ACTIVITY_DECAY_DAYS
-            activity_score = max(0, 1 - (days_since / decay_days))
+            days_since = (now - last_activity).total_seconds() / 86400  # fractional days
+            activity_score = math.exp(-days_since / 7)
             score += activity_score * 0.4
-        else:
-            # No activity yet
-            score += 0.0
 
-        # Factor 2: Recent completion rate (30% weight)
-        # Tasks completed in last 7 days vs total recent tasks
-        recent_date = now - timedelta(days=7)
-        recent_tasks = (
-            db.execute(
-                select(Task)
-                .where(
-                    Task.project_id == project.id,
-                    Task.created_at >= recent_date,
-                )
-            )
-            .scalars()
-            .all()
-        )
+        # Factor 2: Sliding completion window (30% weight) — BETA-003
+        # Weighted 30-day window: 0-7d × 1.0, 8-14d × 0.5, 15-30d × 0.25
+        completion_score = _calc_sliding_completion(db, project.id, now)
+        score += completion_score * 0.3
 
-        if recent_tasks:
-            completed = sum(1 for t in recent_tasks if t.status == "completed")
-            completion_rate = completed / len(recent_tasks)
-            score += completion_rate * 0.3
+        # Factor 3: Graduated next-action scoring (20% weight) — BETA-001
+        # 0=none, 0.3=stale >7d, 0.7=recent 1-7d, 1.0=fresh <24h
+        next_action_score = _calc_graduated_next_action(db, project.id, now)
+        score += next_action_score * 0.2
 
-        # Factor 3: Has clear next action (20% weight)
-        has_next_action = (
-            db.execute(
-                select(Task)
-                .where(
-                    Task.project_id == project.id,
-                    Task.is_next_action.is_(True),
-                    Task.status == "pending",
-                )
-                .limit(1)
-            )
-            .scalar_one_or_none()
-            is not None
-        )
-
-        if has_next_action:
-            score += 0.2
-
-        # Factor 4: Activity frequency (10% weight)
-        # Count activities in last 14 days
+        # Factor 4: Logarithmic frequency scaling (10% weight) — BETA-004
+        # log(1 + count) / log(11) — diminishing returns per action
         activity_count = db.execute(
             select(func.count(ActivityLog.id))
             .where(
@@ -114,7 +221,8 @@ class IntelligenceService:
             )
         ).scalar_one()
 
-        frequency_score = min(1.0, activity_count / 10)  # Cap at 10 activities
+        frequency_score = math.log(1 + activity_count) / math.log(11)
+        frequency_score = min(1.0, frequency_score)
         score += frequency_score * 0.1
 
         return round(score, 2)
@@ -129,48 +237,25 @@ class IntelligenceService:
         """
         now = datetime.now(timezone.utc)
 
-        # Factor 1: Activity recency (40%)
+        # Factor 1: Exponential activity decay (40%) — BETA-002
         days_since_activity = None
         activity_raw = 0.0
         if project.last_activity_at:
             last_activity = _ensure_tz_aware(project.last_activity_at)
             days_since_activity = (now - last_activity).days
-            decay_days = settings.MOMENTUM_ACTIVITY_DECAY_DAYS
-            activity_raw = max(0, 1 - (days_since_activity / decay_days))
+            days_since_frac = (now - last_activity).total_seconds() / 86400
+            activity_raw = math.exp(-days_since_frac / 7)
 
-        # Factor 2: Completion rate (30%)
-        recent_date = now - timedelta(days=7)
-        recent_tasks = (
-            db.execute(
-                select(Task).where(
-                    Task.project_id == project.id,
-                    Task.created_at >= recent_date,
-                )
-            )
-            .scalars()
-            .all()
-        )
-        recent_total = len(recent_tasks)
-        recent_completed = sum(1 for t in recent_tasks if t.status == "completed")
-        completion_raw = (recent_completed / recent_total) if recent_total > 0 else 0.0
+        # Factor 2: Sliding completion window (30%) — BETA-003
+        completion_raw = _calc_sliding_completion(db, project.id, now)
+        # For detail string, get task counts per window
+        completion_detail = _calc_sliding_completion_detail(db, project.id, now)
 
-        # Factor 3: Next action (20%)
-        has_next_action = (
-            db.execute(
-                select(Task)
-                .where(
-                    Task.project_id == project.id,
-                    Task.is_next_action.is_(True),
-                    Task.status == "pending",
-                )
-                .limit(1)
-            )
-            .scalar_one_or_none()
-            is not None
-        )
-        next_action_raw = 1.0 if has_next_action else 0.0
+        # Factor 3: Graduated next action (20%) — BETA-001
+        next_action_raw = _calc_graduated_next_action(db, project.id, now)
+        next_action_detail = _next_action_detail_string(next_action_raw)
 
-        # Factor 4: Activity frequency (10%)
+        # Factor 4: Logarithmic frequency (10%) — BETA-004
         activity_count = db.execute(
             select(func.count(ActivityLog.id)).where(
                 ActivityLog.entity_type == "project",
@@ -178,7 +263,7 @@ class IntelligenceService:
                 ActivityLog.timestamp >= now - timedelta(days=14),
             )
         ).scalar_one()
-        frequency_raw = min(1.0, activity_count / 10)
+        frequency_raw = min(1.0, math.log(1 + activity_count) / math.log(11))
 
         # Weighted scores
         activity_weighted = round(activity_raw * 0.4, 3)
@@ -202,14 +287,14 @@ class IntelligenceService:
                     "weight": 0.3,
                     "raw_score": round(completion_raw, 3),
                     "weighted_score": completion_weighted,
-                    "detail": f"{recent_completed}/{recent_total} tasks (7d)",
+                    "detail": completion_detail,
                 },
                 {
                     "name": "Next Action",
                     "weight": 0.2,
                     "raw_score": round(next_action_raw, 3),
                     "weighted_score": next_action_weighted,
-                    "detail": "Defined" if has_next_action else "Missing",
+                    "detail": next_action_detail,
                 },
                 {
                     "name": "Activity Frequency",
@@ -226,11 +311,13 @@ class IntelligenceService:
         """
         Update momentum scores for all active projects.
 
-        Batch-loads data to avoid N+1 queries:
-        - 1 query for active projects
-        - 1 query for all recent tasks across projects
-        - 1 query for all next actions across projects
-        - 1 query for all activity counts across projects
+        Batch-loads data to avoid N+1 queries. Uses improved formulas:
+        - Exponential activity decay (BETA-002)
+        - Sliding 30-day completion window (BETA-003)
+        - Graduated next-action scoring (BETA-001)
+        - Logarithmic frequency scaling (BETA-004)
+
+        Also saves previous_momentum_score for delta/trend calculation (BETA-020).
 
         Args:
             db: Database session
@@ -249,29 +336,38 @@ class IntelligenceService:
 
         project_ids = [p.id for p in projects]
 
-        # Batch: recent tasks (last 7 days) grouped by project
-        recent_date = now - timedelta(days=7)
-        recent_tasks = db.execute(
+        # Batch: tasks from last 30 days for sliding completion window (BETA-003)
+        window_date = now - timedelta(days=30)
+        window_tasks = db.execute(
             select(Task).where(
                 Task.project_id.in_(project_ids),
-                Task.created_at >= recent_date,
+                Task.created_at >= window_date,
             )
         ).scalars().all()
 
-        recent_by_project: dict[int, list] = {pid: [] for pid in project_ids}
-        for t in recent_tasks:
-            recent_by_project[t.project_id].append(t)
+        tasks_by_project: dict[int, list] = {pid: [] for pid in project_ids}
+        for t in window_tasks:
+            tasks_by_project[t.project_id].append(t)
 
-        # Batch: projects that have a pending next action
-        next_action_project_ids = set(
-            row[0] for row in db.execute(
-                select(Task.project_id).where(
-                    Task.project_id.in_(project_ids),
-                    Task.is_next_action.is_(True),
-                    Task.status == "pending",
-                ).distinct()
-            ).all()
-        )
+        # Batch: next actions with their created_at for graduated scoring (BETA-001)
+        next_actions = db.execute(
+            select(Task).where(
+                Task.project_id.in_(project_ids),
+                Task.is_next_action.is_(True),
+                Task.status == "pending",
+            )
+        ).scalars().all()
+
+        # For each project, find the most recently created next action
+        newest_na_by_project: dict[int, datetime | None] = {}
+        has_na_by_project: dict[int, bool] = {pid: False for pid in project_ids}
+        for na in next_actions:
+            has_na_by_project[na.project_id] = True
+            created = _ensure_tz_aware(na.created_at) if na.created_at else None
+            if created:
+                existing = newest_na_by_project.get(na.project_id)
+                if existing is None or created > existing:
+                    newest_na_by_project[na.project_id] = created
 
         # Batch: activity counts per project (last 14 days)
         activity_date = now - timedelta(days=14)
@@ -287,32 +383,46 @@ class IntelligenceService:
         activity_counts: dict[int, int] = {row[0]: row[1] for row in activity_rows}
 
         # Calculate scores using pre-loaded data
-        decay_days = settings.MOMENTUM_ACTIVITY_DECAY_DAYS
         threshold_days = settings.MOMENTUM_STALLED_THRESHOLD_DAYS
         stats = {"updated": 0, "stalled_detected": 0, "unstalled": 0}
 
         for project in projects:
+            # Save previous score for trend calculation (BETA-020)
+            project.previous_momentum_score = project.momentum_score
+
             score = 0.0
 
-            # Factor 1: Activity recency (40%)
+            # Factor 1: Exponential activity decay (40%) — BETA-002
             if project.last_activity_at:
                 last_activity = _ensure_tz_aware(project.last_activity_at)
-                days_since = (now - last_activity).days
-                score += max(0, 1 - (days_since / decay_days)) * 0.4
+                days_since_frac = (now - last_activity).total_seconds() / 86400
+                score += math.exp(-days_since_frac / 7) * 0.4
 
-            # Factor 2: Completion rate (30%)
-            proj_recent = recent_by_project.get(project.id, [])
-            if proj_recent:
-                completed = sum(1 for t in proj_recent if t.status == "completed")
-                score += (completed / len(proj_recent)) * 0.3
+            # Factor 2: Sliding completion window (30%) — BETA-003
+            proj_tasks = tasks_by_project.get(project.id, [])
+            completion_score = _calc_sliding_completion_from_tasks(proj_tasks, now)
+            score += completion_score * 0.3
 
-            # Factor 3: Next action (20%)
-            if project.id in next_action_project_ids:
-                score += 0.2
+            # Factor 3: Graduated next-action scoring (20%) — BETA-001
+            if has_na_by_project.get(project.id, False):
+                newest = newest_na_by_project.get(project.id)
+                if newest:
+                    age_days = (now - newest).total_seconds() / 86400
+                    if age_days < 1:
+                        na_score = 1.0  # Fresh: created <24h ago
+                    elif age_days <= 7:
+                        na_score = 0.7  # Recent: 1-7 days
+                    else:
+                        na_score = 0.3  # Stale: >7 days
+                else:
+                    na_score = 0.3  # Has NA but no created_at
+                score += na_score * 0.2
+            # else: 0.0 — no next action
 
-            # Factor 4: Activity frequency (10%)
+            # Factor 4: Logarithmic frequency scaling (10%) — BETA-004
             act_count = activity_counts.get(project.id, 0)
-            score += min(1.0, act_count / 10) * 0.1
+            freq_score = min(1.0, math.log(1 + act_count) / math.log(11))
+            score += freq_score * 0.1
 
             project.momentum_score = round(score, 2)
             stats["updated"] += 1
@@ -346,6 +456,42 @@ class IntelligenceService:
 
         db.commit()
         return stats
+
+    @staticmethod
+    def create_momentum_snapshots(db: Session) -> int:
+        """
+        Create momentum snapshots for all active projects (BETA-021/023).
+
+        Called by the scheduled recalculation job to record daily momentum
+        history for sparklines and trend analysis.
+
+        Returns:
+            Number of snapshots created
+        """
+        now = datetime.now(timezone.utc)
+
+        projects = db.execute(
+            select(Project).where(Project.status == "active")
+        ).scalars().all()
+
+        count = 0
+        for project in projects:
+            factors = {
+                "score": project.momentum_score,
+                "previous": project.previous_momentum_score,
+            }
+            snapshot = MomentumSnapshot(
+                project_id=project.id,
+                score=project.momentum_score or 0.0,
+                factors_json=json.dumps(factors),
+                snapshot_at=now,
+            )
+            db.add(snapshot)
+            count += 1
+
+        db.commit()
+        logger.info(f"Created {count} momentum snapshots")
+        return count
 
     @staticmethod
     def detect_stalled_projects(db: Session) -> list[Project]:
