@@ -2,18 +2,30 @@
 Inbox API endpoints - Quick Capture
 """
 
-from datetime import datetime, timezone
+import logging
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.inbox import InboxItem as InboxItemModel
 from app.models.project import Project
 from app.models.task import Task
-from app.schemas.inbox import InboxItem, InboxItemCreate, InboxItemProcess, InboxItemUpdate
+from app.schemas.inbox import (
+    InboxBatchAction,
+    InboxBatchResponse,
+    InboxBatchResultItem,
+    InboxItem,
+    InboxItemCreate,
+    InboxItemProcess,
+    InboxItemUpdate,
+    InboxStatsResponse,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -53,6 +65,8 @@ def _to_response(item: InboxItemModel, db: Session) -> dict:
     return data
 
 
+# --- Collection-level routes (must come before /{item_id} to avoid conflict) ---
+
 @router.get("", response_model=list[InboxItem])
 def list_inbox_items(
     processed: bool = Query(False, description="Show processed items"),
@@ -73,15 +87,6 @@ def list_inbox_items(
     return [_to_response(item, db) for item in items]
 
 
-@router.get("/{item_id}", response_model=InboxItem)
-def get_inbox_item(item_id: int, db: Session = Depends(get_db)):
-    """Get a single inbox item by ID"""
-    item = db.get(InboxItemModel, item_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Inbox item not found")
-    return _to_response(item, db)
-
-
 @router.post("", response_model=InboxItem, status_code=201)
 def create_inbox_item(item: InboxItemCreate, db: Session = Depends(get_db)):
     """
@@ -94,6 +99,165 @@ def create_inbox_item(item: InboxItemCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_item)
     return new_item
+
+
+# --- BETA-032: Inbox Stats ---
+
+@router.get("/stats", response_model=InboxStatsResponse)
+def get_inbox_stats(db: Session = Depends(get_db)):
+    """
+    Get inbox processing statistics.
+
+    Returns unprocessed count, processed today, and average processing time.
+    BETA-032: Replaces client-side calculation (DEBT-064).
+    """
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # Unprocessed count
+    unprocessed_count = db.execute(
+        select(func.count(InboxItemModel.id))
+        .where(InboxItemModel.processed_at.is_(None))
+    ).scalar_one()
+
+    # Processed today
+    processed_today = db.execute(
+        select(func.count(InboxItemModel.id))
+        .where(InboxItemModel.processed_at >= today_start)
+    ).scalar_one()
+
+    # Average processing time (last 30 days)
+    thirty_days_ago = now - timedelta(days=30)
+    processed_items = db.execute(
+        select(InboxItemModel.captured_at, InboxItemModel.processed_at)
+        .where(
+            InboxItemModel.processed_at.is_not(None),
+            InboxItemModel.processed_at >= thirty_days_ago,
+        )
+    ).all()
+
+    avg_time = None
+    if processed_items:
+        total_seconds = 0
+        count = 0
+        for captured_at, processed_at in processed_items:
+            if captured_at and processed_at:
+                # Handle naive datetimes
+                cap = captured_at if captured_at.tzinfo else captured_at.replace(tzinfo=timezone.utc)
+                proc = processed_at if processed_at.tzinfo else processed_at.replace(tzinfo=timezone.utc)
+                delta = (proc - cap).total_seconds()
+                if delta >= 0:
+                    total_seconds += delta
+                    count += 1
+        if count > 0:
+            avg_time = round(total_seconds / count / 3600, 1)
+
+    return InboxStatsResponse(
+        unprocessed_count=unprocessed_count,
+        processed_today=processed_today,
+        avg_processing_time_hours=avg_time,
+    )
+
+
+# --- BETA-031: Inbox Batch Processing ---
+
+@router.post("/batch-process", response_model=InboxBatchResponse)
+def batch_process_inbox_items(
+    batch: InboxBatchAction,
+    db: Session = Depends(get_db),
+):
+    """
+    Process multiple inbox items at once.
+
+    Actions:
+    - assign_to_project: Create tasks in a project from selected items
+    - convert_to_task: Same as assign_to_project (alias)
+    - delete: Delete selected items
+
+    BETA-031: Batch processing for inbox efficiency.
+    """
+    now = datetime.now(timezone.utc)
+    results: list[InboxBatchResultItem] = []
+
+    # Validate project exists for assign/convert actions
+    project = None
+    if batch.action in ("assign_to_project", "convert_to_task"):
+        if not batch.project_id:
+            raise HTTPException(
+                status_code=400,
+                detail="project_id is required for assign_to_project/convert_to_task",
+            )
+        project = db.get(Project, batch.project_id)
+        if not project:
+            raise HTTPException(status_code=404, detail="Target project not found")
+
+    for item_id in batch.item_ids:
+        try:
+            item = db.get(InboxItemModel, item_id)
+            if not item:
+                results.append(InboxBatchResultItem(
+                    item_id=item_id, success=False, error="Item not found"
+                ))
+                continue
+
+            if batch.action == "delete":
+                db.delete(item)
+                results.append(InboxBatchResultItem(item_id=item_id, success=True))
+
+            elif batch.action in ("assign_to_project", "convert_to_task"):
+                if item.processed_at:
+                    results.append(InboxBatchResultItem(
+                        item_id=item_id, success=False, error="Already processed"
+                    ))
+                    continue
+
+                entity_title = batch.title_override or item.content[:500]
+                new_task = Task(
+                    title=entity_title,
+                    project_id=batch.project_id,
+                    status="pending",
+                    is_next_action=True,
+                    urgency_zone="opportunity_now",
+                )
+                db.add(new_task)
+                db.flush()
+
+                item.processed_at = now
+                item.result_type = "task"
+                item.result_id = new_task.id
+                results.append(InboxBatchResultItem(item_id=item_id, success=True))
+
+        except Exception as e:
+            logger.error(f"Batch process error for item {item_id}: {e}")
+            results.append(InboxBatchResultItem(
+                item_id=item_id, success=False, error=str(e)
+            ))
+
+    # Update project activity timestamp if we created tasks
+    if project and batch.action in ("assign_to_project", "convert_to_task"):
+        project.last_activity_at = now
+
+    db.commit()
+
+    succeeded = sum(1 for r in results if r.success)
+    failed = sum(1 for r in results if not r.success)
+
+    return InboxBatchResponse(
+        processed=succeeded,
+        failed=failed,
+        results=results,
+    )
+
+
+# --- Item-level routes (/{item_id} pattern must come AFTER fixed paths) ---
+
+@router.get("/{item_id}", response_model=InboxItem)
+def get_inbox_item(item_id: int, db: Session = Depends(get_db)):
+    """Get a single inbox item by ID"""
+    item = db.get(InboxItemModel, item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Inbox item not found")
+    return _to_response(item, db)
 
 
 @router.put("/{item_id}", response_model=InboxItem)

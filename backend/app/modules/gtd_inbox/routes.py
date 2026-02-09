@@ -7,7 +7,12 @@ Provides workflow endpoints:
 - Waiting-for management
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime, timezone
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -23,7 +28,25 @@ router = APIRouter()
 router.include_router(inbox.router, prefix="/inbox", tags=["Inbox"])
 
 
-# Additional workflow endpoints can be added here
+# --- Weekly Review Schemas ---
+
+class WeeklyReviewCompleteRequest(BaseModel):
+    notes: Optional[str] = Field(None, max_length=5000, description="Optional notes about the review")
+
+
+class WeeklyReviewCompletionResponse(BaseModel):
+    id: int
+    completed_at: str
+    notes: Optional[str] = None
+
+
+class WeeklyReviewHistoryResponse(BaseModel):
+    completions: list[WeeklyReviewCompletionResponse]
+    last_completed_at: Optional[str] = None
+    days_since_last_review: Optional[int] = None
+
+
+# --- Weekly Review Endpoints ---
 
 @router.get("/weekly-review")
 async def get_weekly_review_data(db: Session = Depends(get_db)):
@@ -43,16 +66,72 @@ async def get_weekly_review_data(db: Session = Depends(get_db)):
     return review_data
 
 
-@router.post("/weekly-review/complete")
-async def mark_weekly_review_complete(db: Session = Depends(get_db)):
+@router.post("/weekly-review/complete", response_model=WeeklyReviewCompletionResponse)
+async def mark_weekly_review_complete(
+    body: Optional[WeeklyReviewCompleteRequest] = None,
+    db: Session = Depends(get_db),
+):
     """
     Mark weekly review as complete.
 
-    This updates the last review timestamp and can trigger
-    any post-review automation.
+    Persists a completion timestamp. BETA-030.
     """
-    # TODO: Implement review completion tracking
-    return {"status": "completed", "message": "Weekly review marked complete"}
+    from app.models.weekly_review import WeeklyReviewCompletion
+
+    completion = WeeklyReviewCompletion(
+        completed_at=datetime.now(timezone.utc),
+        notes=body.notes if body else None,
+    )
+    db.add(completion)
+    db.commit()
+    db.refresh(completion)
+
+    return WeeklyReviewCompletionResponse(
+        id=completion.id,
+        completed_at=completion.completed_at.isoformat(),
+        notes=completion.notes,
+    )
+
+
+@router.get("/weekly-review/history", response_model=WeeklyReviewHistoryResponse)
+async def get_weekly_review_history(
+    limit: int = Query(10, ge=1, le=52, description="Number of completions to return"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get weekly review completion history.
+
+    Returns recent completions and days since last review.
+    """
+    from app.models.weekly_review import WeeklyReviewCompletion
+
+    completions = db.execute(
+        select(WeeklyReviewCompletion)
+        .order_by(WeeklyReviewCompletion.completed_at.desc())
+        .limit(limit)
+    ).scalars().all()
+
+    last_completed_at = None
+    days_since = None
+    if completions:
+        last_dt = completions[0].completed_at
+        if last_dt.tzinfo is None:
+            last_dt = last_dt.replace(tzinfo=timezone.utc)
+        last_completed_at = last_dt.isoformat()
+        days_since = (datetime.now(timezone.utc) - last_dt).days
+
+    return WeeklyReviewHistoryResponse(
+        completions=[
+            WeeklyReviewCompletionResponse(
+                id=c.id,
+                completed_at=c.completed_at.isoformat() if c.completed_at else "",
+                notes=c.notes,
+            )
+            for c in completions
+        ],
+        last_completed_at=last_completed_at,
+        days_since_last_review=days_since,
+    )
 
 
 @router.get("/waiting-for")

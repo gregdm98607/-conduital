@@ -27,6 +27,7 @@ from app.models import (
     SyncState,
     Task,
     Vision,
+    WeeklyReviewCompletion,
 )
 
 logger = logging.getLogger("alembic.env")

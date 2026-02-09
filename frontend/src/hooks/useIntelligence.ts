@@ -2,7 +2,7 @@
  * React Query hooks for intelligence features
  */
 
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 
 export function useDashboardStats() {
@@ -43,5 +43,24 @@ export function useMomentumSummary() {
   return useQuery({
     queryKey: ['intelligence', 'momentum-summary'],
     queryFn: ({ signal }) => api.getMomentumSummary(signal),
+  });
+}
+
+export function useWeeklyReviewHistory() {
+  return useQuery({
+    queryKey: ['intelligence', 'weekly-review-history'],
+    queryFn: ({ signal }) => api.getWeeklyReviewHistory(10, signal),
+  });
+}
+
+export function useCompleteWeeklyReview() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (notes?: string) => api.completeWeeklyReview(notes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['intelligence', 'weekly-review-history'] });
+      queryClient.invalidateQueries({ queryKey: ['intelligence', 'weekly-review'] });
+    },
   });
 }

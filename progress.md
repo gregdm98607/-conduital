@@ -1,5 +1,64 @@
 # Progress Log
 
+## Session: 2026-02-09 — Beta Session 3: GTD Inbox Enhancements (Pillar 2)
+
+### Completed Items (4 BETA items)
+
+#### BETA-030: Weekly Review Completion Tracking
+- New `WeeklyReviewCompletion` model (`backend/app/models/weekly_review.py`) — simple timestamp + notes, no gamification
+- Alembic migration `012_weekly_review_completion` — creates table with indexes on `user_id` and `completed_at`
+- `POST /intelligence/weekly-review/complete` — persists completion record, optional notes
+- `GET /intelligence/weekly-review/history` — returns last N completions, `days_since_last_review`, `last_completed_at`
+- Module route stub replaced (was TODO in `modules/gtd_inbox/routes.py`)
+- Dashboard: "Weekly Review" section shows "Last completed: X days ago" (or "Never completed")
+- Frontend: `useWeeklyReviewHistory()` hook, `completeWeeklyReview()` + `getWeeklyReviewHistory()` API methods
+
+#### BETA-032: Inbox Processing Stats Endpoint
+- `GET /inbox/stats` endpoint returns `unprocessed_count`, `processed_today`, `avg_processing_time_hours`
+- Replaces client-side stat calculation (fixes DEBT-064)
+- Route ordering: `/stats` registered before `/{item_id}` to avoid path conflict
+- Frontend: `useInboxStats()` hook, stats cards updated to use server data with fallback
+- Third stat card now shows avg processing time when available
+
+#### BETA-031: Inbox Batch Processing
+- `POST /inbox/batch-process` endpoint — actions: `assign_to_project`, `convert_to_task`, `delete`
+- Request validation: project_id required for assign/convert, action enum validated
+- Per-item error handling: returns individual success/failure results
+- Frontend: multi-select checkboxes on unprocessed items, select-all toggle
+- Bulk action toolbar: project dropdown, "Assign to Project" button, "Delete" button, "Clear" selection
+- Selection state clears on view switch (processed/unprocessed)
+
+#### BETA-034: Inbox Item Age Indicator
+- `getAgeIndicator()` function computes age tiers: <24h (hidden), 24h-3d (gray), 3d-7d (amber), >7d (red)
+- Subtle `AlertCircle` icon + "Xd" text next to captured timestamp
+- Only shown on unprocessed items — informational, not gamified
+
+#### New Files
+- `backend/app/models/weekly_review.py`
+- `backend/alembic/versions/20260209_weekly_review_completion.py`
+- `backend/tests/test_inbox_endpoints.py` (17 tests)
+
+#### Modified Files
+- `backend/app/models/__init__.py` — registered WeeklyReviewCompletion
+- `backend/alembic/env.py` — added WeeklyReviewCompletion import
+- `backend/app/api/intelligence.py` — added complete/history endpoints + schemas
+- `backend/app/api/inbox.py` — added stats/batch-process endpoints, reordered routes
+- `backend/app/schemas/inbox.py` — added InboxStats, InboxBatchAction/Response schemas
+- `backend/app/modules/gtd_inbox/routes.py` — replaced TODO stub with full implementation
+- `frontend/src/types/index.ts` — added InboxStats, InboxBatch*, WeeklyReviewCompletion types
+- `frontend/src/services/api.ts` — added 5 new API methods
+- `frontend/src/hooks/useIntelligence.ts` — added useWeeklyReviewHistory, useCompleteWeeklyReview
+- `frontend/src/hooks/useInbox.ts` — added useInboxStats, useBatchProcessInbox
+- `frontend/src/pages/InboxPage.tsx` — multi-select UI, stats from API, age indicators
+- `frontend/src/pages/Dashboard.tsx` — weekly review status display
+
+#### Tests
+- 17 new tests in `test_inbox_endpoints.py`: weekly review (6), model (2), stats (3), batch processing (6)
+- Full suite: 216/216 passing (17 new + 199 existing)
+- TypeScript: 0 errors
+
+---
+
 ## Session: 2026-02-09 — Beta Session 2: Motivation Signals (Frontend + API)
 
 ### Completed Items (7 BETA items)

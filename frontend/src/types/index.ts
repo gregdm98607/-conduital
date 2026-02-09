@@ -299,6 +299,48 @@ export interface InboxItemProcess {
   description?: string;
 }
 
+// BETA-032: Inbox stats
+export interface InboxStats {
+  unprocessed_count: number;
+  processed_today: number;
+  avg_processing_time_hours: number | null;
+}
+
+// BETA-031: Inbox batch processing
+export type InboxBatchActionType = 'assign_to_project' | 'delete' | 'convert_to_task';
+
+export interface InboxBatchRequest {
+  item_ids: number[];
+  action: InboxBatchActionType;
+  project_id?: number;
+  title_override?: string;
+}
+
+export interface InboxBatchResultItem {
+  item_id: number;
+  success: boolean;
+  error?: string;
+}
+
+export interface InboxBatchResponse {
+  processed: number;
+  failed: number;
+  results: InboxBatchResultItem[];
+}
+
+// BETA-030: Weekly review completion
+export interface WeeklyReviewCompletion {
+  id: number;
+  completed_at: string;
+  notes?: string;
+}
+
+export interface WeeklyReviewHistory {
+  completions: WeeklyReviewCompletion[];
+  last_completed_at: string | null;
+  days_since_last_review: number | null;
+}
+
 // Sync types
 export interface SyncFileStatus {
   file_path: string;

@@ -75,13 +75,59 @@
 
 **Context:** GTD inbox is feature-complete for basic capture/clarify/process. R2 backlog items are marked complete. But there are meaningful enhancements for beta quality.
 
-| ID | Task | Priority |
-|----|------|----------|
-| BETA-030 | **Weekly review completion tracking** — `POST /weekly-review/complete` is currently a stub (TODO). Implement: persist completion timestamp, track review history, show last-completed date on Dashboard. | Must |
-| BETA-031 | **Inbox batch processing** — process multiple items at once (select all → assign to project). Current flow is one-at-a-time. | Should |
-| BETA-032 | **Inbox processing stats** — "Processed Today" count (DEBT-064) needs dedicated API endpoint instead of client-side calculation. | Should |
-| BETA-033 | **Quick capture keyboard shortcut** — global `Ctrl+N` or similar to open capture modal from any page. | Nice |
-| BETA-034 | **Inbox item age indicator** — subtle visual aging on unprocessed items (e.g., slight color shift after 24h, 48h, 7d). Zeigarnik-inspired. | Nice |
+| ID | Task | Priority | Status |
+|----|------|----------|--------|
+| BETA-030 | **Weekly review completion tracking** — `POST /weekly-review/complete` stub → persist completion, track history, show on Dashboard | Must | ✅ Done |
+| BETA-031 | **Inbox batch processing** — multi-select + bulk actions (assign, delete, convert) | Should | ✅ Done |
+| BETA-032 | **Inbox processing stats endpoint** — `GET /inbox/stats` replaces client-side calc (DEBT-064) | Should | ✅ Done |
+| BETA-033 | **Quick capture keyboard shortcut** — global `Ctrl+N` to open capture modal | Nice | Deferred |
+| BETA-034 | **Inbox item age indicator** — subtle visual aging on unprocessed items (24h/3d/7d) | Nice | ✅ Done |
+
+### Phase 2A: BETA-030 — Weekly Review Completion Tracking
+
+**Backend:**
+1. New model `WeeklyReviewCompletion` → `backend/app/models/weekly_review.py`
+   - Fields: `id`, `user_id` (nullable FK), `completed_at` (DateTime tz), `notes` (Text optional)
+   - Inherits `Base` only (completed_at IS the timestamp)
+2. Register in `models/__init__.py` + `alembic/env.py`
+3. Alembic migration `012_weekly_review_completion` (down_revision=`011_momentum_snapshots`)
+4. Implement stub at `modules/gtd_inbox/routes.py:46-55` → persist to DB
+5. Add `GET /weekly-review/history` endpoint (last N completions + days_since)
+6. Tests: POST creates record, GET returns ordered history, days calculation
+
+**Frontend:**
+7. New API methods + hook: `completeWeeklyReview()`, `getWeeklyReviewHistory()`, `useWeeklyReviewHistory()`
+8. Dashboard.tsx: "Last completed: X days ago" in review section
+
+### Phase 2B: BETA-032 — Inbox Stats Endpoint
+
+**Backend:**
+1. `GET /inbox/stats` → `unprocessed_count`, `processed_today`, `avg_processing_time_hours`
+2. Schema: `InboxStats` in `schemas/inbox.py`
+3. Tests for stats calculation
+
+**Frontend:**
+4. `useInboxStats()` hook, `getInboxStats()` API method
+5. InboxPage: replace client-side stats with API data
+
+### Phase 2C: BETA-031 — Inbox Batch Processing
+
+**Backend:**
+1. `POST /inbox/batch-process` → `{ item_ids, action, project_id? }`
+2. Actions: `assign_to_project`, `delete`, `convert_to_task`
+3. Schema: `InboxBatchProcess` request, `InboxBatchResult` response
+4. Tests: batch assign, batch delete, error cases
+
+**Frontend:**
+5. Multi-select checkboxes on inbox items
+6. Bulk action toolbar: "Assign to Project", "Delete", "Convert to Tasks"
+7. Selection state management
+
+### Phase 2D: BETA-034 — Inbox Item Age Indicator
+
+**Frontend only:**
+1. Age tiers: <24h (none), 24h-3d (gray clock), 3d-7d (amber clock), >7d (red clock)
+2. Subtle badge on unprocessed items only. Informational, not gamified.
 
 ---
 
@@ -156,12 +202,11 @@
 - BETA-014: Dashboard momentum summary
 - BETA-024: History + summary API endpoints
 
-### Session 3: GTD Inbox + Polish
+### Session 3: GTD Inbox + Polish ← **CURRENT SESSION**
 - BETA-030: Weekly review completion tracking
 - BETA-031: Batch processing
 - BETA-032: Processed Today stats endpoint
 - BETA-034: Inbox item age indicator
-- Remaining ARIA / accessibility items
 
 ### Session 4: Distribution & Testing
 - Privacy policy, app icon, screenshots

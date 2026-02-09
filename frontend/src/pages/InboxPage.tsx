@@ -1,15 +1,32 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Inbox, Plus, Trash2, FolderKanban, CheckSquare, Archive, Clock, ExternalLink, Edit2, Check, X } from 'lucide-react';
+import { Inbox, Plus, Trash2, FolderKanban, CheckSquare, Archive, Clock, ExternalLink, Edit2, Check, X, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useInboxItems, useCreateInboxItem, useUpdateInboxItem, useProcessInboxItem, useDeleteInboxItem } from '../hooks/useInbox';
+import { useInboxItems, useCreateInboxItem, useUpdateInboxItem, useProcessInboxItem, useDeleteInboxItem, useInboxStats, useBatchProcessInbox } from '../hooks/useInbox';
 import { useProjects } from '../hooks/useProjects';
 import { useCreateTask } from '../hooks/useTasks';
 import { Error } from '../components/common/Error';
 import { Loading } from '../components/common/Loading';
 import { SearchInput } from '../components/common/SearchInput';
 import { Modal } from '../components/common/Modal';
-import type { InboxItem, InboxResultType, Project } from '../types';
+import type { InboxItem, InboxResultType, Project, InboxBatchActionType } from '../types';
+
+/**
+ * BETA-034: Get age indicator for an unprocessed inbox item.
+ * Returns { icon color class, label } or null if <24h.
+ */
+function getAgeIndicator(capturedAt: string): { colorClass: string; label: string } | null {
+  const now = new Date();
+  const captured = new Date(capturedAt);
+  const diffMs = now.getTime() - captured.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffHours < 24) return null;
+  if (diffDays < 3) return { colorClass: 'text-gray-400 dark:text-gray-500', label: `${diffDays}d` };
+  if (diffDays < 7) return { colorClass: 'text-amber-500 dark:text-amber-400', label: `${diffDays}d` };
+  return { colorClass: 'text-red-500 dark:text-red-400', label: `${diffDays}d` };
+}
 
 export function InboxPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,13 +42,19 @@ export function InboxPage() {
   const [editingContent, setEditingContent] = useState('');
   const [quickCaptureProjectId, setQuickCaptureProjectId] = useState<number | undefined>();
 
+  // BETA-031: Multi-select state
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [batchProjectId, setBatchProjectId] = useState<number | undefined>();
+
   const { data: items, isLoading, error } = useInboxItems(showProcessed);
+  const { data: stats } = useInboxStats();
   const { data: projectsData } = useProjects({ status: 'active' });
   const createInboxItem = useCreateInboxItem();
   const createTask = useCreateTask();
   const updateInboxItem = useUpdateInboxItem();
   const processInboxItem = useProcessInboxItem();
   const deleteInboxItem = useDeleteInboxItem();
+  const batchProcess = useBatchProcessInbox();
 
   const projects = projectsData?.projects || [];
 
@@ -43,12 +66,73 @@ export function InboxPage() {
     }
   }, [processingItem]);
 
+  // Clear selection when switching views
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [showProcessed]);
+
   // Client-side search filtering
   const filteredItems = useMemo(() => {
     if (!searchQuery || !items) return items;
     const query = searchQuery.toLowerCase();
     return items.filter((item) => item.content.toLowerCase().includes(query));
   }, [items, searchQuery]);
+
+  // Unprocessed items for selection
+  const unprocessedItems = useMemo(
+    () => filteredItems?.filter(i => !i.processed_at) || [],
+    [filteredItems]
+  );
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === unprocessedItems.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(unprocessedItems.map(i => i.id)));
+    }
+  };
+
+  const handleBatchAction = (action: InboxBatchActionType) => {
+    if (selectedIds.size === 0) return;
+
+    if (action === 'delete') {
+      batchProcess.mutate(
+        { item_ids: Array.from(selectedIds), action: 'delete' },
+        {
+          onSuccess: (data) => {
+            toast.success(`Deleted ${data.processed} item(s)`);
+            setSelectedIds(new Set());
+          },
+          onError: () => toast.error('Batch delete failed'),
+        }
+      );
+    } else if (action === 'assign_to_project' || action === 'convert_to_task') {
+      if (!batchProjectId) {
+        toast.error('Select a project first');
+        return;
+      }
+      batchProcess.mutate(
+        { item_ids: Array.from(selectedIds), action, project_id: batchProjectId },
+        {
+          onSuccess: (data) => {
+            toast.success(`Created ${data.processed} task(s)`);
+            setSelectedIds(new Set());
+            setBatchProjectId(undefined);
+          },
+          onError: () => toast.error('Batch processing failed'),
+        }
+      );
+    }
+  };
 
   const handleQuickCapture = (keepOpen: boolean = false) => {
     if (!quickCaptureText.trim()) return;
@@ -218,14 +302,16 @@ export function InboxPage() {
         </button>
       </header>
 
-      {/* Stats */}
+      {/* Stats — BETA-032: server-side stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="card bg-primary-50 border-primary-200">
+        <div className="card bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800">
           <div className="flex items-center gap-3">
             <Inbox className="w-6 h-6 text-primary-600" />
             <div>
-              <p className="text-2xl font-bold text-primary-900">{items?.filter(i => !i.processed_at).length || 0}</p>
-              <p className="text-sm text-primary-700">Unprocessed Items</p>
+              <p className="text-2xl font-bold text-primary-900 dark:text-primary-200">
+                {stats?.unprocessed_count ?? items?.filter(i => !i.processed_at).length ?? 0}
+              </p>
+              <p className="text-sm text-primary-700 dark:text-primary-300">Unprocessed Items</p>
             </div>
           </div>
         </div>
@@ -233,14 +319,9 @@ export function InboxPage() {
           <div className="flex items-center gap-3">
             <CheckSquare className="w-6 h-6 text-green-600" />
             <div>
-              <p className="text-2xl font-bold text-green-900 dark:text-green-200">{items?.filter(i => {
-                if (!i.processed_at) return false;
-                const processed = new Date(i.processed_at);
-                const today = new Date();
-                return processed.getFullYear() === today.getFullYear()
-                  && processed.getMonth() === today.getMonth()
-                  && processed.getDate() === today.getDate();
-              }).length || 0}</p>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-200">
+                {stats?.processed_today ?? 0}
+              </p>
               <p className="text-sm text-green-700 dark:text-green-300">Processed Today</p>
             </div>
           </div>
@@ -250,13 +331,58 @@ export function InboxPage() {
             <Clock className="w-6 h-6 text-gray-600 dark:text-gray-400" />
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {items?.length ? formatDate(items[0].captured_at) : 'N/A'}
+                {stats?.avg_processing_time_hours != null
+                  ? `${stats.avg_processing_time_hours}h avg`
+                  : items?.length ? formatDate(items[0].captured_at) : 'N/A'}
               </p>
-              <p className="text-sm text-gray-700 dark:text-gray-300">Last Capture</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                {stats?.avg_processing_time_hours != null ? 'Avg Processing Time' : 'Last Capture'}
+              </p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* BETA-031: Bulk Action Toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="mb-4 p-3 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg flex items-center gap-3 flex-wrap">
+          <span className="text-sm font-medium text-primary-800 dark:text-primary-200">
+            {selectedIds.size} selected
+          </span>
+          <div className="h-4 w-px bg-primary-300 dark:bg-primary-700" />
+          <select
+            value={batchProjectId || ''}
+            onChange={(e) => setBatchProjectId(e.target.value ? Number(e.target.value) : undefined)}
+            className="input input-sm text-sm py-1"
+          >
+            <option value="">Select project...</option>
+            {projects.map((p: Project) => (
+              <option key={p.id} value={p.id}>{p.title}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => handleBatchAction('assign_to_project')}
+            disabled={!batchProjectId || batchProcess.isPending}
+            className="btn btn-sm btn-primary text-sm"
+          >
+            Assign to Project
+          </button>
+          <button
+            onClick={() => handleBatchAction('delete')}
+            disabled={batchProcess.isPending}
+            className="btn btn-sm btn-secondary text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm"
+          >
+            <Trash2 className="w-3.5 h-3.5 mr-1" />
+            Delete
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="btn btn-sm btn-secondary text-sm ml-auto"
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
       {/* Search and Filters */}
       <div className="mb-6 flex gap-4 items-center">
@@ -283,8 +409,21 @@ export function InboxPage() {
         <Loading />
       ) : filteredItems && filteredItems.length > 0 ? (
         <div className="space-y-3">
+          {/* BETA-031: Select all header (only for unprocessed view) */}
+          {!showProcessed && unprocessedItems.length > 1 && (
+            <div className="flex items-center gap-2 px-1">
+              <input
+                type="checkbox"
+                checked={selectedIds.size === unprocessedItems.length && unprocessedItems.length > 0}
+                onChange={toggleSelectAll}
+                className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+              />
+              <span className="text-xs text-gray-500 dark:text-gray-400">Select all</span>
+            </div>
+          )}
           {filteredItems.map((item) => {
             const resultLink = getResultLink(item);
+            const ageIndicator = !item.processed_at ? getAgeIndicator(item.captured_at) : null;
             return (
               <div
                 key={item.id}
@@ -293,6 +432,15 @@ export function InboxPage() {
                 }`}
               >
                 <div className="flex items-start gap-4">
+                  {/* BETA-031: Checkbox for unprocessed items */}
+                  {!item.processed_at && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => toggleSelect(item.id)}
+                      className="mt-1 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+                    />
+                  )}
                   <div className="flex-1">
                     {editingItemId === item.id ? (
                       <div className="space-y-2">
@@ -338,6 +486,13 @@ export function InboxPage() {
                         <Clock className="w-3 h-3" />
                         {formatDate(item.captured_at)}
                       </span>
+                      {/* BETA-034: Age indicator for unprocessed items */}
+                      {ageIndicator && (
+                        <span className={`flex items-center gap-1 ${ageIndicator.colorClass}`} title={`Unprocessed for ${ageIndicator.label}`}>
+                          <AlertCircle className="w-3 h-3" />
+                          <span className="text-xs">{ageIndicator.label}</span>
+                        </span>
+                      )}
                       <span className="badge badge-gray">{item.source}</span>
                       {item.processed_at && item.result_type && (
                         <>

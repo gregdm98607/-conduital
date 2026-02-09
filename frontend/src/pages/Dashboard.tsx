@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { useNextActions } from '../hooks/useNextActions';
 import { useStalledProjects, useUpdateMomentum } from '../hooks/useProjects';
 import { useAreas } from '../hooks/useAreas';
-import { useDashboardStats, useMomentumSummary } from '../hooks/useIntelligence';
+import { useDashboardStats, useMomentumSummary, useWeeklyReviewHistory } from '../hooks/useIntelligence';
 import { useUpdateTask } from '../hooks/useTasks';
 import { StalledAlert } from '../components/intelligence/StalledAlert';
 import { StatsSkeleton, NextActionSkeleton } from '../components/common/Skeleton';
@@ -39,6 +39,7 @@ export function Dashboard() {
   const { data: areas } = useAreas();
   const updateMomentum = useUpdateMomentum();
   const updateTask = useUpdateTask();
+  const { data: reviewHistory } = useWeeklyReviewHistory();
 
   // State for task editing modal
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -233,18 +234,35 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Review Reminders */}
-      {(reviewReminders.overdue.length > 0 || reviewReminders.dueSoon.length > 0) && (
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Layers className="w-6 h-6 text-amber-600" />
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Review Reminders</h2>
-            </div>
+      {/* Weekly Review Status — BETA-030 */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Layers className="w-6 h-6 text-amber-600" />
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Weekly Review</h2>
+          </div>
+          <div className="flex items-center gap-3">
+            {reviewHistory?.last_completed_at && (
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Last completed: {reviewHistory.days_since_last_review === 0
+                  ? 'today'
+                  : reviewHistory.days_since_last_review === 1
+                    ? 'yesterday'
+                    : `${reviewHistory.days_since_last_review}d ago`}
+              </span>
+            )}
+            {!reviewHistory?.last_completed_at && (
+              <span className="text-sm text-gray-400 dark:text-gray-500">Never completed</span>
+            )}
             <Link to="/weekly-review" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-              Weekly Review →
+              Start Review →
             </Link>
           </div>
+        </div>
+
+      {/* Review Reminders */}
+      {(reviewReminders.overdue.length > 0 || reviewReminders.dueSoon.length > 0) && (
+        <div>
 
           {reviewReminders.overdue.length > 0 && (
             <div className="mb-3">
@@ -319,8 +337,9 @@ export function Dashboard() {
               </div>
             </div>
           )}
-        </section>
+        </div>
       )}
+      </section>
 
       {/* Areas Overview Widget */}
       {areas && areas.length > 0 && (

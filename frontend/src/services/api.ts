@@ -29,6 +29,11 @@ import type {
   InboxItem,
   InboxItemCreate,
   InboxItemProcess,
+  InboxStats,
+  InboxBatchRequest,
+  InboxBatchResponse,
+  WeeklyReviewCompletion,
+  WeeklyReviewHistory,
 } from '@/types';
 
 class APIClient {
@@ -375,6 +380,22 @@ class APIClient {
     return response.data;
   }
 
+  async completeWeeklyReview(notes?: string): Promise<WeeklyReviewCompletion> {
+    const response = await this.client.post<WeeklyReviewCompletion>(
+      '/intelligence/weekly-review/complete',
+      notes ? { notes } : undefined,
+    );
+    return response.data;
+  }
+
+  async getWeeklyReviewHistory(limit: number = 10, signal?: AbortSignal): Promise<WeeklyReviewHistory> {
+    const response = await this.client.get<WeeklyReviewHistory>('/intelligence/weekly-review/history', {
+      params: { limit },
+      signal,
+    });
+    return response.data;
+  }
+
   // ============================================================================
   // AI Features
   // ============================================================================
@@ -676,6 +697,16 @@ class APIClient {
 
   async deleteInboxItem(id: number): Promise<void> {
     await this.client.delete(`/inbox/${id}`);
+  }
+
+  async getInboxStats(signal?: AbortSignal): Promise<InboxStats> {
+    const response = await this.client.get<InboxStats>('/inbox/stats', { signal });
+    return response.data;
+  }
+
+  async batchProcessInbox(batch: InboxBatchRequest): Promise<InboxBatchResponse> {
+    const response = await this.client.post<InboxBatchResponse>('/inbox/batch-process', batch);
+    return response.data;
   }
 
   // ============================================================================

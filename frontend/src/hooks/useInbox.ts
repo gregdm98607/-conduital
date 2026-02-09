@@ -4,7 +4,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
-import type { InboxItemCreate, InboxItemProcess } from '@/types';
+import type { InboxItemCreate, InboxItemProcess, InboxBatchRequest } from '@/types';
 
 export function useInboxItems(processed: boolean = false) {
   return useQuery({
@@ -71,6 +71,26 @@ export function useDeleteInboxItem() {
     mutationFn: (id: number) => api.deleteInboxItem(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inbox'] });
+    },
+  });
+}
+
+export function useInboxStats() {
+  return useQuery({
+    queryKey: ['inbox', 'stats'],
+    queryFn: ({ signal }) => api.getInboxStats(signal),
+  });
+}
+
+export function useBatchProcessInbox() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (batch: InboxBatchRequest) => api.batchProcessInbox(batch),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inbox'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
   });
 }

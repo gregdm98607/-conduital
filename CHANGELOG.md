@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BETA-012:** Project completion progress bar — thin gradient bar on ProjectCard showing `completed/total` tasks
 - **BETA-013:** "Almost there" nudge — subtle text when >80% tasks complete: "N tasks to finish line" (Goal Gradient + Zeigarnik)
 - **BETA-014:** Dashboard momentum summary — aggregate section showing gaining/steady/declining project counts with declining project links
+- **BETA-030:** Weekly review completion tracking — `POST /intelligence/weekly-review/complete` persists completion timestamp + notes; `GET /intelligence/weekly-review/history` returns completion history with `days_since_last_review`. New `WeeklyReviewCompletion` model + Alembic migration `012`. Dashboard shows "Last completed: X days ago".
+- **BETA-031:** Inbox batch processing — `POST /inbox/batch-process` endpoint for bulk actions (assign_to_project, delete, convert_to_task). Frontend: multi-select checkboxes, select-all toggle, bulk action toolbar with project dropdown.
+- **BETA-032:** Inbox processing stats — `GET /inbox/stats` returns `unprocessed_count`, `processed_today`, `avg_processing_time_hours`. Replaces client-side calculation (DEBT-064).
+- **BETA-034:** Inbox item age indicator — subtle visual aging on unprocessed items: gray clock (24h-3d), amber (3d-7d), red (>7d). Informational, not gamified.
 
 ### Fixed
 - `build.bat` size reporting shows correct total (was always "~0 MB" due to broken findstr parsing)

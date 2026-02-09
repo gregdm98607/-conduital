@@ -61,10 +61,10 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 | ID | Description | Status | Notes |
 |----|-------------|--------|-------|
-| BETA-030 | **Weekly review completion tracking** — implement `POST /weekly-review/complete` stub, persist history | Open | Currently TODO |
-| BETA-031 | **Inbox batch processing** — multi-select + bulk assign to project | Open | UX improvement |
-| BETA-032 | **Inbox processing stats endpoint** — dedicated API for "Processed Today" (fixes DEBT-064) | Open | Replaces client-side calc |
-| BETA-034 | **Inbox item age indicator** — subtle visual aging on unprocessed items | Open | Zeigarnik Effect |
+| BETA-030 | **Weekly review completion tracking** — `POST /weekly-review/complete`, history endpoint, Dashboard display | ✅ Done | Model + migration + API + frontend |
+| BETA-031 | **Inbox batch processing** — multi-select + bulk assign/delete/convert | ✅ Done | Backend + frontend |
+| BETA-032 | **Inbox processing stats endpoint** — `GET /inbox/stats` (fixes DEBT-064) | ✅ Done | Replaces client-side calc |
+| BETA-034 | **Inbox item age indicator** — subtle visual aging (gray/amber/red clock) | ✅ Done | Zeigarnik Effect |
 
 ### R1 Release Notes
 
