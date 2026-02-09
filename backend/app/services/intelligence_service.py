@@ -767,7 +767,7 @@ class IntelligenceService:
     @staticmethod
     def get_weekly_review_data(db: Session) -> dict:
         """
-        Generate data for GTD weekly review
+        Generate data for weekly review
 
         Returns:
             Weekly review summary

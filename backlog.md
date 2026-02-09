@@ -256,7 +256,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 |----|-------------|----------|--------|
 | DEBT-008 | File watcher disabled by default | `main.py` | Open |
 | DEBT-013 | Mobile views not optimized | Frontend | Open |
-| DEBT-014 | ARIA labels missing | Frontend | Open |
+| DEBT-014 | ARIA labels missing | Frontend | ✅ Done |
 | DEBT-015 | Overlapping setup docs | Multiple MD files | Open |
 | DEBT-016 | WebSocket updates not integrated | Frontend/Backend | Open |
 | DEBT-017 | Auto-discovery debounce | `folder_watcher.py` | Open |
@@ -266,14 +266,15 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-052 | Empty model dropdown edge case when provider_models not yet loaded | `Settings.tsx` | Open |
 | DEBT-061 | Dynamic attribute assignment on ORM objects for task counts (fragile) | `project_service.py` | Open |
 | DEBT-062 | Redundant task_count fields in ProjectWithTasks schema | `project.py` | Open |
-| DEBT-063 | `/modules` proxy needs production server configuration (Vite dev proxy only) | `vite.config.ts` | Open |
+
 | DEBT-064 | "Processed Today" count shows 0 on unprocessed tab — needs dedicated API endpoint | `InboxPage.tsx`, backend inbox API | Open |
-| DEBT-065 | API client methods don't accept AbortSignal — prevents true HTTP request cancellation | `api.ts` (all methods) | Open |
-| DEBT-073 | Momentum section missing icon — other Settings sections have colored icons, Momentum has none | `Settings.tsx:862` | Open |
-| DEBT-074 | `recalculateInterval` state variable loaded from API but never exposed in UI — hidden from user | `Settings.tsx:69` | Open |
-| DEBT-075 | Momentum PUT endpoint mutates the singleton `settings` object in-memory — not safe if Pydantic Settings is frozen | `settings.py:282-292` | Open |
-| DEBT-076 | `downloadJSONExport` and `downloadDatabaseBackup` duplicate blob download logic — extract shared helper | `api.ts:532-558` | Open |
+| DEBT-065 | API client methods don't accept AbortSignal — prevents true HTTP request cancellation | `api.ts` (all methods) | ✅ Done |
+| DEBT-075 | Momentum PUT endpoint mutates the singleton `settings` object in-memory — not safe if Pydantic Settings is frozen | `settings.py:282-292` | Documented |
 | DEBT-078 | Test run requires explicit venv python — `python -m pytest` fails without venv activation | `backend/venv` exists but PATH doesn't include it | Open |
+| DEBT-080 | Inno Setup `.iss` version is hardcoded (`#define MyAppVersion`) — not SSoT with pyproject.toml/config.py | `installer/conduital.iss:24` | Open |
+| DEBT-081 | No app icon (.ico) — installer and exe use default icons | Need `assets/conduital.ico` with 16-256px variants | Open |
+| DEBT-082 | `build.bat` size reporting loop broken — shows "Total size: ~0 MB" for most lines | `build.bat:112-115` (findstr parsing) | ✅ Done |
+| DEBT-083 | Installer `InitializeSetup()` force-kills without graceful shutdown attempt | `installer/conduital.iss` — should try WM_CLOSE or shutdown endpoint first | Open |
 
 ---
 
@@ -302,7 +303,8 @@ This backlog is organized by commercial release milestones. Each release builds 
 | STRAT-005 | **Unified Codebase Architecture** | Implemented | Module system (2026-02-02) |
 | STRAT-006 | **Commercial Configuration Presets** | Implemented | basic, gtd, proactive_assistant, full |
 | STRAT-007 | **Conduital Leads Shared Infrastructure** | Implemented | Single codebase for all features |
-| STRAT-008 | **Semantic Versioning (SemVer)** | Decided | `Major.Minor.Patch` — Major: breaking/incompatible changes; Minor: backward-compatible features; Patch: backward-compatible bug fixes. First public version: `1.0.0-beta` |
+| STRAT-008 | **Semantic Versioning (SemVer)** | Decided | `Major.Minor.Patch` — Major: breaking/incompatible changes; Minor: backward-compatible features; Patch: backward-compatible bug fixes. First public version: `1.0.0-alpha` (shipping without code signing) |
+| STRAT-009 | **Alpha Launch: Free First** | Decided | Ship free alpha installer (no license key) for early users/feedback. Implement Gumroad license key validation before beta/paid release. Step-by-step guide: `tasks/gumroad-license-guide.md` |
 
 ---
 
@@ -356,9 +358,13 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-103 | Project Review Frequency + Mark Reviewed Next Date |
 | BACKLOG-104 | Area Health Score "How is this calculated?" Drill-Down | Add expandable section beneath Health bar on AreaDetail, mirroring Momentum Score drill-down on ProjectDetail (BACKLOG-058). Show weighted factor breakdown. |
 | BACKLOG-110 | Auto-Discovery as Optional Setting | Add a user setting on the Settings page to toggle on/off Project discovery, Area discovery, and Project Prefix discovery independently. Design what "off" means (skip on startup, ignore file changes, preserve existing data vs. clear). |
-| BACKLOG-111 | Momentum Settings: Validate stalled > at_risk | Frontend allows saving stalled_threshold < at_risk_threshold, which is logically invalid (a project can't be at-risk before it's stalled). Add client-side + server-side validation. |
+| ~~BACKLOG-111~~ | ~~Momentum Settings: Validate stalled > at_risk~~ | ✅ Done |
 | BACKLOG-112 | Export Preview: Refresh after download | After downloading JSON export or DB backup, the export preview data doesn't refresh. Add a re-fetch or stale indicator. |
 | BACKLOG-113 | **Website Redesign & Product Launch Content (conduital.com)** | **⚠️ Depends on:** DIST-050 ✅, DIST-056 ✅. Deploy content to announce, promote, and demo **Conduital**. **Sitemap:** Home → Features → How It Works → Pricing → Docs → Blog → About → Download. **Hero:** "Intelligent Momentum for Independent Operators" — pillars: Your Data Your Control, Proven Productivity Methods, AI That Actually Helps. **Demo:** 8 screenshots + 2-3 min video + GIFs. **SEO targets:** local-first productivity, AI task manager, intelligent momentum, Conduital. **Implementation phases:** Phase 1 (MVP): Home + Get Started + Features. Phase 2 (Launch): conduital.com + Pricing + Demo. Phase 3 (Growth): Blog + Community + Testimonials. |
+| ~~BACKLOG-115~~ | ~~`/api/v1/shutdown` endpoint for graceful programmatic shutdown~~ | ✅ Done |
+| BACKLOG-116 | Version single source of truth | Read version from one canonical file (pyproject.toml) at build time for PyInstaller, Inno Setup, and package.json; eliminates DEBT-080 |
+| BACKLOG-117 | Installer upgrade-in-place testing | Verify installing a new version over existing preserves user data and applies new DB migrations |
+| BACKLOG-118 | Clean Windows VM testing (Win10 + Win11) | Test on VMs with no Python/Node.js to catch missing DLLs or C++ runtime deps |
 | BACKLOG-114 | **AI-Agentic-First Social Media & Marketing Content Plan (Conduital)** | **⚠️ Depends on:** DIST-052 (@conduital on Twitter/X), DIST-053 (conduital on GitHub), DIST-054 (conduital on Gumroad), DIST-056 (rebrand to Conduital). Envision and deploy an AI-agentic-first social media and marketing content strategy for **Conduital** awareness, promotion, engagement, and marketing. **Platform strategy:** Priority 1: Twitter/X as @conduital (productivity/PKM community) + Reddit (r/gtd, r/productivity, r/ObsidianMD, r/PKMS). Priority 2: LinkedIn (professional audience) + Hacker News + YouTube (tutorials/demos). **Content pillars:** 40% Education/How-To, 25% Philosophy/Thought Leadership (local-first, data ownership, methodology), 20% Technical Deep-Dives (architecture, AI integration), 15% Community/UGC. **AI agent automation:** Content repurposing agents (blog → tweets/threads/LinkedIn/Reddit), engagement monitoring + response drafting agents, performance analytics + optimization agents, launch timing + A/B testing agents, SEO content generation agents, newsletter curation agents. **Cadence:** Twitter 1-2x/day, Reddit 2-3x/week, LinkedIn 2-3x/week, YouTube 1-2x/month, Blog 1-2x/week, Newsletter weekly. **Launch sequence:** 30-day countdown — Week 4: teaser campaign + "building in public" threads under Conduital brand. Week 3: feature spotlights + beta signups. Week 2: demo videos + influencer outreach. Week 1: daily countdown + launch prep. Launch day: coordinated multi-platform push. Post-launch: sustained engagement + community building. **Metrics:** Awareness (followers, impressions), Engagement (replies, shares, saves), Conversion (conduital.com visits, downloads, GitHub stars at github.com/conduital), Agent efficiency (content throughput, response time). **Extended channels:** Blog/SEO on conduital.com, email newsletter funnel, YouTube tutorial series, podcast guest appearances, developer relations via github.com/conduital, Gumroad storefront at conduital.gumroad.com. **Ratio:** 10:1 value-to-promotion. Emphasize authentic community building, transparency about AI use, privacy-first/local-first differentiation. |
 
 ---
@@ -490,6 +496,23 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-053 | Projects.tsx early return before hooks fixed (BUG-021) | 2026-02-07 |
 | DEBT-055 | ContextExportModal backdrop — N/A (already uses shared Modal) | 2026-02-07 |
 | DEBT-072 | Path import in main.py — N/A (actively used in 5 locations) | 2026-02-07 |
+| DIST-056c | Final branding pass: dev scripts (3 files), THIRD_PARTY_LICENSES.txt, .env.example, CLAUDE.md, .gitignore stale pattern | 2026-02-08 |
+| DEBT-079 | auto_discovery_service.py: 33 print() statements converted to logger.info/warning/error | 2026-02-08 |
+| DEBT-080 | folder_watcher.py: 3 print() statements converted to logger.info | 2026-02-08 |
+| DEBT-063 | SPA catch-all route excludes `/modules` and `/health` API endpoints (production fix) | 2026-02-08 |
+| DIST-056d | Deep branding pass: API_DOCUMENTATION.md, backend README, scripts (3 files), sync.py, projects/__init__.py, .env | 2026-02-08 |
+| DEBT-073 | Momentum section icon added (Activity icon matching other Settings sections) | 2026-02-08 |
+| DEBT-074 | Recalculation interval exposed in Settings UI (was loaded but hidden) | 2026-02-08 |
+| DEBT-076 | Duplicate blob download logic extracted into shared `triggerBlobDownload` helper in api.ts | 2026-02-08 |
+| DEBT-063b | SPA catch-all route extended to also exclude `/openapi.json` endpoint | 2026-02-08 |
+| DIST-056e | Trademark cleanup: all GTD/PARA refs removed from model docstrings (7 files), module comments (5 files), AI prompt (1 file) | 2026-02-08 |
+| DIST-010b | .gitignore hygiene: restored backend/API_DOCUMENTATION.md, added frontend/INSTALL_TOAST.md + frontend/QUICK_FIX.md | 2026-02-08 |
+| DIST-010c | .gitignore hardening: added `~$*` for Office temp files, root-level design asset exclusions (/*.docx, /*.png, /*.jpg, /*.jpeg) | 2026-02-08 |
+| DEBT-082 | `build.bat` size reporting loop fixed (corrected findstr parsing with `usebackq tokens` and byte display) | 2026-02-08 |
+| BACKLOG-111 | Momentum Settings stalled > at_risk validation (server-side HTTPException 422 + client-side guard + inline warning) | 2026-02-08 |
+| BACKLOG-115 | `/api/v1/shutdown` graceful shutdown endpoint (shared shutdown_event, localhost-only, cooperative with tray) | 2026-02-08 |
+| DEBT-014 | ARIA labels added to Modal (`role="dialog"`, `aria-modal`, `aria-labelledby`), UserMenu (`aria-haspopup`, `aria-expanded`, `role="menu/menuitem"`), ProjectCard outcome toggle, Settings API key toggle | 2026-02-08 |
+| DEBT-065 | AbortSignal support added to all API client getter methods (27 methods in api.ts) | 2026-02-08 |
 
 *See git history for detailed completion notes.*
 
@@ -527,5 +550,5 @@ For each release, verify:
 
 ---
 
-*Last updated: 2026-02-07 (Round 7: STRAT-001 corrected to Desktop-first, backlog hygiene — 22 done items moved from active tables, Second Brain refs cleaned, .gitignore expanded, backend docstring rebrand)*
+*Last updated: 2026-02-08 (Post-release batch: DEBT-082 build.bat fix, BACKLOG-111 momentum validation, BACKLOG-115 shutdown endpoint, DEBT-014 ARIA labels, DEBT-065 AbortSignal support)*
 *Reorganized by commercial release milestones*

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight, Download, HardDrive } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight, Download, HardDrive, Activity, Rocket } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAreaMappings, useUpdateAreaMappings, useAreaMappingSuggestions, useScanProjects } from '@/hooks/useDiscovery';
 import { useTheme } from '@/context/ThemeContext';
@@ -7,7 +8,7 @@ import { api } from '@/services/api';
 
 const SETTINGS_SECTIONS_KEY = 'pt-settings-sections';
 
-type SectionId = 'appearance' | 'area-mappings' | 'database' | 'sync' | 'ai' | 'momentum' | 'export';
+type SectionId = 'appearance' | 'area-mappings' | 'database' | 'sync' | 'ai' | 'momentum' | 'export' | 'setup';
 
 function loadCollapsedSections(): Set<SectionId> {
   try {
@@ -18,11 +19,16 @@ function loadCollapsedSections(): Set<SectionId> {
   } catch {
     localStorage.removeItem(SETTINGS_SECTIONS_KEY);
   }
-  return new Set<SectionId>(['appearance', 'area-mappings', 'database', 'sync', 'ai', 'momentum', 'export']);
+  return new Set<SectionId>(['appearance', 'area-mappings', 'database', 'sync', 'ai', 'momentum', 'export', 'setup']);
 }
 
 export function Settings() {
+  const navigate = useNavigate();
   const [collapsedSections, setCollapsedSections] = useState<Set<SectionId>>(loadCollapsedSections);
+
+  // Setup status
+  const [setupDataDir, setSetupDataDir] = useState<string>('');
+  const [setupConfigPath, setSetupConfigPath] = useState<string>('');
 
   const toggleSection = useCallback((id: SectionId) => {
     setCollapsedSections(prev => {
@@ -92,6 +98,16 @@ export function Settings() {
         setMomentumLoading(false);
       })
       .catch(() => setMomentumLoading(false));
+  }, []);
+
+  // Load setup status on mount
+  useEffect(() => {
+    api.getSetupStatus()
+      .then((data) => {
+        setSetupDataDir(data.data_directory);
+        setSetupConfigPath(data.config_path);
+      })
+      .catch(() => { /* ignore */ });
   }, []);
 
   // Load AI settings on mount
@@ -293,6 +309,10 @@ export function Settings() {
   };
 
   const handleSaveMomentumSettings = async () => {
+    if (atRiskThreshold >= stalledThreshold) {
+      toast.error('At-risk threshold must be less than stalled threshold');
+      return;
+    }
     setMomentumSaving(true);
     try {
       const result = await api.updateMomentumSettings({
@@ -772,6 +792,7 @@ export function Settings() {
                       type="button"
                       onClick={() => setShowApiKey(!showApiKey)}
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
                     >
                       {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -871,6 +892,7 @@ export function Settings() {
             className="flex items-center gap-3 w-full text-left"
           >
             {collapsedSections.has('momentum') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            <Activity className="w-6 h-6 text-primary-600" />
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Momentum Thresholds</h2>
           </button>
           {!collapsedSections.has('momentum') && (momentumLoading ? (
@@ -905,6 +927,14 @@ export function Settings() {
                   Projects are flagged at risk after this many days
                 </p>
               </div>
+              {atRiskThreshold >= stalledThreshold && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 flex items-start gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-800 dark:text-amber-300">
+                    <strong>Invalid configuration:</strong> At-risk threshold ({atRiskThreshold} days) must be less than stalled threshold ({stalledThreshold} days). A project should be flagged at-risk before it becomes stalled.
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="label">Activity Decay (days)</label>
                 <input
@@ -917,6 +947,20 @@ export function Settings() {
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Activity factor decays to 0 after this many days without activity
+                </p>
+              </div>
+              <div>
+                <label className="label">Recalculation Interval (seconds)</label>
+                <input
+                  type="number"
+                  className="input w-32"
+                  value={recalculateInterval}
+                  min={60}
+                  max={86400}
+                  onChange={(e) => setRecalculateInterval(Number(e.target.value))}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  How often momentum scores are automatically recalculated (3600 = hourly)
                 </p>
               </div>
               <div className="pt-2">
@@ -1006,6 +1050,54 @@ export function Settings() {
                 JSON export includes all projects, tasks, areas, goals, visions, and inbox items.
                 Database backup is a raw SQLite copy.
               </p>
+            </div>
+          )}
+        </section>
+
+        {/* System Setup Section */}
+        <section className="card">
+          <button
+            type="button"
+            onClick={() => toggleSection('setup')}
+            aria-expanded={!collapsedSections.has('setup')}
+            className="flex items-center gap-3 w-full text-left"
+          >
+            {collapsedSections.has('setup') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            <Rocket className="w-6 h-6 text-primary-600" />
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">System Setup</h2>
+          </button>
+
+          {!collapsedSections.has('setup') && (
+            <div className="mt-4 space-y-4">
+              {setupDataDir && (
+                <div>
+                  <label className="label">Data Directory</label>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-mono bg-gray-50 dark:bg-gray-800 rounded px-3 py-2">
+                    {setupDataDir}
+                  </p>
+                </div>
+              )}
+              {setupConfigPath && (
+                <div>
+                  <label className="label">Config File</label>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-mono bg-gray-50 dark:bg-gray-800 rounded px-3 py-2">
+                    {setupConfigPath}
+                  </p>
+                </div>
+              )}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/setup')}
+                  className="btn btn-secondary flex items-center gap-2"
+                >
+                  <Rocket className="w-4 h-4" />
+                  Re-run Setup Wizard
+                </button>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Re-run the first-time setup wizard to reconfigure sync folder, AI key, etc.
+                </p>
+              </div>
             </div>
           )}
         </section>

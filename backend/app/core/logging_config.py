@@ -23,7 +23,7 @@ def setup_logging(
     Configure application logging with file and console handlers.
 
     Args:
-        log_dir: Directory for log files (default: backend/logs/ in project directory)
+        log_dir: Directory for log files (resolved by paths module if not specified)
         log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         log_to_console: Whether to output logs to console
         log_to_file: Whether to write logs to file
@@ -32,8 +32,8 @@ def setup_logging(
     """
     # Determine log directory
     if log_dir is None:
-        # Default to logs/ directory within the backend folder
-        log_dir = Path(__file__).parent.parent.parent / "logs"
+        from app.core.paths import get_log_dir
+        log_dir = get_log_dir()
 
     # Create log directory if it doesn't exist
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -99,9 +99,11 @@ def setup_logging(
 
 def get_log_file_path() -> Path:
     """Get the path to the main log file."""
-    return Path(__file__).parent.parent.parent / "logs" / "conduital.log"
+    from app.core.paths import get_log_dir
+    return get_log_dir() / "conduital.log"
 
 
 def get_error_log_file_path() -> Path:
     """Get the path to the error log file."""
-    return Path(__file__).parent.parent.parent / "logs" / "conduital_errors.log"
+    from app.core.paths import get_log_dir
+    return get_log_dir() / "conduital_errors.log"

@@ -2,7 +2,7 @@
 """
 Project Discovery Script
 
-Run this script to scan your Second Brain and discover all projects.
+Run this script to scan your synced notes folder and discover all projects.
 
 Usage:
     python scripts/discover_projects.py
@@ -28,7 +28,7 @@ def main():
     print("🔍 Project Discovery Tool")
     print("=" * 60)
     print()
-    print(f"📁 Second Brain Root: {settings.SECOND_BRAIN_ROOT}")
+    print(f"Synced Notes Root: {settings.SECOND_BRAIN_ROOT}")
     print(f"🗂️  Scanning directory: 10_Projects")
     print()
 

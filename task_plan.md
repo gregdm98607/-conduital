@@ -1,60 +1,48 @@
-# Task Plan: v1.0.0 Release Prep -- Round 7
+# Task Plan: Session Wrap-Up & Beta Prep
 
-**Goal:** Deep branding cleanup, strategic consistency fix, backlog hygiene, package-lock rebrand, backend docstring cleanup.
-**Status:** `complete`
-**Created:** 2026-02-07 (Session 7)
-
----
-
-## Context
-
-Rounds 1-6 completed: static serving, rebrand, migrations, Pydantic cleanup, end-to-end testing, bug fixes, accessibility, AI degradation, docs rebrand, test infra, version SSoT, 174/174 tests passing. Round 7 addresses deeper branding issues (backend docstrings, Skills directory, backlog Second Brain refs), strategic inconsistency (STRAT-001), backlog hygiene (22 done items cluttering active tables), and package-lock.json rebrand.
-
-## Tasks (8 items)
-
-| # | Source | Description | Status |
-|---|--------|-------------|--------|
-| 1 | STRAT-001 | **Fix strategic decision inconsistency** -- STRAT-001 said "SaaS Web-Only" but actual strategy is "Desktop-first"; corrected in backlog.md | Complete |
-| 2 | Branding | **Clean Second Brain refs from backlog.md** -- 4 user-facing instances replaced (R1 target, R1 features x2, distribution model description) | Complete |
-| 3 | Branding | **Clean backend Python docstrings** -- 10 files: Second Brain -> synced notes folder, PARA naming conventions -> numbered prefix conventions, logger messages updated | Complete |
-| 4 | Branding | **Clean Skills directory** -- 17 replacements across 7 skill files: Project Tracker/Project-Tracker -> Conduital, Second Brain -> synced notes/file sync | Complete |
-| 5 | Hygiene | **Backlog table cleanup** -- moved 22 Done/N/A items from Medium and Low priority debt tables to Completed Items table; removed 8 done items from Parking Lot; cleaned BACKLOG-113 description | Complete |
-| 6 | Branding | **Expand .gitignore** -- added 5 missing dev files: MODULE_SYSTEM.md, Skills/, backend/diagnose.py, frontend/FRONTEND_IMPLEMENTATION_GUIDE.md, frontend/SETUP_AND_TEST.md | Complete |
-| 7 | Branding | **Regenerate package-lock.json** -- name updated from "project-tracker-frontend" to "conduital-frontend" | Complete |
-| 8 | All | **Build verification** -- TypeScript OK, Vite build OK (576KB), Python compile OK, 174/174 tests pass | Complete |
+**Status:** in_progress
+**Date:** 2026-02-08
+**Goal:** Clean slate for beta development — commit all work, archive clutter, update release planning
 
 ---
 
-## Files Modified
+## Phase 1: Commit All Uncommitted Work
 
-### Direct edits
-- `backlog.md` -- STRAT-001 fix, Second Brain cleanup (4 refs), 22 done items moved, Parking Lot cleaned, BACKLOG-113 condensed, last-updated line
-- `.gitignore` -- added 5 missing dev file exclusions
+The alpha has shipped. All work since the last commit needs to be committed as a single coherent checkpoint.
 
-### Background agent: Python docstrings (10 files)
-- `backend/app/services/discovery_service.py` -- docstring cleanup
-- `backend/app/services/area_discovery_service.py` -- docstring cleanup
-- `backend/app/sync/file_watcher.py` -- module/class/param docstrings
-- `backend/app/sync/folder_watcher.py` -- param docstring
-- `backend/app/sync/markdown_parser.py` -- module docstring
-- `backend/app/sync/markdown_writer.py` -- module/param docstrings
-- `backend/app/sync/sync_engine.py` -- docstrings + logger message
-- `backend/app/sync/__init__.py` -- module docstring
-- `backend/app/core/config.py` -- comment + property docstring
-- `backend/app/main.py` -- logger message
+### 1.1 Stage & Commit
+- [ ] Stage all modified files
+- [ ] Stage untracked source files (CHANGELOG, setup wizard, shutdown, tray, paths, build.bat, installer, spec)
+- [ ] Do NOT stage `assets/` (design files — gitignored)
+- [ ] Commit with descriptive message
 
-### Background agent: Skills directory (7 files)
-- `Skills/capture-inbox.md` -- 3 replacements
-- `Skills/context-switch.md` -- 1 replacement
-- `Skills/daily-planning.md` -- 4 replacements
-- `Skills/momentum-review.md` -- 1 replacement
-- `Skills/next-actions-dashboard.md` -- 1 replacement
-- `Skills/project-health-check.md` -- 1 replacement
-- `Skills/sync-brain.md` -- 6 replacements
+### 1.2 Verify Clean Working Tree
+- [ ] `git status` shows clean after commit
+- [ ] Only gitignored files remain
 
-### Package regeneration
-- `frontend/package-lock.json` -- name "project-tracker-frontend" -> "conduital-frontend"
+---
 
-## Errors Encountered
+## Phase 2: Root Directory Cleanup
 
-None.
+Move dev-only, historical, and transitional files to `archive/` folder.
+
+### 2.1 Create `archive/` directory and move files
+### 2.2 Clean junk files (nul, tmpclaude-*.cwd, .coverage)
+### 2.3 Update .gitignore with `archive/` exclusion
+
+---
+
+## Phase 3: Release Planning Update
+
+### 3.1 Update backlog.md — add beta context, review parking lot
+### 3.2 Update CHANGELOG.md — add [Unreleased] section for beta work
+### 3.3 Update distribution-checklist.md — mark completed phases
+
+---
+
+## Phase 4: Final Verification
+
+- [ ] `git status` clean
+- [ ] Root directory tidy
+- [ ] All tracking docs current
+- [ ] Ready for tomorrow's beta work

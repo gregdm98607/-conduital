@@ -240,8 +240,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
       {project.outcome_statement && (
         <div className="mb-4">
           <button
+            type="button"
             onClick={() => setIsOutcomeExpanded(!isOutcomeExpanded)}
             className="flex items-center gap-2 text-sm text-emerald-700 hover:text-emerald-800 transition-colors w-full text-left"
+            aria-expanded={isOutcomeExpanded}
+            aria-label={`${isOutcomeExpanded ? 'Collapse' : 'Expand'} outcome statement`}
           >
             <Target className="w-4 h-4 text-emerald-600 flex-shrink-0" />
             <span className="font-medium">Outcome</span>

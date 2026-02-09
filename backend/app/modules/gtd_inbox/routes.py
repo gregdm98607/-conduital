@@ -1,7 +1,7 @@
 """
-GTD Inbox module routes
+Inbox module routes
 
-Provides GTD-specific endpoints:
+Provides workflow endpoints:
 - Inbox processing
 - Weekly review
 - Waiting-for management
@@ -23,7 +23,7 @@ router = APIRouter()
 router.include_router(inbox.router, prefix="/inbox", tags=["Inbox"])
 
 
-# Additional GTD-specific endpoints can be added here
+# Additional workflow endpoints can be added here
 
 @router.get("/weekly-review")
 async def get_weekly_review_data(db: Session = Depends(get_db)):

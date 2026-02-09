@@ -1,5 +1,5 @@
 """
-Goal model - 1-3 year objectives (GTD Horizon 3)
+Goal model - 1-3 year objectives
 """
 
 from datetime import date, datetime
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 class Goal(Base, TimestampMixin):
     """
-    Goal model - GTD Horizon of Focus Level 3 (1-3 year goals)
+    Goal model - 1-3 year objectives and milestones.
     """
 
     __tablename__ = "goals"

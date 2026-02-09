@@ -1,32 +1,202 @@
-Proprietary Software License
+CONDUITAL END USER LICENSE AGREEMENT (EULA)
+
+Version 1.0 — Effective February 2026
 
 Copyright (c) 2026 Greg Maxfield. All rights reserved.
 
-This software and associated documentation files (the "Software") are
-proprietary and confidential. Unauthorized copying, distribution,
-modification, public display, or public performance of this Software,
-via any medium, is strictly prohibited.
+IMPORTANT: READ THIS AGREEMENT CAREFULLY BEFORE INSTALLING OR USING
+CONDUITAL. BY INSTALLING, COPYING, OR USING THIS SOFTWARE, YOU AGREE
+TO BE BOUND BY THE TERMS OF THIS AGREEMENT. IF YOU DO NOT AGREE,
+DO NOT INSTALL OR USE THE SOFTWARE.
 
-The Software is provided under a commercial license. You may use the
-Software only in accordance with the terms of the license agreement
-that accompanied your purchase or download of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+1. DEFINITIONS
 
----
+"Software" means the Conduital application, including the installer,
+executable files, documentation, and any updates provided to you.
 
-Third-Party Notices:
+"Licensor" means Greg Maxfield, operating as Conduital.
+
+"You" or "User" means the individual who has obtained a copy of the
+Software.
+
+"Device" means a single computer or workstation running a supported
+version of Microsoft Windows.
+
+
+2. LICENSE GRANT
+
+Subject to the terms of this Agreement, the Licensor grants you a
+limited, non-exclusive, non-transferable, revocable license to:
+
+  (a) Install and use the Software on up to three (3) Devices that
+      you own or control, for personal or internal business use.
+
+  (b) Make one (1) backup copy of the Software for archival purposes.
+
+This license is granted per individual user, not per organization.
+
+
+3. RESTRICTIONS
+
+You may NOT:
+
+  (a) Copy, distribute, sublicense, sell, rent, lease, or lend the
+      Software to any third party.
+
+  (b) Modify, adapt, translate, reverse engineer, decompile,
+      disassemble, or create derivative works based on the Software.
+
+  (c) Remove, alter, or obscure any copyright, trademark, or other
+      proprietary notices in the Software.
+
+  (d) Use the Software to build a competing product or service.
+
+  (e) Circumvent or disable any license management, access control,
+      or copy protection mechanisms in the Software.
+
+  (f) Use the Software in any manner that violates applicable laws
+      or regulations.
+
+
+4. DATA HANDLING AND PRIVACY
+
+  (a) LOCAL DATA STORAGE. All user data (projects, tasks, settings,
+      and database files) is stored locally on your Device in the
+      user data directory (typically %LOCALAPPDATA%\Conduital\). The
+      Software does not transmit your project data, tasks, or personal
+      information to the Licensor or any third party.
+
+  (b) MARKDOWN FILE SYNC. If you configure file sync, the Software
+      reads and writes markdown files in a folder you specify on your
+      local filesystem or cloud-synced drive. The Licensor has no
+      access to these files.
+
+  (c) AI FEATURES — THIRD-PARTY API. The Software optionally integrates
+      with the Anthropic Claude API for AI-powered features. When you
+      enable AI features:
+
+      - You provide your own Anthropic API key.
+      - Data you submit to AI features (project descriptions, task
+        content, etc.) is sent directly from your Device to Anthropic's
+        servers under YOUR API key and YOUR Anthropic account.
+      - The Licensor does not receive, store, process, or have access
+        to any data sent to Anthropic.
+      - Your use of the Anthropic API is governed by Anthropic's own
+        Terms of Service and Privacy Policy (https://www.anthropic.com).
+      - All API usage costs are between you and Anthropic. The Licensor
+        is not responsible for any charges incurred through your use of
+        the Anthropic API.
+
+  (d) LICENSE VALIDATION. If license key validation is implemented in
+      a future version, the Software may transmit your license key to
+      the Gumroad API (https://gumroad.com) to verify your purchase.
+      No other data is transmitted during this process.
+
+  (e) NO TELEMETRY. The Software does not collect analytics, usage
+      telemetry, crash reports, or any other data about your usage.
+
+
+5. INTELLECTUAL PROPERTY
+
+The Software is protected by copyright and other intellectual property
+laws. The Licensor retains all right, title, and interest in the
+Software, including all intellectual property rights. This Agreement
+does not grant you any rights to the Licensor's trademarks or service
+marks.
+
+
+6. UPDATES
+
+The Licensor may, at its sole discretion, provide updates, patches, or
+new versions of the Software. Updates may be subject to additional or
+different terms. The Licensor is not obligated to provide updates,
+support, or maintenance.
+
+
+7. WARRANTY DISCLAIMER
+
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTY
+OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+NONINFRINGEMENT. THE LICENSOR DOES NOT WARRANT THAT THE SOFTWARE WILL
+BE UNINTERRUPTED, ERROR-FREE, OR FREE OF HARMFUL COMPONENTS.
+
+THE LICENSOR MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING THE
+ACCURACY, RELIABILITY, OR COMPLETENESS OF ANY AI-GENERATED CONTENT
+PRODUCED THROUGH THE SOFTWARE'S INTEGRATION WITH THIRD-PARTY AI
+SERVICES. AI OUTPUT SHOULD NOT BE RELIED UPON AS PROFESSIONAL ADVICE.
+
+
+8. LIMITATION OF LIABILITY
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL
+THE LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
+CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS
+OF PROFITS, DATA, BUSINESS OPPORTUNITIES, OR GOODWILL, ARISING OUT OF
+OR RELATED TO YOUR USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF
+THE LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+THE LICENSOR'S TOTAL AGGREGATE LIABILITY SHALL NOT EXCEED THE AMOUNT
+YOU PAID FOR THE SOFTWARE IN THE TWELVE (12) MONTHS PRECEDING THE
+CLAIM.
+
+
+9. TERMINATION
+
+  (a) This Agreement is effective until terminated.
+
+  (b) The Licensor may terminate this Agreement immediately if you
+      breach any of its terms.
+
+  (c) Upon termination, you must cease all use of the Software and
+      destroy all copies in your possession.
+
+  (d) Your data remains yours. Termination of this license does not
+      affect your ownership of any data files you created using the
+      Software. You may retain your markdown files, exported data,
+      and database backups.
+
+  (e) Sections 5, 7, 8, and 10 survive termination.
+
+
+10. GENERAL PROVISIONS
+
+  (a) ENTIRE AGREEMENT. This Agreement constitutes the entire agreement
+      between you and the Licensor regarding the Software and supersedes
+      all prior agreements and understandings.
+
+  (b) SEVERABILITY. If any provision of this Agreement is held to be
+      unenforceable, the remaining provisions shall remain in full
+      force and effect.
+
+  (c) GOVERNING LAW. This Agreement shall be governed by the laws of
+      the State of Utah, United States, without regard to conflict of
+      law principles.
+
+  (d) NO WAIVER. The failure of the Licensor to enforce any right or
+      provision of this Agreement shall not constitute a waiver of
+      such right or provision.
+
+  (e) ASSIGNMENT. You may not assign or transfer this Agreement without
+      the Licensor's prior written consent. The Licensor may assign
+      this Agreement without restriction.
+
+
+THIRD-PARTY NOTICES
 
 This software includes open-source components licensed under their
-respective licenses. See THIRD_PARTY_LICENSES.txt for details.
+respective licenses. See THIRD_PARTY_LICENSES.txt for a complete list
+of third-party software and their license terms.
 
 Getting Things Done and GTD are registered trademarks of the David
 Allen Company. This software is not affiliated with or endorsed by
 the David Allen Company. Methodology references are used for
-compatibility description purposes only.
+descriptive purposes only.
+
+
+CONTACT
+
+For questions about this Agreement or the Software:
+Email: greg@fieldgreg.com
+Web: https://conduital.com

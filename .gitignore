@@ -63,7 +63,6 @@ backend/.env.*
 *.db-shm
 *.sqlite
 *.sqlite3
-backend/project_tracker.db*
 backend/conduital.db*
 
 # Logs
@@ -76,6 +75,9 @@ tmp*/
 tmpclaude-*
 nul
 
+# Microsoft Office temporary files
+~$*
+
 # Test artifacts
 .pytest_cache/
 .coverage
@@ -85,6 +87,8 @@ htmlcov/
 # Build artifacts
 *.pyc
 frontend/dist/
+installer/Output/
+assets/
 
 # Claude Code working files (not needed in repo)
 .claude/
@@ -113,7 +117,6 @@ PHASE4_ARCHITECTURE.md
 PROJECT_STATUS.md
 Project_Tracker_Technical_Spec.md
 backend/PROJECT_COMPLETE.md
-backend/API_DOCUMENTATION.md
 backend/SYNC_ENGINE_DOCUMENTATION.md
 backend/INTELLIGENCE_LAYER_DOCUMENTATION.md
 backend/PHASE_4_COMPLETE.md
@@ -134,7 +137,15 @@ tasks/
 Skills/
 backend/diagnose.py
 frontend/FRONTEND_IMPLEMENTATION_GUIDE.md
+frontend/INSTALL_TOAST.md
+frontend/QUICK_FIX.md
 frontend/SETUP_AND_TEST.md
+
+# Design assets and Office documents (managed outside repo)
+/*.docx
+/*.png
+/*.jpg
+/*.jpeg
 
 # Backup files
 *.bak

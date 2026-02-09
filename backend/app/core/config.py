@@ -15,13 +15,27 @@ from typing import Optional, Literal
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.core.paths import (
+    get_config_path,
+    get_database_path,
+    get_log_dir,
+    ensure_data_dir,
+)
+
+# Ensure data directory exists before loading config
+ensure_data_dir()
+
+# Compute env file path at module scope (before class definition)
+# so pydantic-settings loads from the correct location
+_env_file_path = str(get_config_path())
+
 
 def _get_or_generate_secret_key() -> str:
     """
     Get JWT secret from environment, or auto-generate and persist one.
 
     On first run, generates a cryptographically secure secret and writes it
-    to the .env file so it persists across restarts. This prevents shipping
+    to the config file so it persists across restarts. This prevents shipping
     a weak default secret in the codebase.
     """
     import os
@@ -31,8 +45,8 @@ def _get_or_generate_secret_key() -> str:
     if env_key and env_key != "change-me-in-production-use-openssl-rand-hex-32":
         return env_key
 
-    # Check if it's in the .env file already
-    env_file = Path(__file__).parent.parent.parent / ".env"
+    # Check if it's in the config file already
+    env_file = get_config_path()
     if env_file.exists():
         for line in env_file.read_text(encoding="utf-8").splitlines():
             stripped = line.strip()
@@ -44,7 +58,7 @@ def _get_or_generate_secret_key() -> str:
     # Generate a new secret
     new_secret = secrets.token_urlsafe(64)
 
-    # Persist to .env file
+    # Persist to config file
     try:
         if env_file.exists():
             content = env_file.read_text(encoding="utf-8")
@@ -61,6 +75,7 @@ def _get_or_generate_secret_key() -> str:
                 with open(env_file, "a", encoding="utf-8") as f:
                     f.write(f"\n# Auto-generated JWT signing key\nSECRET_KEY={new_secret}\n")
         else:
+            env_file.parent.mkdir(parents=True, exist_ok=True)
             env_file.write_text(
                 f"# Auto-generated JWT signing key\nSECRET_KEY={new_secret}\n",
                 encoding="utf-8",
@@ -85,8 +100,12 @@ class Settings(BaseSettings):
     Application settings loaded from environment variables
     """
 
+    # NOTE: Settings is intentionally NOT frozen. The AI and Momentum settings
+    # endpoints mutate this singleton at runtime (see api/settings.py).
+    # If frozen=True is ever added, those endpoints will need a RuntimeConfig layer.
+    # See DEBT-075 in backlog.md.
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_env_file_path,
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -96,6 +115,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Conduital"
     VERSION: str = "1.0.0-alpha"
     DEBUG: bool = False
+    SETUP_COMPLETE: bool = False  # Set to true after first-run setup wizard
 
     # ==========================================================================
     # Module System Configuration
@@ -110,7 +130,7 @@ class Settings(BaseSettings):
     ENABLED_MODULES: Optional[list[str]] = None
 
     # Database
-    DATABASE_PATH: str = str(Path.home() / ".conduital" / "tracker.db")
+    DATABASE_PATH: str = get_database_path()
     DATABASE_ECHO: bool = False  # Log SQL queries
 
     # Markdown File Sync Integration
@@ -195,7 +215,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
     LOG_TO_FILE: bool = True  # Write logs to file
     LOG_TO_CONSOLE: bool = True  # Output logs to console
-    LOG_DIR: Optional[str] = None  # Custom log directory (default: ~/.conduital/logs)
+    LOG_DIR: Optional[str] = str(get_log_dir())  # Resolved by paths module
     LOG_MAX_BYTES: int = 10 * 1024 * 1024  # 10 MB max per log file
     LOG_BACKUP_COUNT: int = 5  # Number of backup log files to keep
 

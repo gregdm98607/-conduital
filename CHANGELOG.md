@@ -1,0 +1,69 @@
+# Changelog
+
+All notable changes to Conduital will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [1.0.0-alpha] - 2026-02-08
+
+### Added
+- Core CRUD for projects, tasks, areas, contexts, goals, and visions
+- Markdown file sync with Google Drive compatibility (bidirectional)
+- Auto-discovery of projects and areas from folder structure
+- Momentum scoring with configurable thresholds (stalled, at-risk, decay)
+- Next actions prioritization with MYN urgency zones (Critical Now, Opportunity Now, Over the Horizon)
+- Dashboard with stalled projects widget, area health overview, and review reminders
+- Weekly review checklist with interactive progress tracking
+- Daily execution dashboard with prioritized task view
+- Quick capture with project assignment and keep-open batch entry
+- Data export (JSON) and database backup (SQLite) with preview UI
+- Google OAuth authentication (optional, single-user)
+- Multi-AI provider support (Anthropic Claude, OpenAI, Google) with graceful degradation
+- AI-powered "Get Unstuck" task generation
+- AI context export for external AI sessions
+- Memory layer with namespace management, search, and CRUD
+- User onboarding wizard with initial memory object creation
+- Module system with commercial presets (basic, gtd, proactive_assistant, full)
+- Sidebar module-aware navigation
+- Dark mode with Settings toggle
+- Collapsible settings sections and urgency zone sections
+- Project health indicators, review badges, and mark-reviewed workflow
+- Area health scores, archival workflow, and quick actions
+- Momentum settings UI (stalled/at-risk thresholds, decay rate, recalculation interval)
+- CORS configuration from environment variable
+- Whitespace-only content validation on all title/content fields
+- Global React error boundary with retry protection
+- Toast notification deduplication
+- FastAPI static file serving for production builds (no Node.js runtime required)
+- Single-process launch via `run.py` with auto port detection and browser open
+- Auto-run database migrations on startup
+- Comprehensive third-party license documentation
+
+### Fixed
+- SPA catch-all route excludes `/modules`, `/health`, and `/openapi.json` endpoints, preventing JSON responses from being overridden by `index.html` in production builds
+- Duplicate blob download logic extracted into shared helper method in API client
+
+### Changed
+- All "GTD", "PARA", and "Second Brain" trademark references removed from model docstrings, module comments, AI prompts, scripts, and documentation — replaced with generic methodology descriptions
+- API documentation updated to reflect app name ("Conduital") and version
+- Momentum section in Settings has Activity icon matching other sections
+- .gitignore hygiene: restored user-facing API docs; excluded dev-only files, Office temp files, and design assets
+
+### Security
+- Auto-generated JWT secret on first run (persisted to .env)
+- Hardcoded paths removed from all committed files
+- API key file excluded from repository
+- CORS origins configurable via environment variable
+
+### Infrastructure
+- 174/174 backend tests passing
+- Semantic versioning established (single source of truth across config files)
+- Dependency license audit complete (all permissive: MIT, BSD, Apache 2.0, ISC)
+- Locked dependency versions (requirements.txt, poetry.lock, package-lock.json)
+- Dev artifacts excluded from distribution via .gitignore
+- Pydantic V2 migration complete (no V1 deprecation warnings)
+- FastAPI lifespan context manager (no deprecated on_event handlers)
+- SQLAlchemy best practices (.is_() for boolean comparisons)

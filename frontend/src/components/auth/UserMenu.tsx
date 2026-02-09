@@ -50,6 +50,9 @@ export function UserMenu() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-gray-200 rounded-lg transition-colors w-full"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        aria-label={`User menu for ${user.display_name || user.email}`}
       >
         {user.avatar_url ? (
           <img
@@ -72,7 +75,7 @@ export function UserMenu() {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50" role="menu" aria-label="User actions">
           {/* User Info */}
           <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
             <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
@@ -84,6 +87,7 @@ export function UserMenu() {
           {/* Menu Items */}
           <div className="py-1">
             <button
+              role="menuitem"
               onClick={async () => {
                 setIsOpen(false);
                 await logout();

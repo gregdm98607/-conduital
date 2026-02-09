@@ -2,7 +2,7 @@ Third-Party Software Licenses
 ==============================
 
 This file lists the open-source software components included in or
-used by Project Tracker, along with their respective licenses.
+used by Conduital, along with their respective licenses.
 
 All components listed below are compatible with commercial use.
 

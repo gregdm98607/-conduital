@@ -1,8 +1,8 @@
-# Project Tracker - Test Data Creation Script
+# Conduital - Test Data Creation Script
 # Creates sample projects and tasks for testing the frontend
 
 Write-Host "================================" -ForegroundColor Cyan
-Write-Host "Project Tracker - Test Data Creator" -ForegroundColor Cyan
+Write-Host "Conduital - Test Data Creator" -ForegroundColor Cyan
 Write-Host "================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -220,5 +220,5 @@ Write-Host "  4. Try filtering projects and next actions" -ForegroundColor White
 Write-Host "  5. Use the Weekly Review page to see project health" -ForegroundColor White
 Write-Host ""
 
-Write-Host "Enjoy your Project Tracker!" -ForegroundColor Green
+Write-Host "Enjoy Conduital!" -ForegroundColor Green
 Write-Host ""

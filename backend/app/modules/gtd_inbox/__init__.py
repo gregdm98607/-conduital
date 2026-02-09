@@ -1,7 +1,7 @@
 """
-GTD Inbox Module
+Inbox Module
 
-The GTD Inbox module provides GTD-specific workflow features:
+The Inbox module provides workflow features:
 - Inbox capture and processing
 - Weekly review automation
 - Waiting-for tracking
@@ -23,7 +23,7 @@ from app.modules.base import ModuleBase, ModuleInfo, ModuleCategory
 
 class GTDInboxModule(ModuleBase):
     """
-    GTD Inbox module - optional GTD workflow features.
+    Inbox module - optional workflow features.
     """
 
     @property
@@ -40,7 +40,7 @@ class GTDInboxModule(ModuleBase):
     @property
     def router(self) -> Optional[APIRouter]:
         """
-        GTD Inbox module provides:
+        Inbox module provides:
         - /inbox - Inbox capture and processing
         - /reviews - Weekly/daily review endpoints
 
@@ -55,11 +55,11 @@ class GTDInboxModule(ModuleBase):
         return "gtd"  # Routes under /api/v1/gtd/...
 
     async def initialize(self, app_context: dict[str, Any]) -> None:
-        """Initialize GTD inbox module"""
+        """Initialize inbox module"""
         import logging
         logger = logging.getLogger(__name__)
-        logger.info("GTD Inbox module initialized")
+        logger.info("Inbox module initialized")
 
     async def shutdown(self) -> None:
-        """Cleanup GTD inbox module"""
+        """Cleanup inbox module"""
         pass

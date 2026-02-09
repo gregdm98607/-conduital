@@ -92,14 +92,12 @@ The codebase uses a modular architecture with commercial presets:
 - `full` - All modules enabled
 
 ### File Sync
-Bidirectional sync with PARA-organized Second Brain folders using YAML frontmatter in markdown files.
+Bidirectional markdown file sync with YAML frontmatter for project and area data.
 
 ---
 
 ## Related Documentation
 
-- `CLAUDE_CODE_PROMPTS.md` - Reusable prompt templates
-- `Project_Tracker_Technical_Spec.md` - Full technical specification
 - `backend/README.md` - Backend development guide
 - `frontend/FRONTEND_IMPLEMENTATION_GUIDE.md` - Frontend patterns
 

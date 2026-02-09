@@ -97,25 +97,25 @@ backend/
 ### Core Models
 
 - **Project**: Multi-step outcomes with clear endpoints
-- **Task**: Individual action items (GTD Next Actions)
+- **Task**: Individual action items (next actions)
 - **Area**: Areas of Responsibility (ongoing spheres of activity)
-- **Goal**: 1-3 year objectives (GTD Horizon 3)
-- **Vision**: 3-5 year vision and life purpose (GTD Horizons 4-5)
+- **Goal**: 1-3 year objectives
+- **Vision**: 3-5 year vision and life purpose
 
 ### Supporting Models
 
 - **ProjectPhase**: Stages in multi-phase projects
 - **PhaseTemplate**: Reusable phase definitions
-- **Context**: GTD contexts for organizing tasks (@home, @computer, etc.)
+- **Context**: Contexts for organizing tasks (@home, @computer, etc.)
 - **ActivityLog**: Change tracking for momentum calculation
 - **SyncState**: File synchronization status
-- **InboxItem**: GTD inbox for quick capture
+- **InboxItem**: Inbox for quick capture
 
 ## Configuration
 
 Key settings in `.env`:
 
-- `SECOND_BRAIN_ROOT`: Path to your PARA-organized Second Brain
+- `SECOND_BRAIN_ROOT`: Path to your synced notes folder
 - `WATCH_DIRECTORIES`: Directories to watch for changes (default: 10_Projects, 20_Areas)
 - `SYNC_INTERVAL`: How often to check for file changes (seconds)
 - `ANTHROPIC_API_KEY`: Optional - for AI features

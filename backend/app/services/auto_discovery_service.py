@@ -187,19 +187,19 @@ def on_new_folder_created(folder_path: Path):
     Args:
         folder_path: Path to newly created folder
     """
-    print(f"\n🆕 New project folder detected: {folder_path.name}")
-    print("🔍 Running auto-discovery...")
+    logger.info(f"New project folder detected: {folder_path.name}")
+    logger.info("Running auto-discovery...")
 
     service = AutoDiscoveryService()
     result = service.discover_folder(folder_path)
 
     if result["success"] and result["result"].get("imported"):
         project_info = result["result"]
-        print(f"✅ Project imported: {project_info.get('title')}")
-        print(f"   Area: {project_info.get('area')}")
-        print(f"   ID: {project_info.get('project_id')}")
+        logger.info(f"Project imported: {project_info.get('title')}")
+        logger.info(f"  Area: {project_info.get('area')}")
+        logger.info(f"  ID: {project_info.get('project_id')}")
     else:
-        print(f"⚠️  Could not import folder: {result.get('error', 'Unknown reason')}")
+        logger.warning(f"Could not import folder: {result.get('error', 'Unknown reason')}")
 
 
 def on_folder_renamed(old_path: Path, new_path: Path):
@@ -210,19 +210,19 @@ def on_folder_renamed(old_path: Path, new_path: Path):
         old_path: Old folder path
         new_path: New folder path
     """
-    print(f"\n📝 Project folder renamed: {old_path.name} → {new_path.name}")
-    print("🔄 Updating project...")
+    logger.info(f"Project folder renamed: {old_path.name} -> {new_path.name}")
+    logger.info("Updating project...")
 
     service = AutoDiscoveryService()
     result = service.handle_folder_renamed(old_path, new_path)
 
     if result["success"]:
         if result.get("action") == "renamed":
-            print(f"✅ Project updated: {result.get('new_title')}")
+            logger.info(f"Project updated: {result.get('new_title')}")
         else:
-            print(f"✅ Project discovered: {result['result'].get('title')}")
+            logger.info(f"Project discovered: {result['result'].get('title')}")
     else:
-        print(f"⚠️  Update failed: {result.get('error')}")
+        logger.warning(f"Update failed: {result.get('error')}")
 
 
 def on_folder_moved(old_path: Path, new_path: Path):
@@ -233,16 +233,16 @@ def on_folder_moved(old_path: Path, new_path: Path):
         old_path: Old folder path
         new_path: New folder path
     """
-    print(f"\n📦 Project folder moved: {old_path.name} → {new_path.name}")
-    print("🔄 Re-discovering project...")
+    logger.info(f"Project folder moved: {old_path.name} -> {new_path.name}")
+    logger.info("Re-discovering project...")
 
     service = AutoDiscoveryService()
     result = service.handle_folder_moved(old_path, new_path)
 
     if result["success"]:
-        print(f"✅ Project re-discovered at new location")
+        logger.info("Project re-discovered at new location")
     else:
-        print(f"⚠️  Re-discovery failed: {result.get('error')}")
+        logger.warning(f"Re-discovery failed: {result.get('error')}")
 
 
 # Area callback functions for file watcher integration
@@ -254,8 +254,8 @@ def on_area_created(folder_path: Path):
     Args:
         folder_path: Path to newly created area folder
     """
-    print(f"\n🆕 New area folder detected: {folder_path.name}")
-    print("🔍 Running area auto-discovery...")
+    logger.info(f"New area folder detected: {folder_path.name}")
+    logger.info("Running area auto-discovery...")
 
     db = SessionLocal()
     try:
@@ -263,14 +263,13 @@ def on_area_created(folder_path: Path):
         result = service._process_area_folder(folder_path)
 
         if result.get("imported"):
-            print(f"✅ Area imported: {result.get('title')}")
-            print(f"   Review frequency: {result.get('review_frequency')}")
-            print(f"   ID: {result.get('area_id')}")
+            logger.info(f"Area imported: {result.get('title')}")
+            logger.info(f"  Review frequency: {result.get('review_frequency')}")
+            logger.info(f"  ID: {result.get('area_id')}")
         else:
-            print(f"⚠️  Could not import folder: {result.get('reason', 'Unknown reason')}")
+            logger.warning(f"Could not import folder: {result.get('reason', 'Unknown reason')}")
     except Exception as e:
-        logger.error(f"Error during area auto-discovery: {e}")
-        print(f"❌ Error: {e}")
+        logger.error(f"Area auto-discovery error: {e}")
     finally:
         db.close()
 
@@ -283,8 +282,8 @@ def on_area_renamed(old_path: Path, new_path: Path):
         old_path: Old folder path
         new_path: New folder path
     """
-    print(f"\n📝 Area folder renamed: {old_path.name} → {new_path.name}")
-    print("🔄 Updating area...")
+    logger.info(f"Area folder renamed: {old_path.name} -> {new_path.name}")
+    logger.info("Updating area...")
 
     db = SessionLocal()
     try:
@@ -312,7 +311,7 @@ def on_area_renamed(old_path: Path, new_path: Path):
 
         if not area:
             # Area not in database yet, just discover it
-            print(f"Area not found, discovering as new: {new_path.name}")
+            logger.info(f"Area not found, discovering as new: {new_path.name}")
             on_area_created(new_path)
             return
 
@@ -333,13 +332,12 @@ def on_area_renamed(old_path: Path, new_path: Path):
 
             db.commit()
 
-            print(f"✅ Updated area: {old_path.name} → {new_title}")
+            logger.info(f"Updated area: {old_path.name} -> {new_title}")
         else:
-            print(f"⚠️  New folder name doesn't match pattern: {new_path.name}")
+            logger.warning(f"New folder name doesn't match pattern: {new_path.name}")
 
     except Exception as e:
-        logger.error(f"Error handling area rename: {e}")
-        print(f"❌ Error: {e}")
+        logger.error(f"Area rename error: {e}")
     finally:
         db.close()
 
@@ -352,8 +350,8 @@ def on_area_moved(old_path: Path, new_path: Path):
         old_path: Old folder path
         new_path: New folder path
     """
-    print(f"\n📦 Area folder moved: {old_path.name} → {new_path.name}")
-    print("🔄 Re-discovering area...")
+    logger.info(f"Area folder moved: {old_path.name} -> {new_path.name}")
+    logger.info("Re-discovering area...")
 
     db = SessionLocal()
     try:
@@ -362,12 +360,11 @@ def on_area_moved(old_path: Path, new_path: Path):
         result = service._process_area_folder(new_path)
 
         if result.get("imported"):
-            print(f"✅ Area re-discovered at new location: {result.get('title')}")
+            logger.info(f"Area re-discovered at new location: {result.get('title')}")
         else:
-            print(f"⚠️  Re-discovery failed: {result.get('reason', 'Unknown reason')}")
+            logger.warning(f"Re-discovery failed: {result.get('reason', 'Unknown reason')}")
 
     except Exception as e:
-        logger.error(f"Error handling area move: {e}")
-        print(f"❌ Error: {e}")
+        logger.error(f"Area move error: {e}")
     finally:
         db.close()

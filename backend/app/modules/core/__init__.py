@@ -4,8 +4,8 @@ Core Module
 The core module provides fundamental functionality that all other modules depend on:
 - User model and authentication (when enabled)
 - Areas for organizational grouping
-- Contexts for GTD context filtering
-- Goals and Visions for GTD horizons
+- Contexts for task filtering
+- Goals and Visions for planning horizons
 - Base database and configuration
 
 This module is ALWAYS enabled - it cannot be disabled.

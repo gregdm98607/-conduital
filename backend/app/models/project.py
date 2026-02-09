@@ -23,7 +23,7 @@ class Project(Base, TimestampMixin):
     """
     Project model - represents a multi-step outcome with a clear endpoint
 
-    GTD Definition: Any desired result requiring more than one action step
+    Any desired result requiring more than one action step.
     """
 
     __tablename__ = "projects"
@@ -39,7 +39,7 @@ class Project(Base, TimestampMixin):
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     outcome_statement: Mapped[Optional[str]] = mapped_column(
         Text, nullable=True
-    )  # GTD: What does "done" look like?
+    )  # What does "done" look like?
 
     # Status tracking
     status: Mapped[str] = mapped_column(
@@ -78,7 +78,7 @@ class Project(Base, TimestampMixin):
     )
     target_completion_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
-    # GTD Review tracking
+    # Review tracking
     next_review_date: Mapped[Optional[date]] = mapped_column(
         Date, nullable=True, index=True
     )  # When project should next be reviewed
@@ -86,7 +86,7 @@ class Project(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )  # When project was last reviewed
 
-    # GTD Natural Planning Model fields
+    # Natural Planning Model fields
     purpose: Mapped[Optional[str]] = mapped_column(
         Text, nullable=True
     )  # NPM Step 1: Why are we doing this?

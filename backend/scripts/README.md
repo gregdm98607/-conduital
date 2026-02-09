@@ -66,7 +66,7 @@ Project folder: `01.01 Project_Name`
 
 ### 2. `discover_projects.py`
 
-**Purpose:** Discover and import all projects from Second Brain folder structure.
+**Purpose:** Discover and import all projects from synced notes folder structure.
 
 **Usage:**
 
@@ -90,7 +90,7 @@ poetry run python scripts/discover_projects.py
 ```
 🔍 Project Discovery Tool
 ====================================
-📁 Second Brain Root: /path/to/your/second-brain
+Synced Notes Root: /path/to/your/notes
 🗂️  Scanning directory: 10_Projects
 
 📊 Current Area Mappings:

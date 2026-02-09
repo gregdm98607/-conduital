@@ -25,7 +25,7 @@ COMMERCIAL_PRESETS: dict[str, set[str]] = {
         "projects",
     },
 
-    # Conduital GTD: Full workflow support
+    # Conduital Workflow: Full workflow support
     "gtd": {
         "core",
         "projects",

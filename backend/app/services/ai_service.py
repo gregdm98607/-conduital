@@ -278,7 +278,7 @@ class AIService:
 
     def _create_unstuck_task_prompt(self, project: Project, context: dict) -> str:
         """Create prompt for unstuck task generation."""
-        prompt = f"""You are a GTD (Getting Things Done) productivity assistant helping someone restart momentum on a stalled project.
+        prompt = f"""You are a productivity assistant helping someone restart momentum on a stalled project.
 
 Project: {context['title']}
 Status: Stalled for {context['days_stalled']} days

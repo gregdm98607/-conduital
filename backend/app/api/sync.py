@@ -47,7 +47,7 @@ def scan_and_sync(
     db: Session = Depends(get_db),
 ):
     """
-    Scan Second Brain and sync all markdown files
+    Scan synced notes folder and sync all markdown files
 
     This will:
     1. (Optional) Discover projects by folder structure (xx.xx Project_Name)

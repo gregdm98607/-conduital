@@ -1,5 +1,5 @@
 """
-Vision model - 3-5 year vision and life purpose (GTD Horizons 4-5)
+Vision model - 3-5 year vision and life purpose
 """
 
 from typing import TYPE_CHECKING, Optional
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class Vision(Base, TimestampMixin):
     """
-    Vision model - GTD Horizon of Focus Levels 4-5 (Vision & Purpose)
+    Vision model - long-term vision and life purpose (3-5 year horizon).
     """
 
     __tablename__ = "visions"

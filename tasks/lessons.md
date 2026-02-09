@@ -564,6 +564,55 @@ For SQLAlchemy self-referential relationships:
 
 ---
 
+## 2026-02-08: Distribution — PyInstaller Packaging, Runtime Testing, Inno Setup Installer
+
+### What Went Well
+1. **Comprehensive runtime testing** — 13-point test checklist (launch, migrations, server, browser, setup wizard, SPA routes, static assets, API, data dir, logs, tray, shutdown, persistence) all passed on first run from `dist/`
+2. **Inno Setup installer** — Script created, compiled, and full install→launch→use→uninstall cycle verified within a single session
+3. **Fast bug turnaround** — Uvicorn logging crash discovered during install testing, root-caused via subagent research, fixed with one-line change, rebuilt, and re-verified all within minutes
+
+### Lessons Learned
+
+#### 1. Uvicorn's Default Logging Config Crashes in Console-False PyInstaller Bundles
+**Issue:** `ValueError: Unable to configure formatter 'default'` when launching the installed exe from `C:\Program Files\Conduital\`. The exe launched fine from `dist/` during dev testing (which has a console), but crashed when run via the installer (no console window).
+**Root cause:** Uvicorn's `LOGGING_CONFIG` dict uses `"()": "uvicorn.logging.DefaultFormatter"` which calls `sys.stderr.isatty()` during class instantiation. In a PyInstaller `console=False` bundle, `sys.stderr` is `None` or a null device, causing the formatter factory to fail inside `logging.config.dictConfig()`.
+**Fix:** Added `log_config=None` to `uvicorn.Config()` in `run_packaged()`. The app's own `logging_config.py` handles all logging.
+**Rule:** When embedding Uvicorn in a packaged app (especially `console=False`), ALWAYS set `log_config=None` to disable Uvicorn's default logging setup. Provide your own logging configuration. The same issue affects any library that assumes `sys.stderr.isatty()` works — audit third-party libs for TTY assumptions when packaging with `console=False`.
+
+#### 2. Inno Setup Preprocessor (ISPP) Conflicts with Pascal Script `#` Constants
+**Issue:** `#13#10` (carriage return + line feed) in Pascal Script `[Code]` section caused `Unknown preprocessor directive` error. ISPP runs before Pascal compilation and interprets `#13` as a preprocessor directive.
+**Fix:** Replace `#13#10` with `Chr(13) + Chr(10)` in all `[Code]` section strings.
+**Rule:** In Inno Setup `.iss` files, NEVER use `#N` character constants in `[Code]` sections — they conflict with ISPP. Use `Chr(N)` function calls instead. This applies to any Pascal Script constant syntax that starts with `#`.
+
+#### 3. Windows `VersionInfoProductVersion` Requires x.x.x.x Format
+**Issue:** Setting `VersionInfoProductVersion=1.0.0-alpha` in the `.iss` file caused `Value of [Setup] section directive "VersionInfoProductVersion" is invalid`.
+**Fix:** Changed to `VersionInfoProductVersion=1.0.0.0`. The human-readable version (`1.0.0-alpha`) is in `AppVersion` and `AppVerName` instead.
+**Rule:** Windows version info fields (`VersionInfoVersion`, `VersionInfoProductVersion`) require strict `x.x.x.x` numeric format. SemVer prerelease tags (`-alpha`, `-beta`) cannot be used in these fields. Use `AppVersion` for the display version with prerelease tags.
+
+#### 4. Silent Uninstall with /SUPPRESSMSGBOXES Auto-Accepts Destructive Prompts
+**Issue:** During testing, ran uninstaller with `/VERYSILENT /SUPPRESSMSGBOXES` which auto-accepted the "Remove user data?" prompt, deleting the test database with data the user wanted to keep.
+**Fix:** Awareness — document that `/SUPPRESSMSGBOXES` will auto-remove user data. For CI/automation, use `/VERYSILENT` without `/SUPPRESSMSGBOXES` if the data prompt should block.
+**Rule:** Custom uninstall prompts in Inno Setup `[Code]` will be auto-accepted by `/SUPPRESSMSGBOXES`. If your uninstaller has destructive options (like deleting user data), document this clearly and consider making the destructive path opt-IN (require `/REMOVEDATA` flag) rather than auto-accepted.
+
+#### 5. Test Data Is Ephemeral — Back Up Before Destructive Testing
+**Issue:** The test data created during runtime testing was lost when the uninstall cycle test removed `%LOCALAPPDATA%\Conduital\`. The user had wanted to keep that data.
+**Fix:** N/A — data was lost.
+**Rule:** Before running install/uninstall cycle tests, always back up `%LOCALAPPDATA%\Conduital\` if the data has any value. Better yet, create a separate test data profile or copy the database file to a safe location before destructive testing.
+
+### Technical Debt Identified
+- [ ] DEBT-080: Inno Setup `.iss` version is hardcoded (`#define MyAppVersion "1.0.0-alpha"`) — not a single source of truth with pyproject.toml/config.py
+- [ ] DEBT-081: No app icon (.ico) — installer and exe use default icons; needs `assets/conduital.ico` with 16x16 through 256x256 variants
+- [ ] DEBT-082: `build.bat` size reporting loop is broken — shows "Total size: ~0 MB" for most lines (findstr parsing issue with dir output)
+- [ ] DEBT-083: Installer `InitializeSetup()` uses `taskkill /F` which force-kills without allowing graceful shutdown — should attempt graceful close first (e.g., via WM_CLOSE or a shutdown endpoint) then fall back to force-kill
+
+### Potential Backlog Items
+1. **BACKLOG-115:** Add a `/api/v1/shutdown` endpoint for graceful programmatic shutdown — would allow installer and tray to request clean shutdown instead of force-killing
+2. **BACKLOG-116:** Version single source of truth — read version from one canonical file (e.g., pyproject.toml) at build time for PyInstaller spec, Inno Setup `.iss`, and frontend package.json
+3. **BACKLOG-117:** Installer upgrade-in-place testing — verify that installing a new version over an existing one preserves user data and applies new migrations correctly
+4. **BACKLOG-118:** Clean Windows VM testing — test on Win10 and Win11 VMs with no Python/Node.js installed to catch missing DLLs or runtime dependencies
+
+---
+
 ## Template for Future Sessions
 
 ```markdown

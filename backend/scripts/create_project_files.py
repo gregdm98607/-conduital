@@ -233,7 +233,7 @@ def create_missing_files(dry_run=False):
     print("✅ Done!")
     print()
     print("Next steps:")
-    print("   1. Review created files in your Second Brain")
+    print("   1. Review created files in your synced notes folder")
     print("   2. Add project details, tasks, and notes")
     print("   3. Run discovery: poetry run python scripts/discover_projects.py")
     print()

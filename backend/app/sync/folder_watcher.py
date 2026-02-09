@@ -296,9 +296,9 @@ class FolderWatcher:
         self.is_running = True
 
         logger.info("Folder watcher started")
-        print(f"Watching for new project folders in: {self.projects_dir}")
+        logger.info(f"Watching for new project folders in: {self.projects_dir}")
         if self.on_area_created and self.areas_dir.exists():
-            print(f"Watching for new area folders in: {self.areas_dir}")
+            logger.info(f"Watching for new area folders in: {self.areas_dir}")
 
     def stop(self):
         """Stop watching folders"""
@@ -310,7 +310,6 @@ class FolderWatcher:
         self.is_running = False
 
         logger.info("Folder watcher stopped")
-        print("Folder watcher stopped")
 
     def _default_rename_handler(self, old_path: Path, new_path: Path):
         """Default handler for project folder renames - imports new folder"""

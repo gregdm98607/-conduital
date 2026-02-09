@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo Project Tracker - Development Servers
+echo Conduital - Development Servers
 echo ========================================
 echo.
 
@@ -36,18 +36,20 @@ if exist "backend\.env" (
 echo.
 
 echo Starting Backend Server...
-echo Checking for Poetry...
-where poetry >nul 2>&1
-if %errorlevel% equ 0 (
-    echo Using Poetry...
-    start "Backend Server" cmd /k "cd backend && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
-) else if exist "backend\venv\Scripts\activate.bat" (
+if exist "backend\venv\Scripts\activate.bat" (
     echo Using virtual environment...
     start "Backend Server" cmd /k "cd backend && call venv\Scripts\activate.bat && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 ) else (
-    echo WARNING: No Poetry or venv found. Using system Python...
-    echo          This may cause issues if Pydantic V2 is not installed globally.
-    start "Backend Server" cmd /k "cd backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+    echo Checking for Poetry...
+    where poetry >nul 2>&1
+    if %errorlevel% equ 0 (
+        echo Using Poetry...
+        start "Backend Server" cmd /k "cd backend && poetry run python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+    ) else (
+        echo WARNING: No Poetry or venv found. Using system Python...
+        echo          This may cause issues if Pydantic V2 is not installed globally.
+        start "Backend Server" cmd /k "cd backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+    )
 )
 
 echo Waiting for backend to start...

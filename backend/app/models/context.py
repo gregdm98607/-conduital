@@ -1,5 +1,5 @@
 """
-Context model - GTD contexts for task filtering
+Context model - contexts for task filtering
 """
 
 from typing import Optional
@@ -12,7 +12,7 @@ from app.models.base import Base, TimestampMixin
 
 class Context(Base, TimestampMixin):
     """
-    Context model - GTD contexts for organizing next actions
+    Context model - contexts for organizing next actions
 
     Examples:
     - Location: @home, @office, @errands

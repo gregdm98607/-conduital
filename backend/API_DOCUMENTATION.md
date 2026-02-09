@@ -1,4 +1,4 @@
-# Project Tracker API Documentation
+# Conduital API Documentation
 
 Base URL: `http://localhost:8000`
 
@@ -30,8 +30,8 @@ Health check endpoint
 ```json
 {
   "status": "healthy",
-  "app": "Project Tracker",
-  "version": "0.1.0"
+  "app": "Conduital",
+  "version": "1.0.0-alpha"
 }
 ```
 
@@ -415,7 +415,7 @@ Delete a context
 
 ---
 
-## Inbox (GTD Capture)
+## Inbox (Quick Capture)
 
 ### `GET /api/v1/inbox`
 List inbox items
@@ -430,7 +430,7 @@ List inbox items
 Get a single inbox item by ID
 
 ### `POST /api/v1/inbox`
-Quick capture to inbox (GTD Capture phase)
+Quick capture to inbox
 
 **Request Body:**
 ```json
@@ -443,7 +443,7 @@ Quick capture to inbox (GTD Capture phase)
 **Response:** Created inbox item (201)
 
 ### `POST /api/v1/inbox/{item_id}/process`
-Process an inbox item (GTD Clarify phase)
+Process an inbox item
 
 **Request Body:**
 ```json
@@ -548,7 +548,7 @@ curl -X POST http://localhost:8000/api/v1/tasks \
   }'
 ```
 
-### GTD Workflow: Capture → Clarify → Organize
+### Workflow: Capture → Clarify → Organize
 
 ```bash
 # 1. Capture
@@ -615,5 +615,5 @@ Not found errors return 404:
 
 ---
 
-**Last Updated:** 2026-01-20
+**Last Updated:** 2026-02-08
 **API Version:** v1

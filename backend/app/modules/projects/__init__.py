@@ -3,9 +3,9 @@ Projects Module
 
 The projects module provides project and task management:
 - Projects with phases and momentum tracking
-- Tasks with GTD-style attributes
+- Tasks with next action attributes
 - Next actions prioritization
-- File sync with Second Brain
+- File sync with markdown notes
 - Project discovery from folder structure
 
 This module is part of the base configuration and is always enabled.

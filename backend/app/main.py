@@ -11,12 +11,13 @@ Set COMMERCIAL_MODE in .env or use ENABLED_MODULES for custom configs.
 """
 
 import logging
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 # Core API routers (always loaded for backwards compatibility)
@@ -62,10 +63,11 @@ def run_migrations():
     try:
         from alembic.config import Config
         from alembic import command
+        from app.core.paths import get_alembic_ini_path, get_alembic_dir
 
-        alembic_cfg = Config(str(Path(__file__).parent.parent / "alembic.ini"))
+        alembic_cfg = Config(str(get_alembic_ini_path()))
         alembic_cfg.set_main_option(
-            "script_location", str(Path(__file__).parent.parent / "alembic")
+            "script_location", str(get_alembic_dir())
         )
         command.upgrade(alembic_cfg, "head")
         logger.info("Database migrations: up to date")
@@ -237,8 +239,9 @@ async def health_check():
 @app.get("/")
 async def root():
     """Root endpoint — serves SPA if frontend build exists, otherwise API info."""
+    from app.core.paths import get_frontend_dist
     # In production (frontend build present), serve the SPA
-    _dist = Path(__file__).parent.parent.parent / "frontend" / "dist" / "index.html"
+    _dist = get_frontend_dist() / "index.html"
     if _dist.is_file():
         return FileResponse(str(_dist))
 
@@ -276,6 +279,69 @@ async def list_modules():
             for m in all_modules
         ],
     }
+
+
+@app.get("/api/v1/legal/eula")
+async def get_eula():
+    """Return the EULA/LICENSE text for display in the app."""
+    from app.core.paths import is_packaged
+
+    # In packaged mode: LICENSE is in the install directory (next to the exe)
+    if is_packaged():
+        # The exe is in the install dir; LICENSE is alongside it
+        exe_dir = Path(sys.executable).parent
+        license_path = exe_dir / "LICENSE"
+    else:
+        # Development: project root
+        license_path = Path(__file__).resolve().parent.parent.parent / "LICENSE"
+
+    if license_path.is_file():
+        return PlainTextResponse(license_path.read_text(encoding="utf-8"))
+
+    return PlainTextResponse("License file not found.", status_code=404)
+
+
+@app.get("/api/v1/legal/third-party")
+async def get_third_party_licenses():
+    """Return third-party license notices."""
+    from app.core.paths import is_packaged
+
+    if is_packaged():
+        exe_dir = Path(sys.executable).parent
+        tp_path = exe_dir / "THIRD_PARTY_LICENSES.txt"
+    else:
+        tp_path = Path(__file__).resolve().parent.parent.parent / "THIRD_PARTY_LICENSES.txt"
+
+    if tp_path.is_file():
+        return PlainTextResponse(tp_path.read_text(encoding="utf-8"))
+
+    return PlainTextResponse("Third-party licenses file not found.", status_code=404)
+
+
+@app.post("/api/v1/shutdown")
+async def request_shutdown(request: Request):
+    """Request graceful server shutdown.
+
+    Only accepts requests from localhost for security.
+    Used by the installer and system tray for clean shutdown
+    instead of force-killing the process.
+    """
+    from fastapi.responses import JSONResponse
+
+    # Security: only allow from localhost
+    client_host = request.client.host if request.client else None
+    if client_host not in ("127.0.0.1", "::1", "localhost"):
+        return JSONResponse(
+            {"detail": "Shutdown can only be requested from localhost"},
+            status_code=403,
+        )
+
+    from app.core.shutdown import shutdown_event
+
+    logger.info("Graceful shutdown requested via API")
+    shutdown_event.set()
+
+    return {"message": "Shutdown initiated", "status": "shutting_down"}
 
 
 # =============================================================================
@@ -319,13 +385,20 @@ app.include_router(
     settings_api.router, prefix=f"{settings.API_V1_PREFIX}/settings", tags=["Settings"]
 )
 
+# Setup wizard (first-run configuration)
+from app.api import setup as setup_api
+app.include_router(
+    setup_api.router, prefix=f"{settings.API_V1_PREFIX}/setup", tags=["Setup"]
+)
+
 
 # =============================================================================
 # Static File Serving (Production: serve React build from FastAPI)
 # =============================================================================
 
 # Serve frontend build if it exists (eliminates Node.js requirement for end users)
-_frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
+from app.core.paths import get_frontend_dist
+_frontend_dist = get_frontend_dist()
 if _frontend_dist.is_dir():
     # Serve static assets (JS, CSS, images)
     app.mount(
@@ -339,7 +412,7 @@ if _frontend_dist.is_dir():
     async def serve_spa(request: Request, full_path: str):
         """Serve the React SPA for any unmatched routes."""
         # Don't serve SPA for API routes (they should 404 naturally)
-        if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("redoc"):
+        if full_path.startswith("api/") or full_path.startswith("modules") or full_path.startswith("docs") or full_path.startswith("redoc") or full_path.startswith("health") or full_path.startswith("openapi.json"):
             from fastapi.responses import JSONResponse
             return JSONResponse({"detail": "Not Found"}, status_code=404)
 

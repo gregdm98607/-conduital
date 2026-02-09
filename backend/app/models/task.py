@@ -19,7 +19,7 @@ class Task(Base, TimestampMixin):
     """
     Task model - represents a single action item
 
-    GTD Next Action: A physical, visible activity that moves something forward
+    A physical, visible activity that moves something forward.
     """
 
     __tablename__ = "tasks"

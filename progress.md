@@ -234,3 +234,211 @@
 - Vite build: clean (576KB)
 - Python compile: PASS (all modified files)
 - Backend tests: **174/174 pass (100%)**
+
+### v1.0.0 Release Prep Round 8 -- Final Branding, Code Quality, CHANGELOG -- 2026-02-08
+
+#### Branding Cleanup (Final Pass)
+- create-test-data.ps1: 3 "Project Tracker" refs replaced with "Conduital" **Done**
+- start-dev.bat: 1 "Project Tracker" ref replaced **Done**
+- start-dev-enhanced.bat: 1 "Project Tracker" ref replaced **Done**
+- THIRD_PARTY_LICENSES.txt: 1 "Project Tracker" ref replaced **Done**
+- backend/.env.example: "Second Brain Integration" section rebranded to "File Sync Integration", "PARA-organized" removed, comments updated **Done**
+- CLAUDE.md: "PARA-organized Second Brain folders" replaced with generic description **Done**
+- .gitignore: removed stale `backend/project_tracker.db*` pattern **Done**
+
+#### Code Quality
+- auto_discovery_service.py: 33 print() statements converted to logger.info/warning/error; emojis removed for Windows encoding safety **Done**
+- folder_watcher.py: 3 print() statements converted to logger.info **Done**
+
+#### Release Documentation
+- Created CHANGELOG.md with v1.0.0-alpha release notes (Added, Security, Infrastructure sections) **Done**
+
+#### Build Verification
+- TypeScript: clean (0 errors)
+- Vite build: clean (576KB)
+- Python compile: PASS (all modified files)
+- Backend tests: **174/174 pass (100%)**
+
+### v1.0.0 Release Prep Round 9 -- Production Route Fix, Deep Branding, Debt Documentation -- 2026-02-08
+
+#### Bug Fix
+- DEBT-063: SPA catch-all in main.py now excludes `/modules` and `/health` API routes — prevents JSON endpoints from being served as index.html in production builds **Done**
+
+#### Branding Cleanup (Deep Pass)
+- API_DOCUMENTATION.md: "Project Tracker" -> "Conduital" (title + health response), version updated to 1.0.0-alpha, 4 "GTD" refs cleaned (Inbox section, Capture/Clarify phase labels) **Done**
+- backend/README.md: "GTD Next Actions" -> "next actions", "GTD Horizon 3/4-5" removed, "GTD contexts" -> "Contexts", "GTD inbox" -> "Inbox", "PARA-organized Second Brain" -> "synced notes folder" **Done**
+- backend/scripts/discover_projects.py: "Second Brain" -> "synced notes folder" in docstring + print output **Done**
+- backend/scripts/create_project_files.py: "Second Brain" -> "synced notes folder" in print output **Done**
+- backend/scripts/README.md: "Second Brain" -> "synced notes folder" in purpose + output example **Done**
+- backend/app/modules/projects/__init__.py: "GTD-style attributes" -> "next action attributes", "Second Brain" -> "markdown notes" **Done**
+- backend/app/api/sync.py: "Second Brain" -> "synced notes folder" in docstring **Done**
+- backend/.env: "Project Tracker" -> "Conduital" in header comment **Done**
+
+#### Documentation
+- DEBT-075: Added explanatory comment to config.py Settings class explaining why it's intentionally not frozen (runtime mutation by settings endpoints) **Done**
+- CHANGELOG.md: Added [Unreleased] section with Round 9 changes **Done**
+
+#### Build Verification (Round 9)
+- TypeScript: clean (0 errors)
+- Vite build: clean (576KB)
+- Python compile: PASS (all modified files)
+- Backend tests: **174/174 pass (100%)**
+
+### v1.0.0 Release Prep Round 10 -- UI Polish, Code Quality, Defensive Routing -- 2026-02-08
+
+#### UI Polish
+- DEBT-073: Added `Activity` icon to Momentum section header in Settings.tsx — matches all other sections which have colored icons **Done**
+- DEBT-074: Exposed `recalculateInterval` field in Momentum Settings UI — was loaded from API and saved back but had no input field (hidden from user) **Done**
+
+#### Code Quality
+- DEBT-076: Extracted `triggerBlobDownload()` private helper in api.ts — `downloadJSONExport` and `downloadDatabaseBackup` now delegate to shared helper instead of duplicating blob download logic **Done**
+
+#### Defensive Routing
+- DEBT-063b: SPA catch-all in main.py now also excludes `/openapi.json` route — defensive measure for production builds **Done**
+
+#### Documentation
+- CLAUDE.md: Removed stale references to `CLAUDE_CODE_PROMPTS.md` and `Project_Tracker_Technical_Spec.md` from Related Documentation section **Done**
+- CHANGELOG.md: Updated [Unreleased] section with Round 10 changes **Done**
+
+#### Build Verification (Round 10)
+- TypeScript: clean (0 errors)
+- Vite build: clean (577KB)
+- Python compile: PASS (all modified files)
+- Backend tests: **174/174 pass (100%)**
+
+### v1.0.0 Release Prep Round 11 -- Trademark Cleanup, .gitignore Hygiene -- 2026-02-08
+
+#### Trademark Cleanup (DIST-056e)
+- Removed all GTD references from 7 model docstrings/comments: area.py, project.py, task.py, inbox.py, goal.py, vision.py, context.py **Done**
+- Removed PARA reference from area.py docstring **Done**
+- Cleaned GTD references from 5 module files: modules/__init__.py, modules/core/__init__.py, modules/registry.py, modules/gtd_inbox/__init__.py, modules/gtd_inbox/routes.py **Done**
+- Cleaned GTD reference from intelligence_service.py weekly review docstring **Done**
+- Cleaned GTD reference from ai_service.py unstuck task AI prompt **Done**
+- Total: 30+ GTD/PARA references replaced with generic terminology across 13 source files
+
+#### .gitignore Hygiene (DIST-010b)
+- Restored backend/API_DOCUMENTATION.md — was incorrectly gitignored (it's user-facing API docs that should ship) **Done**
+- Added frontend/INSTALL_TOAST.md to .gitignore (dev-only note with hardcoded paths) **Done**
+- Added frontend/QUICK_FIX.md to .gitignore (dev-only troubleshooting doc) **Done**
+
+#### Documentation
+- CHANGELOG.md: Updated [Unreleased] section with Round 11 changes **Done**
+- backlog.md: Added DIST-056e and DIST-010b to Completed Items; updated last-updated line **Done**
+
+#### Build Verification (Round 11)
+- TypeScript: clean (0 errors)
+- Vite build: clean (577KB)
+- Python compile: PASS (all modified files)
+- Backend tests: **174/174 pass (100%)**
+
+### v1.0.0 Release Prep Round 12 -- Final Release Readiness Audit -- 2026-02-08
+
+#### Branding & Trademark Scan (Full Codebase)
+- Scanned all source files for "Project Tracker", "Second Brain", "PARA", "GTD", "project-tracker", "project_tracker" **Done**
+- Result: **CLEAN** — no stale references found; all remaining GTD/SECOND_BRAIN_ROOT occurrences are legitimate (trademark attribution in LICENSE, internal config variable names, module names) **Done**
+
+#### Version Consistency Check
+- Verified 1.0.0-alpha across 7 files: pyproject.toml, package.json, config.py, .env.example, run.py, CHANGELOG.md, API_DOCUMENTATION.md **Done**
+- Result: **0 drift** — all files aligned on 1.0.0-alpha **Done**
+
+#### .gitignore Hardening (DIST-010c)
+- Added `~$*` pattern for Microsoft Office temporary files (was leaking `~$nduitalDesignBrief.docx`) **Done**
+- Added root-level design asset exclusions: `/*.docx`, `/*.png`, `/*.jpg`, `/*.jpeg` **Done**
+
+#### CHANGELOG Finalization
+- Merged [Unreleased] section into v1.0.0-alpha entry — all changes are pre-release, no need for separate unreleased section **Done**
+- Updated release date to 2026-02-08 **Done**
+- Consolidated Fixed and Changed subsections into v1.0.0-alpha **Done**
+
+#### Build Verification (Round 12)
+- TypeScript: clean (0 errors)
+- Vite build: clean (577KB)
+- Python compile: PASS
+- Backend tests: **174/174 pass (100%) in 4.69s**
+
+### Phase 2.4: Packaged Exe Runtime Testing -- 2026-02-08
+
+#### Test Results (13/13 PASS)
+- Launch: exe starts, no console window, logging to `%LOCALAPPDATA%\Conduital\logs\` **PASS**
+- Migrations: All 12 migrations from empty state, 17 tables in `%LOCALAPPDATA%\Conduital\tracker.db` **PASS**
+- Server health: `GET /health` returns correct app name, version, commercial mode **PASS**
+- Browser auto-open: Opens to `http://127.0.0.1:52140` **PASS**
+- Setup wizard: `is_packaged: true`, `is_first_run: true`; 4-step wizard completes; `SETUP_COMPLETE=true` persisted **PASS**
+- Frontend SPA: All routes (/, /projects, /areas, /next-actions, /weekly-review, /settings, /setup) return 200 **PASS**
+- Static assets: JS (591KB) and CSS served from `_internal/frontend_dist/assets/` **PASS**
+- API endpoints: /health, /api/v1/projects, /api/v1/setup/status, /modules, /docs all functional **PASS**
+- Data directory: `%LOCALAPPDATA%\Conduital\` with tracker.db (253KB), config.env, logs/ **PASS**
+- Log files: conduital.log + conduital_errors.log created; error log empty **PASS**
+- System tray: Process runs with tray icon (139MB memory) **PASS**
+- Shutdown: `taskkill /F` terminates cleanly; tray Quit is the clean shutdown path **PASS**
+- Setup persistence: `setup_complete: true`, `is_first_run: false` after wizard **PASS**
+
+**Issues found:** None blocking. All 13 tests pass.
+
+### Phase 3: Inno Setup Installer Script -- 2026-02-08
+
+#### Created `installer/conduital.iss`
+- Full Inno Setup 6.x installer script **Done**
+- EULA screen using LICENSE file **Done**
+- Default install to `{autopf}\Conduital` (Program Files) **Done**
+- Start Menu shortcuts (app + uninstaller) **Done**
+- Optional Desktop shortcut **Done**
+- "Launch Conduital" checkbox on final install screen **Done**
+- Uninstaller in Windows Apps & Features **Done**
+- Custom uninstall: prompts to remove `%LOCALAPPDATA%\Conduital\` user data (default: keep) **Done**
+- Pre-uninstall: force-kills running Conduital.exe **Done**
+- LZMA2/ultra64 compression **Done**
+- x64 only, Windows 10+ minimum **Done**
+- Version info embedded (1.0.0.0) **Done**
+- `.gitignore`: Added `installer/Output/` exclusion **Done**
+
+### Phase 3: Installer Build & Test -- 2026-02-08
+
+#### Bug Fix: Uvicorn Logging in PyInstaller
+- **Bug:** `ValueError: Unable to configure formatter 'default'` when launching installed exe
+- **Root cause:** Uvicorn's default `LOGGING_CONFIG` uses `DefaultFormatter` which calls `sys.stderr.isatty()` — fails in PyInstaller `console=False` bundles
+- **Fix:** Added `log_config=None` to `uvicorn.Config()` in `run_packaged()` — app's own `logging_config.py` handles all logging instead
+- Rebuilt PyInstaller package and installer after fix **Done**
+
+#### Inno Setup Installation
+- Installed Inno Setup 6.7.0 via winget **Done**
+- Fixed `#13#10` in Pascal Script → `Chr(13) + Chr(10)` (ISPP preprocessor conflict) **Done**
+- Fixed `VersionInfoProductVersion` — Windows requires x.x.x.x format, not semver with prerelease tag **Done**
+- Simplified `InitializeSetup()` — kills running Conduital.exe before install/upgrade **Done**
+
+#### Installer Build
+- Compiled with ISCC: 14.2s build time, 29 MB output **Done**
+- Output: `installer/Output/ConduitalSetup-1.0.0-alpha.exe` **Done**
+
+#### Full Install → Launch → Use → Uninstall Cycle (Dev Machine)
+- Install: Inno Setup wizard with EULA, directory choice, shortcuts **PASS**
+- Files installed to `C:\Program Files\Conduital\` (exe, _internal, LICENSE, THIRD_PARTY, uninstaller) **PASS**
+- Launch: App starts from Program Files, server healthy on port 52140 **PASS**
+- Setup wizard: `is_packaged: true`, `is_first_run: true`, 4-step wizard renders correctly **PASS**
+- Uninstall: Files removed from Program Files; user data prompt works **PASS**
+
+### Post-Release Batch — Tech Debt, Validation, Accessibility, Infrastructure — 2026-02-08
+
+#### Code Changes (5 items)
+- DEBT-082: Fixed `build.bat` size reporting — corrected `findstr` parsing with `usebackq tokens`, now shows bytes alongside MB **Done**
+- BACKLOG-111: Momentum Settings stalled > at_risk validation — server-side effective-value validation with HTTP 422, client-side guard + inline warning banner in Settings UI **Done**
+- BACKLOG-115: `/api/v1/shutdown` graceful shutdown endpoint — shared `shutdown_event` in `app.core.shutdown`, localhost-only POST endpoint, cooperative with system tray via `run.py` integration **Done**
+- DEBT-014: ARIA accessibility improvements — Modal (`role="dialog"`, `aria-modal`, `aria-labelledby`), UserMenu (`aria-haspopup`, `aria-expanded`, `role="menu/menuitem"`), ProjectCard outcome toggle (`aria-expanded`, `aria-label`), Settings API key visibility toggle (`aria-label`) **Done**
+- DEBT-065: AbortSignal support added to all 27 API client getter methods in `api.ts` — enables HTTP request cancellation on component unmount **Done**
+
+#### Files Changed
+- `build.bat` — size reporting fix
+- `backend/app/api/settings.py` — momentum validation + HTTPException import
+- `backend/app/core/shutdown.py` — NEW: shared shutdown event
+- `backend/app/main.py` — shutdown endpoint
+- `backend/run.py` — shared shutdown event integration
+- `frontend/src/services/api.ts` — AbortSignal on all getters
+- `frontend/src/pages/Settings.tsx` — momentum validation + API key aria-label
+- `frontend/src/components/common/Modal.tsx` — dialog ARIA attributes
+- `frontend/src/components/auth/UserMenu.tsx` — menu ARIA attributes
+- `frontend/src/components/projects/ProjectCard.tsx` — outcome toggle ARIA
+
+#### Build Verification
+- TypeScript: clean (0 errors)
+- Python compile: PASS (all modified files)
+- Backend tests: **174/174 pass (100%)**

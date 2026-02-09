@@ -10,8 +10,8 @@ import logging
 import threading
 from pathlib import Path
 
-from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional
 
 from app.core.config import settings
@@ -79,6 +79,17 @@ class MomentumSettingsUpdate(BaseModel):
     activity_decay_days: Optional[int] = Field(None, ge=7, le=365)
     recalculate_interval: Optional[int] = Field(None, ge=60, le=86400)
 
+    @model_validator(mode="after")
+    def validate_threshold_relationship(self) -> "MomentumSettingsUpdate":
+        """When both thresholds are provided in the same request, validate their relationship."""
+        if self.stalled_threshold_days is not None and self.at_risk_threshold_days is not None:
+            if self.at_risk_threshold_days >= self.stalled_threshold_days:
+                raise ValueError(
+                    f"At-risk threshold ({self.at_risk_threshold_days} days) "
+                    f"must be less than stalled threshold ({self.stalled_threshold_days} days)"
+                )
+        return self
+
 
 def _mask_key(key: Optional[str]) -> tuple[bool, Optional[str]]:
     """Mask an API key. Returns (is_configured, masked_value)."""
@@ -90,10 +101,9 @@ def _mask_key(key: Optional[str]) -> tuple[bool, Optional[str]]:
 
 
 def _get_env_file_path() -> Path:
-    """Get the path to the .env file (next to the backend app)."""
-    current = Path(__file__).resolve()
-    backend_dir = current.parent.parent.parent  # backend/
-    return backend_dir / ".env"
+    """Get the path to the config/env file (resolved by paths module)."""
+    from app.core.paths import get_config_path
+    return get_config_path()
 
 
 def _sanitize_env_value(value: str) -> str:
@@ -278,6 +288,29 @@ def update_momentum_settings(update: MomentumSettingsUpdate):
     """Update momentum threshold settings and persist to .env"""
     env_updates: dict[str, str] = {}
 
+    # Compute effective values (new value if provided, else current setting)
+    effective_stalled = (
+        update.stalled_threshold_days
+        if update.stalled_threshold_days is not None
+        else settings.MOMENTUM_STALLED_THRESHOLD_DAYS
+    )
+    effective_at_risk = (
+        update.at_risk_threshold_days
+        if update.at_risk_threshold_days is not None
+        else settings.MOMENTUM_AT_RISK_THRESHOLD_DAYS
+    )
+
+    # Validate relationship: at_risk must be strictly less than stalled
+    if effective_at_risk >= effective_stalled:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"At-risk threshold ({effective_at_risk} days) must be less than "
+                f"stalled threshold ({effective_stalled} days)"
+            ),
+        )
+
+    # Apply mutations only after validation passes
     if update.stalled_threshold_days is not None:
         settings.MOMENTUM_STALLED_THRESHOLD_DAYS = update.stalled_threshold_days
         env_updates["MOMENTUM_STALLED_THRESHOLD_DAYS"] = str(update.stalled_threshold_days)

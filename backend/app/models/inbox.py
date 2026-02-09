@@ -1,5 +1,5 @@
 """
-Inbox model - GTD inbox for quick capture
+Inbox model - quick capture
 """
 
 from datetime import datetime
@@ -16,9 +16,9 @@ if TYPE_CHECKING:
 
 class InboxItem(TimestampMixin, Base):
     """
-    Inbox model - GTD inbox for capturing ideas/tasks/items
+    Inbox model - captures ideas, tasks, and items for later processing.
 
-    GTD Principle: Capture everything, process later
+    Principle: Capture everything, process later.
     """
 
     __tablename__ = "inbox"

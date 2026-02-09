@@ -6,7 +6,7 @@ Each module can contain models, routes, services, and schemas.
 
 Commercial Configurations:
 - basic: Core + Projects (default)
-- gtd: Core + Projects + GTD Inbox + Weekly Review
+- gtd: Core + Projects + Inbox + Weekly Review
 - proactive_assistant: Core + Projects + Memory Layer + AI Context
 - full: Everything enabled
 

@@ -21,6 +21,8 @@ import { MemoryPage } from './pages/MemoryPage';
 import { LoginPage } from './pages/LoginPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { SetupWizard } from './pages/SetupWizard';
+import { SetupGuard } from './components/setup/SetupGuard';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,15 +42,18 @@ function App() {
         <AuthProvider>
           <BrowserRouter>
             <Routes>
-              {/* Public route - Login page */}
+              {/* Public routes */}
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/setup" element={<SetupWizard />} />
 
-              {/* Protected routes - wrapped in Layout */}
+              {/* Protected routes - wrapped in Layout + SetupGuard */}
               <Route
                 path="/"
                 element={
                   <ProtectedRoute>
-                    <Layout />
+                    <SetupGuard>
+                      <Layout />
+                    </SetupGuard>
                   </ProtectedRoute>
                 }
               >

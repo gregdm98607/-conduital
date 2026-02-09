@@ -134,15 +134,16 @@ class APIClient {
   // Projects
   // ============================================================================
 
-  async getProjects(filters?: ProjectFilters): Promise<ProjectList> {
+  async getProjects(filters?: ProjectFilters, signal?: AbortSignal): Promise<ProjectList> {
     const response = await this.client.get<ProjectList>('/projects', {
       params: filters,
+      signal,
     });
     return response.data;
   }
 
-  async getProject(id: number): Promise<Project> {
-    const response = await this.client.get<Project>(`/projects/${id}`);
+  async getProject(id: number, signal?: AbortSignal): Promise<Project> {
+    const response = await this.client.get<Project>(`/projects/${id}`, { signal });
     return response.data;
   }
 
@@ -170,9 +171,10 @@ class APIClient {
     return response.data;
   }
 
-  async searchProjects(query: string): Promise<Project[]> {
+  async searchProjects(query: string, signal?: AbortSignal): Promise<Project[]> {
     const response = await this.client.get<Project[]>('/projects/search', {
       params: { query },
+      signal,
     });
     return response.data;
   }
@@ -181,15 +183,16 @@ class APIClient {
   // Tasks
   // ============================================================================
 
-  async getTasks(filters?: TaskFilters): Promise<TaskList> {
+  async getTasks(filters?: TaskFilters, signal?: AbortSignal): Promise<TaskList> {
     const response = await this.client.get<TaskList>('/tasks', {
       params: filters,
+      signal,
     });
     return response.data;
   }
 
-  async getTask(id: number): Promise<Task> {
-    const response = await this.client.get<Task>(`/tasks/${id}`);
+  async getTask(id: number, signal?: AbortSignal): Promise<Task> {
+    const response = await this.client.get<Task>(`/tasks/${id}`, { signal });
     return response.data;
   }
 
@@ -226,9 +229,10 @@ class APIClient {
   // Next Actions
   // ============================================================================
 
-  async getNextActions(filters?: NextActionFilters): Promise<NextAction[]> {
+  async getNextActions(filters?: NextActionFilters, signal?: AbortSignal): Promise<NextAction[]> {
     const response = await this.client.get<{ tasks: Task[] }>('/next-actions', {
       params: filters,
+      signal,
     });
 
     // Transform Task[] to NextAction[] by adding priority tier and reason
@@ -284,20 +288,21 @@ class APIClient {
     });
   }
 
-  async getNextActionsByContext(context: string): Promise<NextAction[]> {
+  async getNextActionsByContext(context: string, signal?: AbortSignal): Promise<NextAction[]> {
     const response = await this.client.get<NextAction[]>('/next-actions/by-context', {
       params: { context },
+      signal,
     });
     return response.data;
   }
 
-  async getQuickWins(): Promise<NextAction[]> {
-    const response = await this.client.get<NextAction[]>('/next-actions/quick-wins');
+  async getQuickWins(signal?: AbortSignal): Promise<NextAction[]> {
+    const response = await this.client.get<NextAction[]>('/next-actions/quick-wins', { signal });
     return response.data;
   }
 
-  async getDailyDashboard(): Promise<DailyDashboard> {
-    const response = await this.client.get<DailyDashboard>('/next-actions/dashboard');
+  async getDailyDashboard(signal?: AbortSignal): Promise<DailyDashboard> {
+    const response = await this.client.get<DailyDashboard>('/next-actions/dashboard', { signal });
     return response.data;
   }
 
@@ -305,13 +310,13 @@ class APIClient {
   // Intelligence
   // ============================================================================
 
-  async getDashboardStats(): Promise<{
+  async getDashboardStats(signal?: AbortSignal): Promise<{
     active_project_count: number;
     pending_task_count: number;
     avg_momentum: number;
     orphan_project_count: number;
   }> {
-    const response = await this.client.get('/intelligence/dashboard-stats');
+    const response = await this.client.get('/intelligence/dashboard-stats', { signal });
     return response.data;
   }
 
@@ -325,19 +330,20 @@ class APIClient {
     return response.data;
   }
 
-  async calculateMomentum(projectId: number): Promise<number> {
-    const response = await this.client.get<number>(`/intelligence/momentum/${projectId}`);
+  async calculateMomentum(projectId: number, signal?: AbortSignal): Promise<number> {
+    const response = await this.client.get<number>(`/intelligence/momentum/${projectId}`, { signal });
     return response.data;
   }
 
-  async getMomentumBreakdown(projectId: number): Promise<MomentumBreakdown> {
-    const response = await this.client.get<MomentumBreakdown>(`/intelligence/momentum-breakdown/${projectId}`);
+  async getMomentumBreakdown(projectId: number, signal?: AbortSignal): Promise<MomentumBreakdown> {
+    const response = await this.client.get<MomentumBreakdown>(`/intelligence/momentum-breakdown/${projectId}`, { signal });
     return response.data;
   }
 
-  async getStalledProjects(includeAtRisk: boolean = false): Promise<StalledProject[]> {
+  async getStalledProjects(includeAtRisk: boolean = false, signal?: AbortSignal): Promise<StalledProject[]> {
     const response = await this.client.get<StalledProject[]>('/intelligence/stalled', {
       params: includeAtRisk ? { include_at_risk: true } : undefined,
+      signal,
     });
     return response.data;
   }
@@ -349,8 +355,8 @@ class APIClient {
     return response.data;
   }
 
-  async getWeeklyReview(): Promise<WeeklyReview> {
-    const response = await this.client.get<WeeklyReview>('/intelligence/weekly-review');
+  async getWeeklyReview(signal?: AbortSignal): Promise<WeeklyReview> {
+    const response = await this.client.get<WeeklyReview>('/intelligence/weekly-review', { signal });
     return response.data;
   }
 
@@ -374,15 +380,16 @@ class APIClient {
   // Areas
   // ============================================================================
 
-  async getAreas(includeArchived: boolean = false): Promise<Area[]> {
+  async getAreas(includeArchived: boolean = false, signal?: AbortSignal): Promise<Area[]> {
     const response = await this.client.get<Area[]>('/areas', {
       params: includeArchived ? { include_archived: true } : undefined,
+      signal,
     });
     return response.data;
   }
 
-  async getArea(id: number): Promise<AreaWithProjects> {
-    const response = await this.client.get<AreaWithProjects>(`/areas/${id}`);
+  async getArea(id: number, signal?: AbortSignal): Promise<AreaWithProjects> {
+    const response = await this.client.get<AreaWithProjects>(`/areas/${id}`, { signal });
     return response.data;
   }
 
@@ -419,7 +426,7 @@ class APIClient {
   // Settings
   // ============================================================================
 
-  async getAISettings(): Promise<{
+  async getAISettings(signal?: AbortSignal): Promise<{
     ai_provider: string;
     ai_features_enabled: boolean;
     ai_model: string;
@@ -433,7 +440,7 @@ class APIClient {
     available_providers: string[];
     provider_models: Record<string, Array<{ id: string; name: string }>>;
   }> {
-    const response = await this.client.get('/settings/ai');
+    const response = await this.client.get('/settings/ai', { signal });
     return response.data;
   }
 
@@ -476,13 +483,13 @@ class APIClient {
   // Momentum Settings
   // ============================================================================
 
-  async getMomentumSettings(): Promise<{
+  async getMomentumSettings(signal?: AbortSignal): Promise<{
     stalled_threshold_days: number;
     at_risk_threshold_days: number;
     activity_decay_days: number;
     recalculate_interval: number;
   }> {
-    const response = await this.client.get('/settings/momentum');
+    const response = await this.client.get('/settings/momentum', { signal });
     return response.data;
   }
 
@@ -505,13 +512,13 @@ class APIClient {
   // AI Context Export
   // ============================================================================
 
-  async getAIContext(params?: { project_id?: number; area_id?: number }): Promise<{
+  async getAIContext(params?: { project_id?: number; area_id?: number }, signal?: AbortSignal): Promise<{
     context: string;
     project_count: number;
     task_count: number;
     area_count: number;
   }> {
-    const response = await this.client.get('/export/ai-context', { params });
+    const response = await this.client.get('/export/ai-context', { params, signal });
     return response.data;
   }
 
@@ -519,34 +526,30 @@ class APIClient {
   // Data Export
   // ============================================================================
 
-  async getExportPreview(): Promise<{
+  async getExportPreview(signal?: AbortSignal): Promise<{
     entity_counts: Record<string, number>;
     estimated_size_bytes: number;
     estimated_size_display: string;
     available_formats: string[];
   }> {
-    const response = await this.client.get('/export/preview');
+    const response = await this.client.get('/export/preview', { signal });
     return response.data;
   }
 
   async downloadJSONExport(): Promise<void> {
     const response = await this.client.get('/export/json', { responseType: 'blob' });
-    const disposition = response.headers['content-disposition'] || '';
-    const filename = disposition.match(/filename="?(.+)"?/)?.[1] || 'conduital_export.json';
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+    this.triggerBlobDownload(response, 'conduital_export.json');
   }
 
   async downloadDatabaseBackup(): Promise<void> {
     const response = await this.client.get('/export/backup', { responseType: 'blob' });
-    const disposition = response.headers['content-disposition'] || '';
-    const filename = disposition.match(/filename="?(.+)"?/)?.[1] || 'conduital_backup.db';
+    this.triggerBlobDownload(response, 'conduital_backup.db');
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private triggerBlobDownload(response: { data: Blob; headers: Record<string, any> }, fallbackFilename: string): void {
+    const disposition = String(response.headers['content-disposition'] || '');
+    const filename = disposition.match(/filename="?(.+)"?/)?.[1] || fallbackFilename;
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -571,8 +574,8 @@ class APIClient {
     return response.data;
   }
 
-  async getSyncStatus(): Promise<SyncStatus> {
-    const response = await this.client.get<SyncStatus>('/sync/status');
+  async getSyncStatus(signal?: AbortSignal): Promise<SyncStatus> {
+    const response = await this.client.get<SyncStatus>('/sync/status', { signal });
     return response.data;
   }
 
@@ -580,8 +583,8 @@ class APIClient {
   // Discovery
   // ============================================================================
 
-  async getAreaMappings(): Promise<Record<string, string>> {
-    const response = await this.client.get<Record<string, string>>('/discovery/mappings');
+  async getAreaMappings(signal?: AbortSignal): Promise<Record<string, string>> {
+    const response = await this.client.get<Record<string, string>>('/discovery/mappings', { signal });
     return response.data;
   }
 
@@ -595,10 +598,10 @@ class APIClient {
     return response.data;
   }
 
-  async getAreaMappingSuggestions(): Promise<{
+  async getAreaMappingSuggestions(signal?: AbortSignal): Promise<{
     unmapped_prefixes: Record<string, { folders: string[]; suggested_name: string }>;
   }> {
-    const response = await this.client.get('/discovery/suggestions');
+    const response = await this.client.get('/discovery/suggestions', { signal });
     return response.data;
   }
 
@@ -628,15 +631,16 @@ class APIClient {
   // Inbox (Quick Capture)
   // ============================================================================
 
-  async getInboxItems(processed: boolean = false, limit: number = 50): Promise<InboxItem[]> {
+  async getInboxItems(processed: boolean = false, limit: number = 50, signal?: AbortSignal): Promise<InboxItem[]> {
     const response = await this.client.get<InboxItem[]>('/inbox', {
       params: { processed, limit },
+      signal,
     });
     return response.data;
   }
 
-  async getInboxItem(id: number): Promise<InboxItem> {
-    const response = await this.client.get<InboxItem>(`/inbox/${id}`);
+  async getInboxItem(id: number, signal?: AbortSignal): Promise<InboxItem> {
+    const response = await this.client.get<InboxItem>(`/inbox/${id}`, { signal });
     return response.data;
   }
 
@@ -657,6 +661,55 @@ class APIClient {
 
   async deleteInboxItem(id: number): Promise<void> {
     await this.client.delete(`/inbox/${id}`);
+  }
+
+  // ============================================================================
+  // Setup Wizard
+  // ============================================================================
+
+  async getSetupStatus(signal?: AbortSignal): Promise<{
+    setup_complete: boolean;
+    is_first_run: boolean;
+    is_packaged: boolean;
+    data_directory: string;
+    config_path: string;
+    legacy_migration: { needs_migration: boolean; legacy_path?: string; target_path?: string };
+    current_settings: {
+      sync_folder_configured: boolean;
+      sync_folder: string;
+      ai_key_configured: boolean;
+      ai_features_enabled: boolean;
+      database_path: string;
+    };
+  }> {
+    const response = await this.client.get('/setup/status', { signal });
+    return response.data;
+  }
+
+  async completeSetup(config: {
+    sync_folder?: string;
+    anthropic_api_key?: string;
+    ai_features_enabled?: boolean;
+    migrate_legacy_data?: boolean;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    data_directory: string;
+  }> {
+    const response = await this.client.post('/setup/complete', config);
+    return response.data;
+  }
+
+  async validateSyncPath(path: string): Promise<{
+    valid: boolean;
+    exists: boolean;
+    is_directory: boolean;
+    path: string;
+  }> {
+    const response = await this.client.post('/setup/validate-path', null, {
+      params: { path },
+    });
+    return response.data;
   }
 
   // ============================================================================

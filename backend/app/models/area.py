@@ -1,5 +1,5 @@
 """
-Area model - Areas of Responsibility (GTD)
+Area model - Areas of Responsibility
 """
 
 from typing import TYPE_CHECKING, Optional
@@ -20,8 +20,8 @@ class Area(Base, TimestampMixin):
     """
     Area of Responsibility model
 
-    GTD Definition: Sphere of activity with a standard to maintain
-    PARA: Ongoing areas of responsibility (work, health, finance, etc.)
+    A sphere of activity with a standard to maintain.
+    Represents ongoing domains of responsibility (work, health, finance, etc.)
     """
 
     __tablename__ = "areas"
@@ -41,7 +41,7 @@ class Area(Base, TimestampMixin):
         String(1000), nullable=True, unique=True
     )  # e.g., 20_Areas/20.05_AI_Systems
 
-    # GTD: What does "good" look like?
+    # What does "good" look like?
     standard_of_excellence: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Review cadence
