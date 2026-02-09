@@ -97,6 +97,7 @@ class Project(ProjectBase):
         None, description="What does successful completion look like?"
     )
     momentum_score: float = Field(..., ge=0.0, le=1.0, description="Momentum score (0.0-1.0)")
+    previous_momentum_score: Optional[float] = Field(None, description="Previous momentum score for trend calculation")
     last_activity_at: Optional[datetime] = Field(None, description="Last activity timestamp")
     stalled_since: Optional[datetime] = Field(None, description="When project became stalled")
     completed_at: Optional[datetime] = Field(None, description="Completion timestamp")

@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { RefreshCw, Edit2, Calendar, ChevronDown, Star, Clock, AlertCircle, Layers, FolderOpen, CheckCircle, FileText } from 'lucide-react';
+import { RefreshCw, Edit2, Calendar, ChevronDown, Star, Clock, AlertCircle, Layers, FolderOpen, CheckCircle, FileText, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNextActions } from '../hooks/useNextActions';
 import { useStalledProjects, useUpdateMomentum } from '../hooks/useProjects';
 import { useAreas } from '../hooks/useAreas';
-import { useDashboardStats } from '../hooks/useIntelligence';
+import { useDashboardStats, useMomentumSummary } from '../hooks/useIntelligence';
 import { useUpdateTask } from '../hooks/useTasks';
 import { StalledAlert } from '../components/intelligence/StalledAlert';
 import { StatsSkeleton, NextActionSkeleton } from '../components/common/Skeleton';
@@ -33,6 +33,7 @@ const urgencyZoneBadges: Record<UrgencyZone, { label: string; badgeColor: string
 
 export function Dashboard() {
   const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats();
+  const { data: momentumSummary, isLoading: momentumSummaryLoading } = useMomentumSummary();
   const { data: stalled, isLoading: stalledLoading } = useStalledProjects(true);
   const { data: nextActions, isLoading: actionsLoading } = useNextActions({ limit: 5 });
   const { data: areas } = useAreas();
@@ -175,6 +176,55 @@ export function Dashboard() {
           </>
         )}
       </div>
+
+      {/* Momentum Summary */}
+      {!momentumSummaryLoading && momentumSummary && momentumSummary.total_active > 0 && (
+        <div className="mb-8">
+          <div className="card">
+            <div className="flex items-center gap-3 flex-wrap text-sm">
+              {momentumSummary.gaining > 0 && (
+                <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                  <TrendingUp className="w-4 h-4" />
+                  <span className="font-medium">{momentumSummary.gaining}</span> gaining momentum
+                </span>
+              )}
+              {momentumSummary.steady > 0 && (
+                <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                  <Minus className="w-4 h-4" />
+                  <span className="font-medium">{momentumSummary.steady}</span> steady
+                </span>
+              )}
+              {momentumSummary.declining > 0 && (
+                <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
+                  <TrendingDown className="w-4 h-4" />
+                  <span className="font-medium">{momentumSummary.declining}</span> declining
+                </span>
+              )}
+            </div>
+            {momentumSummary.declining > 0 && momentumSummary.projects && (
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Projects needing attention:</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  {momentumSummary.projects
+                    .filter((p: { trend: string }) => p.trend === 'falling')
+                    .map((p: { id: number; title: string; score: number }) => (
+                      <Link
+                        key={p.id}
+                        to={`/projects/${p.id}`}
+                        className="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:underline"
+                      >
+                        {p.title}
+                        <span className="ml-1 text-gray-400 dark:text-gray-500">
+                          {(p.score * 100).toFixed(0)}%
+                        </span>
+                      </Link>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Stalled Projects Alert */}
       {!stalledLoading && stalled && stalled.length > 0 && (

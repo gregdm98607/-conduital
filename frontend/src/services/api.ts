@@ -18,6 +18,8 @@ import type {
   MomentumUpdateStats,
   StalledProject,
   MomentumBreakdown,
+  MomentumHistory,
+  MomentumSummary,
   AIAnalysis,
   AITaskSuggestion,
   DailyDashboard,
@@ -337,6 +339,19 @@ class APIClient {
 
   async getMomentumBreakdown(projectId: number, signal?: AbortSignal): Promise<MomentumBreakdown> {
     const response = await this.client.get<MomentumBreakdown>(`/intelligence/momentum-breakdown/${projectId}`, { signal });
+    return response.data;
+  }
+
+  async getMomentumHistory(projectId: number, days: number = 30, signal?: AbortSignal): Promise<MomentumHistory> {
+    const response = await this.client.get<MomentumHistory>(`/intelligence/momentum-history/${projectId}`, {
+      params: { days },
+      signal,
+    });
+    return response.data;
+  }
+
+  async getMomentumSummary(signal?: AbortSignal): Promise<MomentumSummary> {
+    const response = await this.client.get<MomentumSummary>('/intelligence/dashboard/momentum-summary', { signal });
     return response.data;
   }
 

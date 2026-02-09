@@ -324,3 +324,117 @@ class TestInbox:
         data = response.json()
         assert data["processed_at"] is not None
         assert data["result_type"] == "task"
+
+
+class TestMomentumHistoryEndpoints:
+    """Test momentum history and summary API endpoints (BETA-024)"""
+
+    def test_momentum_history_empty(self, test_client):
+        """Test momentum history for a project with no snapshots"""
+        create_response = test_client.post(
+            "/api/v1/projects",
+            json={"title": "History Test", "status": "active", "priority": 3},
+        )
+        project_id = create_response.json()["id"]
+
+        response = test_client.get(f"/api/v1/intelligence/momentum-history/{project_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["project_id"] == project_id
+        assert data["title"] == "History Test"
+        assert data["current_score"] == 0.0
+        assert data["previous_score"] is None
+        assert data["trend"] == "stable"
+        assert data["snapshots"] == []
+
+    def test_momentum_history_not_found(self, test_client):
+        """Test momentum history for non-existent project"""
+        response = test_client.get("/api/v1/intelligence/momentum-history/999")
+        assert response.status_code == 404
+
+    def test_momentum_history_days_param(self, test_client):
+        """Test momentum history respects days query parameter"""
+        create_response = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Days Param Test", "status": "active", "priority": 3},
+        )
+        project_id = create_response.json()["id"]
+
+        response = test_client.get(
+            f"/api/v1/intelligence/momentum-history/{project_id}",
+            params={"days": 7},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["project_id"] == project_id
+
+    def test_momentum_history_invalid_days(self, test_client):
+        """Test momentum history rejects invalid days param"""
+        create_response = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Invalid Days", "status": "active", "priority": 3},
+        )
+        project_id = create_response.json()["id"]
+
+        response = test_client.get(
+            f"/api/v1/intelligence/momentum-history/{project_id}",
+            params={"days": 0},
+        )
+        assert response.status_code == 422  # Validation error
+
+    def test_momentum_summary_empty(self, test_client):
+        """Test momentum summary with no active projects"""
+        response = test_client.get("/api/v1/intelligence/dashboard/momentum-summary")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_active"] == 0
+        assert data["gaining"] == 0
+        assert data["steady"] == 0
+        assert data["declining"] == 0
+        assert data["avg_score"] == 0.0
+        assert data["projects"] == []
+
+    def test_momentum_summary_with_projects(self, test_client):
+        """Test momentum summary with active projects"""
+        test_client.post(
+            "/api/v1/projects",
+            json={"title": "Project A", "status": "active", "priority": 3},
+        )
+        test_client.post(
+            "/api/v1/projects",
+            json={"title": "Project B", "status": "active", "priority": 5},
+        )
+        # Completed project should not appear
+        test_client.post(
+            "/api/v1/projects",
+            json={"title": "Project C", "status": "completed", "priority": 1},
+        )
+
+        response = test_client.get("/api/v1/intelligence/dashboard/momentum-summary")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_active"] == 2
+        assert len(data["projects"]) == 2
+        # Both new projects have no previous score, so all should be "stable"
+        assert data["steady"] == 2
+        assert data["gaining"] == 0
+        assert data["declining"] == 0
+        # Verify project structure
+        project_titles = {p["title"] for p in data["projects"]}
+        assert "Project A" in project_titles
+        assert "Project B" in project_titles
+        assert "Project C" not in project_titles
+
+    def test_project_response_includes_previous_momentum_score(self, test_client):
+        """Test that project response includes previous_momentum_score field"""
+        create_response = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Schema Test", "status": "active", "priority": 3},
+        )
+        project_id = create_response.json()["id"]
+
+        response = test_client.get(f"/api/v1/projects/{project_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert "previous_momentum_score" in data
+        assert data["previous_momentum_score"] is None

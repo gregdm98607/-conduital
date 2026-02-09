@@ -3,6 +3,8 @@ Intelligence API endpoints - Momentum, stalled projects, AI features
 """
 
 import logging
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -12,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.models.momentum_snapshot import MomentumSnapshot
 from app.models.project import Project
 from app.schemas.task import Task as TaskSchema
 from app.services.intelligence_service import IntelligenceService
@@ -99,6 +102,57 @@ class DashboardStatsResponse(BaseModel):
     orphan_project_count: int
 
 
+class MomentumSnapshotItem(BaseModel):
+    """Single momentum snapshot data point for sparkline charts"""
+
+    score: float
+    snapshot_at: str  # ISO datetime
+
+
+class MomentumHistoryResponse(BaseModel):
+    """Response for momentum history / sparkline data"""
+
+    project_id: int
+    title: str
+    current_score: float
+    previous_score: float | None
+    trend: str  # "rising", "falling", "stable"
+    snapshots: list[MomentumSnapshotItem]
+
+
+class MomentumSummaryProject(BaseModel):
+    """Per-project momentum summary for the dashboard"""
+
+    id: int
+    title: str
+    score: float
+    previous_score: float | None
+    trend: str  # "rising", "falling", "stable"
+
+
+class MomentumSummaryResponse(BaseModel):
+    """Aggregate momentum summary across all active projects"""
+
+    total_active: int
+    gaining: int  # projects with rising trend
+    steady: int  # projects with stable trend
+    declining: int  # projects with falling trend
+    avg_score: float
+    projects: list[MomentumSummaryProject]
+
+
+def _compute_trend(current: float, previous: float | None) -> str:
+    """Compute trend string from current and previous momentum scores."""
+    if previous is None:
+        return "stable"
+    delta = current - previous
+    if delta > 0.05:
+        return "rising"
+    elif delta < -0.05:
+        return "falling"
+    return "stable"
+
+
 @router.get("/dashboard-stats", response_model=DashboardStatsResponse)
 def get_dashboard_stats(db: Session = Depends(get_db)):
     """
@@ -140,6 +194,112 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         pending_task_count=pending_count,
         avg_momentum=avg_momentum,
         orphan_project_count=orphan_count,
+    )
+
+
+@router.get("/momentum-history/{project_id}", response_model=MomentumHistoryResponse)
+def get_momentum_history(
+    project_id: int,
+    days: int = Query(30, ge=1, le=365, description="Number of days of history to return"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get momentum snapshot history for a project.
+
+    Returns time-series data suitable for sparkline charts, including
+    the current score, previous score, computed trend, and daily snapshots.
+    """
+    project = db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+
+    snapshots = (
+        db.execute(
+            select(MomentumSnapshot)
+            .where(
+                MomentumSnapshot.project_id == project_id,
+                MomentumSnapshot.snapshot_at >= cutoff,
+            )
+            .order_by(MomentumSnapshot.snapshot_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+
+    trend = _compute_trend(project.momentum_score or 0.0, project.previous_momentum_score)
+
+    snapshot_items = [
+        MomentumSnapshotItem(
+            score=s.score,
+            snapshot_at=s.snapshot_at.isoformat(),
+        )
+        for s in snapshots
+    ]
+
+    return MomentumHistoryResponse(
+        project_id=project.id,
+        title=project.title,
+        current_score=project.momentum_score or 0.0,
+        previous_score=project.previous_momentum_score,
+        trend=trend,
+        snapshots=snapshot_items,
+    )
+
+
+@router.get("/dashboard/momentum-summary", response_model=MomentumSummaryResponse)
+def get_momentum_summary(db: Session = Depends(get_db)):
+    """
+    Get aggregate momentum summary across all active projects.
+
+    Returns counts of gaining/steady/declining projects, the average
+    momentum score, and per-project details with trend indicators.
+    """
+    active_projects = (
+        db.execute(select(Project).where(Project.status == "active"))
+        .scalars()
+        .all()
+    )
+
+    project_summaries: list[MomentumSummaryProject] = []
+    gaining = 0
+    steady = 0
+    declining = 0
+
+    for p in active_projects:
+        trend = _compute_trend(p.momentum_score or 0.0, p.previous_momentum_score)
+        if trend == "rising":
+            gaining += 1
+        elif trend == "falling":
+            declining += 1
+        else:
+            steady += 1
+
+        project_summaries.append(
+            MomentumSummaryProject(
+                id=p.id,
+                title=p.title,
+                score=p.momentum_score or 0.0,
+                previous_score=p.previous_momentum_score,
+                trend=trend,
+            )
+        )
+
+    total_active = len(active_projects)
+    avg_score = (
+        sum(p.momentum_score or 0.0 for p in active_projects) / total_active
+        if total_active > 0
+        else 0.0
+    )
+
+    return MomentumSummaryResponse(
+        total_active=total_active,
+        gaining=gaining,
+        steady=steady,
+        declining=declining,
+        avg_score=avg_score,
+        projects=project_summaries,
     )
 
 

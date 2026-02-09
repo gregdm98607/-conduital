@@ -46,16 +46,16 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BETA-002 | **Exponential activity decay** — `e^(-days/7)` instead of linear `1-(days/30)` | ✅ Done | Recent activity matters more |
 | BETA-003 | **Sliding completion window** — 30-day weighted window (7d×1.0, 14d×0.5, 30d×0.25) | ✅ Done | Prevents hard cliff at day 8 |
 | BETA-004 | **Logarithmic frequency scaling** — `log(1+count)/log(11)` instead of `min(1, count/10)` | ✅ Done | Harder to saturate |
-| BETA-010 | **Momentum trend indicator** — up/down/stable arrow on ProjectCard from 7-day delta | Open | Progress Principle |
-| BETA-011 | **Momentum sparkline** — 30-day mini line chart on ProjectCard | Open | Progress Principle |
-| BETA-012 | **Project completion progress bar** — thin bar on ProjectCard (completed/total tasks) | Open | Goal Gradient Effect |
-| BETA-013 | **"Almost there" nudge** — subtle text when >80% tasks complete | Open | Goal Gradient + Zeigarnik |
-| BETA-014 | **Dashboard momentum summary** — aggregate trend view across all projects | Open | Progress Principle |
+| BETA-010 | **Momentum trend indicator** — up/down/stable arrow on ProjectCard from delta | ✅ Done | Progress Principle |
+| BETA-011 | **Momentum sparkline** — inline SVG trend line on ProjectCard | ✅ Done | Progress Principle |
+| BETA-012 | **Project completion progress bar** — thin bar on ProjectCard (completed/total tasks) | ✅ Done | Goal Gradient Effect |
+| BETA-013 | **"Almost there" nudge** — subtle text when >80% tasks complete | ✅ Done | Goal Gradient + Zeigarnik |
+| BETA-014 | **Dashboard momentum summary** — aggregate trend view across all projects | ✅ Done | Progress Principle |
 | BETA-020 | **`previous_momentum_score` column** — delta calculation support | ✅ Done | Data model |
 | BETA-021 | **`MomentumSnapshot` table** — daily snapshots for sparklines | ✅ Done | Data model |
 | BETA-022 | **Alembic migration** for BETA-020/021 | ✅ Done | Migration 011 |
 | BETA-023 | **Snapshot creation** in scheduled recalculation job | ✅ Done | Scheduler updated |
-| BETA-024 | **Momentum history API** — `GET /projects/{id}/momentum-history`, `GET /dashboard/momentum-summary` | Open | API endpoints |
+| BETA-024 | **Momentum history API** — `GET /intelligence/momentum-history/{id}`, `GET /intelligence/dashboard/momentum-summary` | ✅ Done | API endpoints |
 
 ### GTD Inbox Enhancements (New for Beta)
 

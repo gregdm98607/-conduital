@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Flame, TrendingUp, Minus, Target, ChevronDown, ChevronUp, Activity, AlertTriangle, Clock, Eye } from 'lucide-react';
+import { Flame, TrendingUp, TrendingDown, Minus, Target, ChevronDown, ChevronUp, Activity, AlertTriangle, Clock, Eye } from 'lucide-react';
 import { Project } from '../../types';
 import { MomentumBar } from './MomentumBar';
 import { formatRelativeTime, daysSince } from '../../utils/date';
@@ -154,6 +154,42 @@ function getReviewIndicator(project: Project): { label: string; colorClass: stri
   return null;
 }
 
+// Get momentum trend info based on current vs previous score
+function getTrendInfo(project: Project): { icon: React.ReactNode; color: string; label: string } {
+  const current = project.momentum_score;
+  const previous = project.previous_momentum_score;
+
+  if (previous == null) {
+    return {
+      icon: <Minus className="w-3 h-3 text-gray-400 dark:text-gray-500" />,
+      color: 'text-gray-400 dark:text-gray-500',
+      label: 'Stable',
+    };
+  }
+
+  const diff = current - previous;
+  if (diff > 0.05) {
+    return {
+      icon: <TrendingUp className="w-3 h-3 text-green-500 dark:text-green-400" />,
+      color: 'text-green-500 dark:text-green-400',
+      label: 'Rising',
+    };
+  }
+  if (diff < -0.05) {
+    return {
+      icon: <TrendingDown className="w-3 h-3 text-red-500 dark:text-red-400" />,
+      color: 'text-red-500 dark:text-red-400',
+      label: 'Falling',
+    };
+  }
+
+  return {
+    icon: <Minus className="w-3 h-3 text-gray-400 dark:text-gray-500" />,
+    color: 'text-gray-400 dark:text-gray-500',
+    label: 'Stable',
+  };
+}
+
 export function ProjectCard({ project }: ProjectCardProps) {
   const [isOutcomeExpanded, setIsOutcomeExpanded] = useState(false);
   // Use API-provided counts (list endpoint), fall back to tasks array (detail endpoint)
@@ -165,6 +201,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const daysStalledCount = project.stalled_since ? daysSince(project.stalled_since) : null;
   const daysSinceActivity = project.last_activity_at ? daysSince(project.last_activity_at) : null;
   const reviewIndicator = getReviewIndicator(project);
+  const trendInfo = getTrendInfo(project);
+  const remainingTasks = totalTasks - completedTasks;
 
   return (
     <div className={`card hover:shadow-lg transition-all ${project.priority >= 8 ? 'border-l-4 border-l-red-500' : project.priority >= 7 ? 'border-l-4 border-l-orange-400' : ''}`}>
@@ -264,7 +302,50 @@ export function ProjectCard({ project }: ProjectCardProps) {
         </div>
       )}
 
-      <MomentumBar score={project.momentum_score} />
+      {/* Momentum bar with trend indicator (BETA-010) and sparkline (BETA-011) */}
+      <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <MomentumBar score={project.momentum_score} />
+        </div>
+        <span
+          className={`inline-flex items-center gap-0.5 text-xs ${trendInfo.color}`}
+          title={`Momentum ${trendInfo.label.toLowerCase()}`}
+        >
+          {trendInfo.icon}
+        </span>
+        {/* Mini sparkline SVG (BETA-011) */}
+        <svg
+          width="40"
+          height="16"
+          viewBox="0 0 40 16"
+          className="flex-shrink-0"
+          aria-label={`Momentum trend: ${trendInfo.label}`}
+        >
+          {project.previous_momentum_score != null ? (
+            <polyline
+              points={`4,${14 - project.previous_momentum_score * 12} 36,${14 - project.momentum_score * 12}`}
+              fill="none"
+              stroke={
+                project.momentum_score - project.previous_momentum_score > 0.05
+                  ? '#22c55e'
+                  : project.previous_momentum_score - project.momentum_score > 0.05
+                    ? '#ef4444'
+                    : '#9ca3af'
+              }
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          ) : (
+            <polyline
+              points="4,8 36,8"
+              fill="none"
+              stroke="#9ca3af"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          )}
+        </svg>
+      </div>
 
       <div className="mt-4 grid grid-cols-3 gap-3 text-sm text-gray-600 dark:text-gray-400">
         <div>
@@ -282,6 +363,23 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <div className="font-medium">{completedTasks}/{totalTasks}</div>
         </div>
       </div>
+
+      {/* Completion progress bar (BETA-012) */}
+      {totalTasks > 0 && (
+        <div className="mt-2 w-full h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-500 dark:to-blue-400 transition-all duration-300"
+            style={{ width: `${completionPct}%` }}
+          />
+        </div>
+      )}
+
+      {/* "Almost there" nudge (BETA-013) */}
+      {completionPct > 80 && totalTasks > 0 && project.status === 'active' && (
+        <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+          {remainingTasks} {remainingTasks === 1 ? 'task' : 'tasks'} to finish line
+        </p>
+      )}
 
       <div className="mt-4 flex gap-2">
         <Link to={`/projects/${project.id}`} className="btn btn-sm btn-primary flex-1">

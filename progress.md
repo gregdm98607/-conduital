@@ -1,5 +1,46 @@
 # Progress Log
 
+## Session: 2026-02-09 — Beta Session 2: Motivation Signals (Frontend + API)
+
+### Completed Items (7 BETA items)
+
+#### API Endpoints (Phase 1C)
+- BETA-024: Momentum history API — `GET /intelligence/momentum-history/{id}` returns sparkline data (snapshots, trend, previous score); `GET /intelligence/dashboard/momentum-summary` returns aggregate gaining/steady/declining counts with per-project details. Added `_compute_trend()` helper with ±5% threshold. **Done**
+- Added `previous_momentum_score` to backend Project response schema (exposes trend data to frontend). **Done**
+
+#### Frontend Motivation Signals (Phase 1B)
+- BETA-010: Momentum trend indicator — up/down/stable arrow on ProjectCard. Uses `getTrendInfo()` helper comparing current vs previous momentum score (±0.05 threshold). Green TrendingUp, red TrendingDown, gray Minus. Dark mode support. **Done**
+- BETA-011: Momentum sparkline — inline 40x16 SVG on ProjectCard. 2-point polyline from `previous_momentum_score` to `momentum_score` with color-coded stroke (green rising, red falling, gray stable). Flat line when no previous data. **Done**
+- BETA-012: Project completion progress bar — thin h-1 gradient bar under stats grid. Blue gradient (`from-blue-400 to-blue-600`), dark mode variants. Only shown when totalTasks > 0. **Done**
+- BETA-013: "Almost there" nudge — when completionPct > 80%, totalTasks > 0, project active: shows "{N} task(s) to finish line". Muted gray text (text-xs), singular/plural handling. Psychology: Goal Gradient + Zeigarnik Effect. **Done**
+- BETA-014: Dashboard momentum summary — compact section after stats grid showing "N gaining momentum, N steady, N declining" with colored icons. Shows declining project links when any exist. Uses `useMomentumSummary()` hook. **Done**
+
+#### Frontend Plumbing
+- Added `MomentumSnapshotItem`, `MomentumHistory`, `MomentumSummaryProject`, `MomentumSummary` types to `types/index.ts`
+- Added `previous_momentum_score` to `Project` interface
+- Added `getMomentumHistory()` and `getMomentumSummary()` to API client
+- Added `useMomentumHistory()` and `useMomentumSummary()` hooks to `useIntelligence.ts`
+
+#### Tests
+- 7 new API tests in `test_api_basic.py`: momentum history (empty, not found, days param, invalid days), momentum summary (empty, with projects), project schema includes previous_momentum_score
+- TypeScript type check: PASS (0 errors)
+
+#### Code Changes Summary
+- `backend/app/api/intelligence.py`: 4 new schemas + `_compute_trend()` helper + 2 new endpoints
+- `backend/app/schemas/project.py`: Added `previous_momentum_score` field to Project response
+- `backend/tests/test_api_basic.py`: 7 new tests (TestMomentumHistoryEndpoints class)
+- `frontend/src/types/index.ts`: 4 new interfaces + 1 field addition
+- `frontend/src/services/api.ts`: 2 new methods + type imports
+- `frontend/src/hooks/useIntelligence.ts`: 2 new hooks
+- `frontend/src/components/projects/ProjectCard.tsx`: TrendingDown import, `getTrendInfo()` helper, trend arrow, sparkline SVG, progress bar, nudge
+- `frontend/src/pages/Dashboard.tsx`: TrendingUp/TrendingDown/Minus imports, `useMomentumSummary` hook, momentum summary section
+
+#### Test Results
+- **199/199 backend tests pass (100%)** — 7 net new tests added (from 192 to 199)
+- TypeScript: PASS (0 errors)
+
+---
+
 ## Session: 2026-02-09 — Beta Session 1: Momentum Granularity (Backend)
 
 ### Completed Items (8 BETA items)

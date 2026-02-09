@@ -30,3 +30,18 @@ export function useSuggestNextAction(projectId: number) {
     mutationFn: () => api.suggestNextAction(projectId),
   });
 }
+
+export function useMomentumHistory(projectId: number, days: number = 30) {
+  return useQuery({
+    queryKey: ['intelligence', 'momentum-history', projectId, days],
+    queryFn: ({ signal }) => api.getMomentumHistory(projectId, days, signal),
+    enabled: !!projectId,
+  });
+}
+
+export function useMomentumSummary() {
+  return useQuery({
+    queryKey: ['intelligence', 'momentum-summary'],
+    queryFn: ({ signal }) => api.getMomentumSummary(signal),
+  });
+}

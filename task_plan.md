@@ -50,11 +50,11 @@
 
 | ID | Task | Priority | Principle |
 |----|------|----------|-----------|
-| BETA-010 | **Momentum trend indicator** — small up/down/stable arrow next to score, based on 7-day delta. "Your momentum is rising." | Must | Progress Principle |
-| BETA-011 | **Momentum sparkline** — tiny 30-day line chart on ProjectCard showing momentum trajectory. No labels, just shape. | Must | Progress Principle |
-| BETA-012 | **Project completion progress bar** — thin progress bar on ProjectCard: `completed / total` tasks. Subtle gradient fill. | Should | Goal Gradient |
-| BETA-013 | **"Almost there" nudge** — when project is >80% tasks complete, show subtle text: "3 tasks to finish line". | Should | Goal Gradient + Zeigarnik |
-| BETA-014 | **Dashboard momentum summary** — "5 projects gaining momentum, 2 steady, 1 declining" — aggregate view. | Should | Progress Principle |
+| BETA-010 | **Momentum trend indicator** — small up/down/stable arrow next to score, based on delta. | ✅ Done | Progress Principle |
+| BETA-011 | **Momentum sparkline** — inline SVG trend line on ProjectCard. | ✅ Done | Progress Principle |
+| BETA-012 | **Project completion progress bar** — thin gradient bar on ProjectCard: `completed / total` tasks. | ✅ Done | Goal Gradient |
+| BETA-013 | **"Almost there" nudge** — when >80% tasks complete, subtle text: "N tasks to finish line". | ✅ Done | Goal Gradient + Zeigarnik |
+| BETA-014 | **Dashboard momentum summary** — "5 gaining, 2 steady, 1 declining" aggregate view. | ✅ Done | Progress Principle |
 | BETA-015 | **Momentum history chart** — Settings or Dashboard widget: line chart of average momentum over 30/60/90 days. | Nice | Progress Principle |
 | BETA-016 | **Streak-free activity heatmap** — GitHub-style contribution grid showing activity density. No streak counter — just the visual pattern. | Nice | Variable Ratio |
 | BETA-017 | **Momentum protection framing** — when momentum is high, frame as "maintaining your progress" rather than "keep going". Loss aversion subtle cue. | Nice | Loss Aversion |
@@ -67,7 +67,7 @@
 | BETA-021 | Create `MomentumSnapshot` table (project_id, score, factors_json, timestamp) — daily snapshots for sparklines | ✅ Done |
 | BETA-022 | Migration for both new tables/columns | ✅ Done |
 | BETA-023 | Snapshot creation in scheduled recalculation job | ✅ Done |
-| BETA-024 | API endpoints: `GET /projects/{id}/momentum-history`, `GET /dashboard/momentum-summary` | Should |
+| BETA-024 | API endpoints: `GET /intelligence/momentum-history/{id}`, `GET /intelligence/dashboard/momentum-summary` | ✅ Done |
 
 ---
 

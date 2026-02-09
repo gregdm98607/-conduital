@@ -20,6 +20,7 @@ export interface Project {
   area_id?: number;
   area?: Area;
   momentum_score: number;
+  previous_momentum_score?: number | null;
   last_activity_at?: string;
   stalled_since?: string;
   target_completion_date?: string;
@@ -176,6 +177,37 @@ export interface MomentumBreakdown {
   title: string;
   total_score: number;
   factors: MomentumFactor[];
+}
+
+export interface MomentumSnapshotItem {
+  score: number;
+  snapshot_at: string;
+}
+
+export interface MomentumHistory {
+  project_id: number;
+  title: string;
+  current_score: number;
+  previous_score: number | null;
+  trend: 'rising' | 'falling' | 'stable';
+  snapshots: MomentumSnapshotItem[];
+}
+
+export interface MomentumSummaryProject {
+  id: number;
+  title: string;
+  score: number;
+  previous_score: number | null;
+  trend: 'rising' | 'falling' | 'stable';
+}
+
+export interface MomentumSummary {
+  total_active: number;
+  gaining: number;
+  steady: number;
+  declining: number;
+  avg_score: number;
+  projects: MomentumSummaryProject[];
 }
 
 export interface DailyDashboard {

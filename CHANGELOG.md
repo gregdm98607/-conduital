@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BETA-021:** `MomentumSnapshot` table for daily momentum history (sparklines, trend data)
 - **BETA-022:** Alembic migration `011_momentum_snapshots`
 - **BETA-023:** Scheduled recalculation job now creates daily momentum snapshots
+- **BETA-024:** Momentum history API — `GET /intelligence/momentum-history/{id}` (sparkline data) and `GET /intelligence/dashboard/momentum-summary` (aggregate trend counts)
+- **BETA-010:** Momentum trend indicator — up/down/stable arrow on ProjectCard based on `previous_momentum_score` delta
+- **BETA-011:** Momentum sparkline — inline 2-point SVG trend line on ProjectCard (rising/falling/flat)
+- **BETA-012:** Project completion progress bar — thin gradient bar on ProjectCard showing `completed/total` tasks
+- **BETA-013:** "Almost there" nudge — subtle text when >80% tasks complete: "N tasks to finish line" (Goal Gradient + Zeigarnik)
+- **BETA-014:** Dashboard momentum summary — aggregate section showing gaining/steady/declining project counts with declining project links
 
 ### Fixed
 - `build.bat` size reporting shows correct total (was always "~0 MB" due to broken findstr parsing)
