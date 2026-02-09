@@ -8,6 +8,7 @@ Supports commercial module configurations:
 - full: All modules enabled
 """
 
+import re
 import secrets
 from pathlib import Path
 from typing import Optional, Literal
@@ -28,6 +29,31 @@ ensure_data_dir()
 # Compute env file path at module scope (before class definition)
 # so pydantic-settings loads from the correct location
 _env_file_path = str(get_config_path())
+
+
+def _read_version_from_pyproject() -> str:
+    """Read version from pyproject.toml (single source of truth).
+
+    Falls back to a hardcoded default in packaged builds where
+    pyproject.toml is not available.
+    """
+    _FALLBACK_VERSION = "1.0.0-alpha"
+
+    # In development: pyproject.toml is at backend/pyproject.toml
+    candidates = [
+        Path(__file__).resolve().parent.parent.parent / "pyproject.toml",
+    ]
+    for path in candidates:
+        if path.is_file():
+            try:
+                text = path.read_text(encoding="utf-8")
+                match = re.search(r'^version\s*=\s*"([^"]+)"', text, re.MULTILINE)
+                if match:
+                    return match.group(1)
+            except OSError:
+                pass
+
+    return _FALLBACK_VERSION
 
 
 def _get_or_generate_secret_key() -> str:
@@ -113,7 +139,7 @@ class Settings(BaseSettings):
 
     # Application
     APP_NAME: str = "Conduital"
-    VERSION: str = "1.0.0-alpha"
+    VERSION: str = _read_version_from_pyproject()
     DEBUG: bool = False
     SETUP_COMPLETE: bool = False  # Set to true after first-run setup wizard
 

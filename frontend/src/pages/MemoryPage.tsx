@@ -460,7 +460,7 @@ function EditObjectModal({ objectId, onClose }: { objectId: string; onClose: () 
                 min={0}
                 max={100}
                 value={priority ?? 50}
-                onChange={(e) => setPriority(Number(e.target.value))}
+                onChange={(e) => setPriority(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
               />
             </div>
             <div>
@@ -616,7 +616,7 @@ function CreateObjectModal({
               min={0}
               max={100}
               value={priority}
-              onChange={(e) => setPriority(Number(e.target.value))}
+              onChange={(e) => setPriority(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
             />
           </div>
         </div>
@@ -723,7 +723,7 @@ function CreateNamespaceModal({ onClose }: { onClose: () => void }) {
             min={0}
             max={100}
             value={defaultPriority}
-            onChange={(e) => setDefaultPriority(Number(e.target.value))}
+            onChange={(e) => setDefaultPriority(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
           />
         </div>
         <div className="flex justify-end gap-2">

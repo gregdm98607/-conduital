@@ -1,5 +1,54 @@
 # Progress Log
 
+## Session: 2026-02-09 — Beta Session 4: Pillar 3 — Infrastructure & Polish
+
+### Completed Items (6 items)
+
+#### DEBT-083: Installer Graceful Shutdown
+- `GracefulShutdown()` procedure in `installer/conduital.iss` replaces direct `taskkill /F`
+- Step 1: Calls `POST http://127.0.0.1:52140/api/v1/shutdown` via PowerShell (5s timeout)
+- Step 2: Waits up to 8 seconds for process to exit gracefully
+- Step 3: Falls back to `taskkill /F` as safety net
+- Both `InitializeSetup()` and `InitializeUninstall()` use the shared procedure
+
+#### BACKLOG-116 / DEBT-080: Version Single Source of Truth
+- `pyproject.toml` is the canonical version source
+- `config.py` now reads version from `pyproject.toml` via `_read_version_from_pyproject()` at module load
+- Falls back to `_FALLBACK_VERSION` constant for packaged builds (no pyproject.toml available)
+- New `backend/scripts/sync_version.py` — propagates version to `package.json`, `conduital.iss`, `config.py` fallback
+- Supports `--check` mode for CI validation (exit 1 if mismatch)
+
+#### DEBT-039: MemoryPage Priority Input Out-of-Range
+- All 3 priority input `onChange` handlers now clamp to `Math.min(100, Math.max(0, ...))`
+- Locations: EditObjectModal, CreateObjectModal, CreateNamespaceModal
+- Prevents users from typing values like -50 or 150
+
+#### DEBT-061: Dynamic Attribute Assignment Fragility
+- Added `task_count: int = 0` and `completed_task_count: int = 0` as explicit class attributes on `Project` model
+- SQLAlchemy ignores these (not `Mapped[...]`), so no database impact
+- Provides IDE autocomplete, prevents `AttributeError`, makes intent explicit
+- Service layer still assigns values via query results — now overwrites defaults instead of creating dynamic attributes
+
+#### DEBT-064: Marked Done
+- Already fixed by BETA-032 (`GET /inbox/stats` endpoint replaces client-side calculation)
+- Backlog updated to reflect completion
+
+#### New Files
+- `backend/scripts/sync_version.py`
+
+#### Modified Files
+- `installer/conduital.iss` — graceful shutdown procedure
+- `backend/app/core/config.py` — version reads from pyproject.toml
+- `backend/app/models/project.py` — explicit task_count/completed_task_count attributes
+- `frontend/src/pages/MemoryPage.tsx` — priority input clamping (3 locations)
+
+#### Tests
+- Full suite: 216/216 passing (no regressions)
+- TypeScript: 0 errors
+- Python compile: PASS on all modified files
+
+---
+
 ## Session: 2026-02-09 — Beta Session 3: GTD Inbox Enhancements (Pillar 2)
 
 ### Completed Items (4 BETA items)

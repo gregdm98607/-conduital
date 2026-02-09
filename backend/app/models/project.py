@@ -107,6 +107,12 @@ class Project(Base, TimestampMixin):
     file_path: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True, unique=True)
     file_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)  # SHA-256 hash
 
+    # Non-persisted attributes populated by service layer queries (DEBT-061).
+    # Defined here so the intent is explicit, IDE autocomplete works, and
+    # Pydantic from_attributes can read them reliably.
+    task_count: int = 0
+    completed_task_count: int = 0
+
     # Relationships (defined with TYPE_CHECKING to avoid circular imports)
     user: Mapped[Optional["User"]] = relationship("User", backref="projects")
     area: Mapped[Optional["Area"]] = relationship("Area", back_populates="projects")

@@ -159,9 +159,9 @@
 | ID | Description | Priority |
 |----|-------------|----------|
 | DEBT-007 | Soft delete for entities | Medium |
-| DEBT-080 | Installer version not SSoT | Medium |
-| DEBT-083 | Installer kills without graceful shutdown attempt | Medium |
-| BACKLOG-116 | Version single source of truth | Medium |
+| DEBT-080 | Installer version not SSoT | ✅ Done |
+| DEBT-083 | Installer kills without graceful shutdown attempt | ✅ Done |
+| BACKLOG-116 | Version single source of truth | ✅ Done |
 
 ### Code Quality & Polish
 
@@ -169,8 +169,8 @@
 |----|-------------|----------|
 | DEBT-013 | Mobile views not optimized | Low |
 | DEBT-016 | WebSocket updates not integrated | Low |
-| DEBT-039 | MemoryPage priority input out-of-range | Low |
-| DEBT-061 | Dynamic attribute assignment fragility | Low |
+| DEBT-039 | MemoryPage priority input out-of-range | ✅ Done |
+| DEBT-061 | Dynamic attribute assignment fragility | ✅ Done |
 
 ---
 
@@ -202,18 +202,23 @@
 - BETA-014: Dashboard momentum summary
 - BETA-024: History + summary API endpoints
 
-### Session 3: GTD Inbox + Polish ← **CURRENT SESSION**
-- BETA-030: Weekly review completion tracking
-- BETA-031: Batch processing
-- BETA-032: Processed Today stats endpoint
-- BETA-034: Inbox item age indicator
+### Session 3: GTD Inbox + Polish
+- BETA-030: Weekly review completion tracking ✅
+- BETA-031: Batch processing ✅
+- BETA-032: Processed Today stats endpoint ✅
+- BETA-034: Inbox item age indicator ✅
 
-### Session 4: Distribution & Testing
+### Session 4: Pillar 3 — Infrastructure & Polish ← **CURRENT SESSION**
+- DEBT-083: Installer graceful shutdown ✅
+- BACKLOG-116 / DEBT-080: Version SSoT ✅
+- DEBT-039: MemoryPage priority input fix ✅
+- DEBT-061: Dynamic attribute assignment fix ✅
+- DEBT-064: Marked done (fixed by BETA-032) ✅
+
+### Session 5 (Remaining): Distribution & Testing
 - Privacy policy, app icon, screenshots
 - VM testing (Windows 10/11)
 - Upgrade-in-place testing
-- Installer graceful shutdown (DEBT-083)
-- Version SSoT (BACKLOG-116)
 
 ---
 
@@ -233,4 +238,4 @@ The goal is to make the data *informative and visible*, not to gamify the experi
 
 ---
 
-*Last updated: 2026-02-09*
+*Last updated: 2026-02-09 (Session 4: Pillar 3 tech debt — DEBT-039/061/080/083, BACKLOG-116)*

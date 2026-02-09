@@ -36,7 +36,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 2. **GTD Inbox Enhancements:** Weekly review completion tracking, batch processing, processing stats endpoint
 3. **Distribution:** Privacy policy (Phase 4.3), app icon (Phase 5.1), Gumroad listing (Phase 5.3)
 4. **Testing:** Clean Windows 10/11 VM testing (BACKLOG-118)
-5. **Infrastructure:** Version SSoT (BACKLOG-116), installer graceful shutdown (DEBT-083)
+5. **Infrastructure:** ~~Version SSoT (BACKLOG-116)~~, ~~installer graceful shutdown (DEBT-083)~~ ✅ Both done
 
 ### Momentum Intelligence (New for Beta)
 
@@ -308,19 +308,19 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-017 | Auto-discovery debounce | `folder_watcher.py` | Open |
 | DEBT-018 | Google Drive network interruptions | `folder_watcher.py` | Open |
 | DEBT-019 | Silent auto-discovery failures | Auto-discovery service | Open |
-| DEBT-039 | MemoryPage priority input allows out-of-range values client-side | `MemoryPage.tsx:447` | Open |
+| DEBT-039 | MemoryPage priority input allows out-of-range values client-side | `MemoryPage.tsx:447` | ✅ Done |
 | DEBT-052 | Empty model dropdown edge case when provider_models not yet loaded | `Settings.tsx` | Open |
-| DEBT-061 | Dynamic attribute assignment on ORM objects for task counts (fragile) | `project_service.py` | Open |
+| DEBT-061 | Dynamic attribute assignment on ORM objects for task counts (fragile) | `project_service.py` | ✅ Done |
 | DEBT-062 | Redundant task_count fields in ProjectWithTasks schema | `project.py` | Open |
 
-| DEBT-064 | "Processed Today" count shows 0 on unprocessed tab — needs dedicated API endpoint | `InboxPage.tsx`, backend inbox API | Open |
+| DEBT-064 | "Processed Today" count shows 0 on unprocessed tab — needs dedicated API endpoint | `InboxPage.tsx`, backend inbox API | ✅ Done |
 | DEBT-065 | API client methods don't accept AbortSignal — prevents true HTTP request cancellation | `api.ts` (all methods) | ✅ Done |
 | DEBT-075 | Momentum PUT endpoint mutates the singleton `settings` object in-memory — not safe if Pydantic Settings is frozen | `settings.py:282-292` | Documented |
 | DEBT-078 | Test run requires explicit venv python — `python -m pytest` fails without venv activation | `backend/venv` exists but PATH doesn't include it | Open |
-| DEBT-080 | Inno Setup `.iss` version is hardcoded (`#define MyAppVersion`) — not SSoT with pyproject.toml/config.py | `installer/conduital.iss:24` | Open |
+| DEBT-080 | Inno Setup `.iss` version is hardcoded (`#define MyAppVersion`) — not SSoT with pyproject.toml/config.py | `installer/conduital.iss:24` | ✅ Done |
 | DEBT-081 | No app icon (.ico) — installer and exe use default icons | Need `assets/conduital.ico` with 16-256px variants | Open |
 | DEBT-082 | `build.bat` size reporting loop broken — shows "Total size: ~0 MB" for most lines | `build.bat:112-115` (findstr parsing) | ✅ Done |
-| DEBT-083 | Installer `InitializeSetup()` force-kills without graceful shutdown attempt | `installer/conduital.iss` — should try WM_CLOSE or shutdown endpoint first | Open |
+| DEBT-083 | Installer `InitializeSetup()` force-kills without graceful shutdown attempt | `installer/conduital.iss` — should try WM_CLOSE or shutdown endpoint first | ✅ Done |
 
 ---
 
@@ -408,7 +408,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-112 | Export Preview: Refresh after download | After downloading JSON export or DB backup, the export preview data doesn't refresh. Add a re-fetch or stale indicator. |
 | BACKLOG-113 | **Website Redesign & Product Launch Content (conduital.com)** | **⚠️ Depends on:** DIST-050 ✅, DIST-056 ✅. Deploy content to announce, promote, and demo **Conduital**. **Sitemap:** Home → Features → How It Works → Pricing → Docs → Blog → About → Download. **Hero:** "Intelligent Momentum for Independent Operators" — pillars: Your Data Your Control, Proven Productivity Methods, AI That Actually Helps. **Demo:** 8 screenshots + 2-3 min video + GIFs. **SEO targets:** local-first productivity, AI task manager, intelligent momentum, Conduital. **Implementation phases:** Phase 1 (MVP): Home + Get Started + Features. Phase 2 (Launch): conduital.com + Pricing + Demo. Phase 3 (Growth): Blog + Community + Testimonials. |
 | ~~BACKLOG-115~~ | ~~`/api/v1/shutdown` endpoint for graceful programmatic shutdown~~ | ✅ Done |
-| BACKLOG-116 | Version single source of truth | Read version from one canonical file (pyproject.toml) at build time for PyInstaller, Inno Setup, and package.json; eliminates DEBT-080 |
+| ~~BACKLOG-116~~ | ~~Version single source of truth~~ | ✅ Done — `config.py` reads from `pyproject.toml` at startup; `scripts/sync_version.py` propagates to package.json, conduital.iss, config.py fallback |
 | BACKLOG-117 | Installer upgrade-in-place testing | Verify installing a new version over existing preserves user data and applies new DB migrations |
 | BACKLOG-118 | Clean Windows VM testing (Win10 + Win11) | Test on VMs with no Python/Node.js to catch missing DLLs or C++ runtime deps |
 | BACKLOG-114 | **AI-Agentic-First Social Media & Marketing Content Plan (Conduital)** | **⚠️ Depends on:** DIST-052 (@conduital on Twitter/X), DIST-053 (conduital on GitHub), DIST-054 (conduital on Gumroad), DIST-056 (rebrand to Conduital). Envision and deploy an AI-agentic-first social media and marketing content strategy for **Conduital** awareness, promotion, engagement, and marketing. **Platform strategy:** Priority 1: Twitter/X as @conduital (productivity/PKM community) + Reddit (r/gtd, r/productivity, r/ObsidianMD, r/PKMS). Priority 2: LinkedIn (professional audience) + Hacker News + YouTube (tutorials/demos). **Content pillars:** 40% Education/How-To, 25% Philosophy/Thought Leadership (local-first, data ownership, methodology), 20% Technical Deep-Dives (architecture, AI integration), 15% Community/UGC. **AI agent automation:** Content repurposing agents (blog → tweets/threads/LinkedIn/Reddit), engagement monitoring + response drafting agents, performance analytics + optimization agents, launch timing + A/B testing agents, SEO content generation agents, newsletter curation agents. **Cadence:** Twitter 1-2x/day, Reddit 2-3x/week, LinkedIn 2-3x/week, YouTube 1-2x/month, Blog 1-2x/week, Newsletter weekly. **Launch sequence:** 30-day countdown — Week 4: teaser campaign + "building in public" threads under Conduital brand. Week 3: feature spotlights + beta signups. Week 2: demo videos + influencer outreach. Week 1: daily countdown + launch prep. Launch day: coordinated multi-platform push. Post-launch: sustained engagement + community building. **Metrics:** Awareness (followers, impressions), Engagement (replies, shares, saves), Conversion (conduital.com visits, downloads, GitHub stars at github.com/conduital), Agent efficiency (content throughput, response time). **Extended channels:** Blog/SEO on conduital.com, email newsletter funnel, YouTube tutorial series, podcast guest appearances, developer relations via github.com/conduital, Gumroad storefront at conduital.gumroad.com. **Ratio:** 10:1 value-to-promotion. Emphasize authentic community building, transparency about AI use, privacy-first/local-first differentiation. |
@@ -575,6 +575,12 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BETA-021 | `MomentumSnapshot` table for daily momentum history | 2026-02-09 |
 | BETA-022 | Alembic migration 011_momentum_snapshots | 2026-02-09 |
 | BETA-023 | Snapshot creation added to scheduled recalculation job | 2026-02-09 |
+| DEBT-039 | MemoryPage priority input clamped to 0-100 range (3 locations) | 2026-02-09 |
+| DEBT-061 | Project model task_count/completed_task_count defined as explicit class attributes | 2026-02-09 |
+| DEBT-064 | "Processed Today" stat replaced with dedicated `GET /inbox/stats` endpoint (BETA-032) | 2026-02-09 |
+| DEBT-080 | Installer version now synced from pyproject.toml via `scripts/sync_version.py` | 2026-02-09 |
+| DEBT-083 | Installer graceful shutdown — tries `POST /shutdown` endpoint before force-kill | 2026-02-09 |
+| BACKLOG-116 | Version SSoT — `config.py` reads from pyproject.toml; sync script for all files | 2026-02-09 |
 
 *See git history for detailed completion notes.*
 
@@ -612,5 +618,5 @@ For each release, verify:
 
 ---
 
-*Last updated: 2026-02-09 (Alpha tester feedback batch 1: BACKLOG-119 through BACKLOG-126 added to Parking Lot, BACKLOG-104 expanded)*
+*Last updated: 2026-02-09 (Beta Session 4: DEBT-039/061/064/080/083 + BACKLOG-116 done; Pillar 3 tech debt started)*
 *Reorganized by commercial release milestones*

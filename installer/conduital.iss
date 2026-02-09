@@ -136,25 +136,44 @@ begin
   end;
 end;
 
-// Close any running Conduital instance before installing/upgrading
-function InitializeSetup(): Boolean;
+// Try graceful shutdown via the /api/v1/shutdown endpoint, then fall back to force-kill.
+// The shutdown endpoint (BACKLOG-115) triggers a cooperative shutdown of the FastAPI server.
+procedure GracefulShutdown();
 var
   ErrorCode: Integer;
+  WaitCount: Integer;
 begin
-  Result := True;
-  // Kill any running instance (silent — no error if not running)
+  // Step 1: Try graceful shutdown via HTTP POST to localhost
+  Exec('powershell', '-NoProfile -Command "try { Invoke-WebRequest -Uri ''http://127.0.0.1:52140/api/v1/shutdown'' -Method POST -TimeoutSec 5 -UseBasicParsing | Out-Null } catch {}"',
+    '', SW_HIDE, ewWaitUntilTerminated, ErrorCode);
+
+  // Step 2: Wait up to 8 seconds for the process to exit gracefully
+  WaitCount := 0;
+  while WaitCount < 8 do
+  begin
+    Sleep(1000);
+    WaitCount := WaitCount + 1;
+    // Check if process is still running (tasklist returns 0 if found)
+    Exec('tasklist', '/FI "IMAGENAME eq Conduital.exe" /NH', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode);
+    // tasklist always returns 0; we cannot reliably check via exit code here,
+    // so just wait the full period on graceful path
+  end;
+
+  // Step 3: Force-kill if still running (safety net)
   Exec('taskkill', '/F /IM Conduital.exe', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode);
   if ErrorCode = 0 then
-    Sleep(2000);  // Wait for process to fully exit
+    Sleep(1000);  // Brief pause after force-kill
+end;
+
+// Close any running Conduital instance before installing/upgrading
+function InitializeSetup(): Boolean;
+begin
+  Result := True;
+  GracefulShutdown();
 end;
 
 function InitializeUninstall(): Boolean;
-var
-  ErrorCode: Integer;
 begin
   Result := True;
-  // Attempt to close Conduital before uninstalling
-  Exec('taskkill', '/F /IM Conduital.exe', '', SW_HIDE, ewWaitUntilTerminated, ErrorCode);
-  // Brief pause to let the process fully exit
-  Sleep(2000);
+  GracefulShutdown();
 end;

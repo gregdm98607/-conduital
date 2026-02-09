@@ -30,7 +30,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BETA-032:** Inbox processing stats — `GET /inbox/stats` returns `unprocessed_count`, `processed_today`, `avg_processing_time_hours`. Replaces client-side calculation (DEBT-064).
 - **BETA-034:** Inbox item age indicator — subtle visual aging on unprocessed items: gray clock (24h-3d), amber (3d-7d), red (>7d). Informational, not gamified.
 
+### Changed
+- **DEBT-083:** Installer graceful shutdown — `InitializeSetup()` and `InitializeUninstall()` now try `POST /api/v1/shutdown` before falling back to `taskkill /F`. Gives the running app 8 seconds to shut down cleanly.
+- **BACKLOG-116 / DEBT-080:** Version single source of truth — `config.py` now reads version from `pyproject.toml` at startup; `scripts/sync_version.py` propagates to `package.json`, `conduital.iss`, and `config.py` fallback. Only edit `pyproject.toml` to change version.
+- **DEBT-061:** Project model `task_count` and `completed_task_count` are now explicit class attributes with defaults, replacing fragile dynamic `setattr()` assignment in service layer.
+
 ### Fixed
+- **DEBT-039:** MemoryPage priority inputs now clamp values to 0-100 range — prevents out-of-range values entered via keyboard
 - `build.bat` size reporting shows correct total (was always "~0 MB" due to broken findstr parsing)
 
 ### Accessibility
