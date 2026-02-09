@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Graceful shutdown endpoint (`POST /api/v1/shutdown`) — localhost-only, cooperative with system tray and installer
+- AbortSignal support on all 27 API client getter methods — enables HTTP request cancellation on component unmount
+- Momentum settings validation — server returns HTTP 422 when at-risk threshold >= stalled threshold; client shows inline warning
+
+### Fixed
+- `build.bat` size reporting shows correct total (was always "~0 MB" due to broken findstr parsing)
+
+### Accessibility
+- Modal: `role="dialog"`, `aria-modal="true"`, `aria-labelledby` linking title to dialog
+- UserMenu: `aria-haspopup="menu"`, `aria-expanded`, `role="menu"` and `role="menuitem"`
+- ProjectCard: outcome toggle has `aria-expanded` and descriptive `aria-label`
+- Settings: API key visibility toggle has `aria-label`
+
 ## [1.0.0-alpha] - 2026-02-08
 
 ### Added

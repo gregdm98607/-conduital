@@ -93,29 +93,21 @@ assets/
 # Claude Code working files (not needed in repo)
 .claude/
 
-# Development-only documentation (strip from distribution builds)
+# Development-only files (strip from distribution builds)
 CLAUDE.md
-CLAUDE_CODE_PROMPTS.md
-backend/MODULE_SYSTEM.md
+archive/
+tasks/
+Skills/
 backlog.md
 distribution-checklist.md
 task_plan.md
-findings.md
 progress.md
-prompts.md
-marketing-strategy-ai-agentic.md
-API_IMPLEMENTATION_SUMMARY.md
-DATABASE_MODELS_SUMMARY.md
-FILE_CREATION_SCRIPT.md
-FORMS_IMPLEMENTATION_SUMMARY.md
-FRONTEND_BUILD_COMPLETE.md
-GOOGLE_DRIVE_SETUP.md
-NEXT_STEPS.md
-PHASE_1_DISCOVERY_COMPLETE.md
-PHASE_2_AUTO_DISCOVERY_COMPLETE.md
-PHASE4_ARCHITECTURE.md
-PROJECT_STATUS.md
-Project_Tracker_Technical_Spec.md
+backend/MODULE_SYSTEM.md
+backend/diagnose.py
+frontend/FRONTEND_IMPLEMENTATION_GUIDE.md
+frontend/INSTALL_TOAST.md
+frontend/QUICK_FIX.md
+frontend/SETUP_AND_TEST.md
 backend/PROJECT_COMPLETE.md
 backend/SYNC_ENGINE_DOCUMENTATION.md
 backend/INTELLIGENCE_LAYER_DOCUMENTATION.md
@@ -123,23 +115,6 @@ backend/PHASE_4_COMPLETE.md
 backend/DISCOVERY_GUIDE.md
 frontend/PHASE_5_FRONTEND_COMPLETE.md
 frontend/DEBUG_STEPS.md
-QUICK_FIX.md
-QUICK_START.md
-QUICKSTART.md
-R1_RELEASE_NOTES.md
-SECOND_BRAIN_SYNC_EXAMPLE.md
-SETUP.md
-SETUP_GUIDE.md
-SYNC_ENGINE_SUMMARY.md
-TESTER_SETUP_GUIDE.md
-TROUBLESHOOTING.md
-tasks/
-Skills/
-backend/diagnose.py
-frontend/FRONTEND_IMPLEMENTATION_GUIDE.md
-frontend/INSTALL_TOAST.md
-frontend/QUICK_FIX.md
-frontend/SETUP_AND_TEST.md
 
 # Design assets and Office documents (managed outside repo)
 /*.docx

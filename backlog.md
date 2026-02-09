@@ -10,7 +10,8 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 | Release | Modules | Target Audience | Status |
 |---------|---------|-----------------|--------|
-| **R1: Conduital Basic** | `core` + `projects` | Project managers, individuals | **User Testing** (2026-02-03) |
+| **R1: Conduital Basic** | `core` + `projects` | Project managers, individuals | **v1.0.0-alpha shipped** (2026-02-08) |
+| **R1.1: Conduital Beta** | `core` + `projects` | Project managers, individuals | **In Progress** |
 | **R2: Conduital GTD** | + `gtd_inbox` | GTD practitioners | Planned |
 | **R3: Proactive Assistant** | + `memory_layer` + `ai_context` | AI-augmented users | Planned |
 | **R4: Full Suite** | All modules | Power users | Planned |
@@ -21,7 +22,20 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 **Modules:** `core` + `projects`
 **Target:** Production-ready project and task management with markdown file sync.
-**Status:** 🧪 **User Testing** | Released: 2026-02-03
+**Status:** ✅ **v1.0.0-alpha shipped** (2026-02-08) | Installer built, dev-tested, distributed
+
+---
+
+## R1.1: Conduital Beta
+
+**Target:** Incremental improvements on alpha — remaining distribution items, polish, VM testing.
+**Status:** 🔧 **In Progress**
+
+### Beta Priorities
+1. **Distribution:** Privacy policy (Phase 4.3), app icon (Phase 5.1), Gumroad listing (Phase 5.3)
+2. **Testing:** Clean Windows 10/11 VM testing (BACKLOG-118)
+3. **Polish:** Remaining tech debt, UX improvements from parking lot
+4. **Infrastructure:** Version SSoT (BACKLOG-116), installer graceful shutdown (DEBT-083)
 
 ### R1 Release Notes
 
