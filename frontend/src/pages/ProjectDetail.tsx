@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, CheckCircle, Edit, X, Trash2, Target, Star, ChevronDown, ChevronRight, Lightbulb, FileText, RefreshCw, Clock, Zap } from 'lucide-react';
+import { ArrowLeft, Plus, CheckCircle, Edit, X, Trash2, Target, Star, ChevronDown, ChevronRight, Lightbulb, FileText, RefreshCw, Clock, Zap, ArrowUp, ArrowDown, Calendar } from 'lucide-react';
 import { useProject, useMarkProjectReviewed, useCreateUnstuckTask } from '../hooks/useProjects';
 import { useArea } from '../hooks/useAreas';
 import { useUpdateTask, useDeleteTask } from '../hooks/useTasks';
@@ -12,6 +12,7 @@ import { EditProjectModal } from '../components/projects/EditProjectModal';
 import { CreateTaskModal } from '../components/tasks/CreateTaskModal';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { ContextExportModal } from '../components/common/ContextExportModal';
+import { DeferPopover } from '../components/tasks/DeferPopover';
 import { ProjectHeaderSkeleton, TaskItemSkeleton } from '@/components/common/Skeleton';
 import { SearchInput } from '@/components/common/SearchInput';
 import toast from 'react-hot-toast';
@@ -113,6 +114,50 @@ export function ProjectDetail() {
     } catch (error) {
       toast.error('Failed to cancel tasks');
     }
+  };
+
+  const handleBulkMakeNextAction = async () => {
+    try {
+      const updates = Array.from(selectedTaskIds).map(id =>
+        updateTask.mutateAsync({ id, task: { is_next_action: true } })
+      );
+      await Promise.all(updates);
+      toast.success(`Promoted ${selectedTaskIds.size} task${selectedTaskIds.size !== 1 ? 's' : ''} to Next Actions`);
+      clearSelection();
+    } catch {
+      toast.error('Failed to promote tasks');
+    }
+  };
+
+  const handleBulkDemoteToOther = async () => {
+    try {
+      const updates = Array.from(selectedTaskIds).map(id =>
+        updateTask.mutateAsync({ id, task: { is_next_action: false } })
+      );
+      await Promise.all(updates);
+      toast.success(`Moved ${selectedTaskIds.size} task${selectedTaskIds.size !== 1 ? 's' : ''} to Other Tasks`);
+      clearSelection();
+    } catch {
+      toast.error('Failed to demote tasks');
+    }
+  };
+
+  // Determine if selection contains only Other Tasks, only Next Actions, or mixed
+  const selectedAreAllOtherTasks = selectedTaskIds.size > 0 && Array.from(selectedTaskIds).every(
+    id => otherTasks.some(t => t.id === id)
+  );
+  const selectedAreAllNextActions = selectedTaskIds.size > 0 && Array.from(selectedTaskIds).every(
+    id => nextActions.some(t => t.id === id)
+  );
+
+  const handleDeferTask = (taskId: number, deferUntil: string) => {
+    updateTask.mutate(
+      { id: taskId, task: { defer_until: deferUntil } },
+      {
+        onSuccess: () => toast.success(`Task deferred to ${deferUntil}`),
+        onError: () => toast.error('Failed to defer task'),
+      }
+    );
   };
 
   const handleBulkDelete = async () => {
@@ -379,6 +424,28 @@ export function ProjectDetail() {
               </button>
             </div>
             <div className="flex items-center gap-2">
+              {selectedAreAllOtherTasks && (
+                <button
+                  onClick={handleBulkMakeNextAction}
+                  className="btn btn-sm flex items-center gap-2 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                  disabled={updateTask.isPending}
+                  title="Promote selected tasks to Next Actions"
+                >
+                  <ArrowUp className="w-4 h-4" />
+                  → Next Action
+                </button>
+              )}
+              {selectedAreAllNextActions && (
+                <button
+                  onClick={handleBulkDemoteToOther}
+                  className="btn btn-sm flex items-center gap-2 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  disabled={updateTask.isPending}
+                  title="Move selected tasks to Other Tasks"
+                >
+                  <ArrowDown className="w-4 h-4" />
+                  → Other
+                </button>
+              )}
               <button
                 onClick={handleBulkComplete}
                 className="btn btn-sm btn-primary flex items-center gap-2"
@@ -397,7 +464,7 @@ export function ProjectDetail() {
               </button>
               <button
                 onClick={handleBulkDelete}
-                className="btn btn-sm btn-secondary flex items-center gap-2 text-red-600 hover:bg-red-50"
+                className="btn btn-sm btn-secondary flex items-center gap-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                 disabled={deleteTask.isPending}
               >
                 <Trash2 className="w-4 h-4" />
@@ -427,6 +494,7 @@ export function ProjectDetail() {
                 key={task.id}
                 task={task}
                 onEdit={setEditingTask}
+                onDefer={handleDeferTask}
                 isSelected={selectedTaskIds.has(task.id)}
                 onToggleSelect={() => toggleTaskSelection(task.id)}
               />
@@ -453,6 +521,7 @@ export function ProjectDetail() {
                 key={task.id}
                 task={task}
                 onEdit={setEditingTask}
+                onDefer={handleDeferTask}
                 isSelected={selectedTaskIds.has(task.id)}
                 onToggleSelect={() => toggleTaskSelection(task.id)}
               />
@@ -510,11 +579,12 @@ interface TaskItemProps {
   task: any;
   completed?: boolean;
   onEdit: (task: any) => void;
+  onDefer?: (taskId: number, deferUntil: string) => void;
   isSelected?: boolean;
   onToggleSelect?: () => void;
 }
 
-function TaskItem({ task, completed = false, onEdit, isSelected = false, onToggleSelect }: TaskItemProps) {
+function TaskItem({ task, completed = false, onEdit, onDefer, isSelected = false, onToggleSelect }: TaskItemProps) {
   return (
     <div className={`card ${completed ? 'opacity-60' : ''} ${isSelected ? 'ring-2 ring-primary-500 bg-primary-50' : ''}`}>
       <div className="flex items-start justify-between">
@@ -535,6 +605,12 @@ function TaskItem({ task, completed = false, onEdit, isSelected = false, onToggl
             {task.context && <span className="badge badge-gray text-xs">{task.context}</span>}
             {task.energy_level && <span className="badge badge-gray text-xs">{task.energy_level}</span>}
             {task.estimated_minutes && <span className="badge badge-gray text-xs">{task.estimated_minutes}m</span>}
+            {task.defer_until && (
+              <span className="badge badge-blue text-xs flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                Deferred to {task.defer_until}
+              </span>
+            )}
           </div>
           <h3 className={`font-medium ${completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
             {task.title}
@@ -543,12 +619,20 @@ function TaskItem({ task, completed = false, onEdit, isSelected = false, onToggl
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{task.description}</p>
           )}
         </div>
-        <button
-          onClick={() => onEdit(task)}
-          className="btn btn-sm btn-secondary ml-4"
-        >
-          <Edit className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1 ml-4">
+          {!completed && onDefer && (
+            <DeferPopover
+              compact
+              onDefer={(date) => onDefer(task.id, date)}
+            />
+          )}
+          <button
+            onClick={() => onEdit(task)}
+            className="btn btn-sm btn-secondary"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -96,7 +96,7 @@ assets/
 # Development-only files (strip from distribution builds)
 CLAUDE.md
 archive/
-tasks/
+/tasks/
 Skills/
 backlog.md
 distribution-checklist.md

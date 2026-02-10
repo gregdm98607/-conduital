@@ -7,6 +7,7 @@ import { Error } from '../components/common/Error';
 import { NextActionSkeleton } from '../components/common/Skeleton';
 import { SearchInput } from '../components/common/SearchInput';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
+import { DeferPopover } from '../components/tasks/DeferPopover';
 import { getDueDateInfo } from '../utils/date';
 import type { Task, UrgencyZone, NextAction } from '../types';
 
@@ -150,6 +151,16 @@ export function NextActions() {
           console.error('Failed to update task status:', error);
           toast.error('Failed to update task status', { id: 'task-status-error' });
         },
+      }
+    );
+  };
+
+  const handleDeferTask = (taskId: number, deferUntil: string) => {
+    updateTask.mutate(
+      { id: taskId, task: { defer_until: deferUntil } },
+      {
+        onSuccess: () => toast.success(`Task deferred to ${deferUntil}`),
+        onError: () => toast.error('Failed to defer task'),
       }
     );
   };
@@ -420,6 +431,11 @@ export function NextActions() {
                                 >
                                   <CheckCircle className="w-3 h-3" />
                                 </button>
+                                <DeferPopover
+                                  compact
+                                  onDefer={(date) => handleDeferTask(action.task.id, date)}
+                                  disabled={updateTask.isPending}
+                                />
                               </div>
                             </div>
                           );
@@ -542,6 +558,11 @@ export function NextActions() {
                     >
                       <CheckCircle className="w-3 h-3" />
                     </button>
+                    <DeferPopover
+                      compact
+                      onDefer={(date) => handleDeferTask(action.task.id, date)}
+                      disabled={updateTask.isPending}
+                    />
                   </div>
                 </div>
               );

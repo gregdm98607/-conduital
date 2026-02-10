@@ -214,6 +214,9 @@
 - DEBT-039: MemoryPage priority input fix ✅
 - DEBT-061: Dynamic attribute assignment fix ✅
 - DEBT-064: Marked done (fixed by BETA-032) ✅
+- BACKLOG-120: "Make Next Action" quick action ✅
+- BACKLOG-119: Task Push/Defer quick action ✅
+- DEBT-062: Closed by design ✅
 
 ### Session 5 (Remaining): Distribution & Testing
 - Privacy policy, app icon, screenshots
@@ -238,4 +241,4 @@ The goal is to make the data *informative and visible*, not to gamify the experi
 
 ---
 
-*Last updated: 2026-02-09 (Session 4: Pillar 3 tech debt — DEBT-039/061/080/083, BACKLOG-116)*
+*Last updated: 2026-02-09 (Session 4: Pillar 3 + alpha feedback — DEBT-039/061/062/064/080/083, BACKLOG-116/119/120)*

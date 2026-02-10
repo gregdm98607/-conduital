@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **BACKLOG-120:** "Make Next Action" / "Move to Other" quick actions on ProjectDetail bulk toolbar — promote/demote tasks between Next Actions and Other Tasks with one click
+- **BACKLOG-119:** Task Push/Defer quick action — clock icon on task items opens popover with "1 Week" / "1 Month" presets and custom date picker; defers task to Over the Horizon zone. Available on ProjectDetail and NextActions pages.
 - Graceful shutdown endpoint (`POST /api/v1/shutdown`) — localhost-only, cooperative with system tray and installer
 - AbortSignal support on all 27 API client getter methods — enables HTTP request cancellation on component unmount
 - Momentum settings validation — server returns HTTP 422 when at-risk threshold >= stalled threshold; client shows inline warning

@@ -2,7 +2,7 @@
 
 ## Session: 2026-02-09 — Beta Session 4: Pillar 3 — Infrastructure & Polish
 
-### Completed Items (6 items)
+### Completed Items (9 items)
 
 #### DEBT-083: Installer Graceful Shutdown
 - `GracefulShutdown()` procedure in `installer/conduital.iss` replaces direct `taskkill /F`
@@ -33,14 +33,40 @@
 - Already fixed by BETA-032 (`GET /inbox/stats` endpoint replaces client-side calculation)
 - Backlog updated to reflect completion
 
+#### BACKLOG-120: "Make Next Action" Quick Action
+- Added `handleBulkMakeNextAction` and `handleBulkDemoteToOther` handlers to ProjectDetail
+- "→ Next Action" button shows when only Other Tasks are selected
+- "→ Other" button shows when only Next Actions are selected
+- Contextual buttons: appear/disappear based on selection composition
+
+#### BACKLOG-119: Task Push/Defer Quick Action
+- New `DeferPopover` component (`frontend/src/components/tasks/DeferPopover.tsx`)
+  - "1 Week" and "1 Month" preset buttons with calculated dates
+  - Custom date picker for arbitrary future dates
+  - Compact mode for inline card usage
+  - Click-outside-to-close behavior
+- Integrated into ProjectDetail TaskItem (clock icon next to Edit button)
+- Integrated into NextActions zones view and grid view action buttons
+- Uses existing `PUT /tasks/{id}` with `{ defer_until }` — no new backend needed
+- Deferred badge shown on tasks in ProjectDetail (shows defer date)
+
+#### DEBT-062: Closed by Design
+- Analyzed ProjectWithTasks schema — no actual redundancy
+- task_count/completed_task_count are SQL-computed summaries
+- tasks list provides full detail when needed
+- Closed as "Works as Designed"
+
 #### New Files
 - `backend/scripts/sync_version.py`
+- `frontend/src/components/tasks/DeferPopover.tsx`
 
 #### Modified Files
 - `installer/conduital.iss` — graceful shutdown procedure
 - `backend/app/core/config.py` — version reads from pyproject.toml
 - `backend/app/models/project.py` — explicit task_count/completed_task_count attributes
 - `frontend/src/pages/MemoryPage.tsx` — priority input clamping (3 locations)
+- `frontend/src/pages/ProjectDetail.tsx` — Make Next Action toolbar + DeferPopover integration
+- `frontend/src/pages/NextActions.tsx` — DeferPopover integration (zones + grid views)
 
 #### Tests
 - Full suite: 216/216 passing (no regressions)
