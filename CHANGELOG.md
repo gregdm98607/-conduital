@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-beta] - 2026-02-09
+
 ### Added
 - **BACKLOG-120:** "Make Next Action" / "Move to Other" quick actions on ProjectDetail bulk toolbar — promote/demote tasks between Next Actions and Other Tasks with one click
 - **BACKLOG-119:** Task Push/Defer quick action — clock icon on task items opens popover with "1 Week" / "1 Month" presets and custom date picker; defers task to Over the Horizon zone. Available on ProjectDetail and NextActions pages.
@@ -45,8 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DEBT-061:** Project model `task_count` and `completed_task_count` are now explicit class attributes with defaults, replacing fragile dynamic `setattr()` assignment in service layer.
 
 ### Fixed
+- **BUG-025:** Projects list view now shows correct task counts — was displaying 0/0 because it read from `project.tasks` array instead of API-computed `task_count`/`completed_task_count` fields
 - **DEBT-039:** MemoryPage priority inputs now clamp values to 0-100 range — prevents out-of-range values entered via keyboard
 - `build.bat` size reporting shows correct total (was always "~0 MB" due to broken findstr parsing)
+- Context model unification — frontend and backend context types aligned; API endpoints return consistent shape
 
 ### Accessibility
 - Modal: `role="dialog"`, `aria-modal="true"`, `aria-labelledby` linking title to dialog
