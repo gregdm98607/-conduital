@@ -15,6 +15,9 @@ import {
   CloudCog,
   Target,
   Brain,
+  Crosshair,
+  Eye,
+  Tag,
 } from 'lucide-react';
 import { UserMenu } from '@/components/auth/UserMenu';
 
@@ -48,6 +51,14 @@ const ALL_NAV_SECTIONS: NavSection[] = [
       { name: 'Areas', href: '/areas', icon: Layers },
       { name: 'Next Actions', href: '/next-actions', icon: ListTodo },
       { name: 'All Tasks', href: '/tasks', icon: CheckSquare },
+    ],
+  },
+  {
+    label: 'Horizons',
+    items: [
+      { name: 'Goals', href: '/goals', icon: Crosshair },
+      { name: 'Visions', href: '/visions', icon: Eye },
+      { name: 'Contexts', href: '/contexts', icon: Tag },
     ],
   },
   {

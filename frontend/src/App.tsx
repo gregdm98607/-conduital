@@ -20,6 +20,9 @@ import { Settings } from './pages/Settings';
 import { MemoryPage } from './pages/MemoryPage';
 import { LoginPage } from './pages/LoginPage';
 import { OnboardingPage } from './pages/OnboardingPage';
+import { Goals } from './pages/Goals';
+import { Visions } from './pages/Visions';
+import { Contexts } from './pages/Contexts';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { SetupWizard } from './pages/SetupWizard';
 import { SetupGuard } from './components/setup/SetupGuard';
@@ -68,6 +71,9 @@ function App() {
                 <Route path="daily" element={<DailyDashboard />} />
                 <Route path="someday-maybe" element={<SomedayMaybe />} />
                 <Route path="weekly-review" element={<WeeklyReviewPage />} />
+                <Route path="goals" element={<Goals />} />
+                <Route path="visions" element={<Visions />} />
+                <Route path="contexts" element={<Contexts />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="memory" element={<MemoryPage />} />
                 <Route path="onboarding" element={<OnboardingPage />} />

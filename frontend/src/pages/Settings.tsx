@@ -68,6 +68,14 @@ export function Settings() {
   const [aiTestResult, setAiTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [providerModels, setProviderModels] = useState<Record<string, Array<{ id: string; name: string }>>>({});
 
+  // Sync Settings state
+  const [syncFolderRoot, setSyncFolderRoot] = useState('');
+  const [watchDirectories, setWatchDirectories] = useState('');
+  const [syncInterval, setSyncInterval] = useState(30);
+  const [conflictStrategy, setConflictStrategy] = useState('prompt');
+  const [syncLoading, setSyncLoading] = useState(true);
+  const [syncSaving, setSyncSaving] = useState(false);
+
   // Momentum Settings state
   const [stalledThreshold, setStalledThreshold] = useState(14);
   const [atRiskThreshold, setAtRiskThreshold] = useState(7);
@@ -86,6 +94,19 @@ export function Settings() {
   const [downloadingBackup, setDownloadingBackup] = useState(false);
 
   const { theme, setTheme } = useTheme();
+
+  // Load Sync settings on mount
+  useEffect(() => {
+    api.getSyncSettings()
+      .then((data) => {
+        setSyncFolderRoot(data.sync_folder_root || '');
+        setWatchDirectories(data.watch_directories.join(', '));
+        setSyncInterval(data.sync_interval);
+        setConflictStrategy(data.conflict_strategy);
+        setSyncLoading(false);
+      })
+      .catch(() => setSyncLoading(false));
+  }, []);
 
   // Load Momentum settings on mount
   useEffect(() => {
@@ -306,6 +327,32 @@ export function Settings() {
         toast.error('Failed to scan projects');
       },
     });
+  };
+
+  const handleSaveSyncSettings = async () => {
+    const dirs = watchDirectories.split(',').map(d => d.trim()).filter(Boolean);
+    if (dirs.length === 0) {
+      toast.error('At least one watch directory is required');
+      return;
+    }
+    setSyncSaving(true);
+    try {
+      const result = await api.updateSyncSettings({
+        sync_folder_root: syncFolderRoot || '',
+        watch_directories: dirs,
+        sync_interval: syncInterval,
+        conflict_strategy: conflictStrategy,
+      });
+      setSyncFolderRoot(result.sync_folder_root || '');
+      setWatchDirectories(result.watch_directories.join(', '));
+      setSyncInterval(result.sync_interval);
+      setConflictStrategy(result.conflict_strategy);
+      toast.success('Sync settings saved');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      toast.error(msg || 'Failed to save sync settings');
+    }
+    setSyncSaving(false);
   };
 
   const handleSaveMomentumSettings = async () => {
@@ -690,18 +737,25 @@ export function Settings() {
             <RefreshCw className="w-6 h-6 text-primary-600" />
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">File Sync</h2>
           </button>
-          {!collapsedSections.has('sync') && (
+          {!collapsedSections.has('sync') && (syncLoading ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading sync settings...</div>
+          ) : (
             <div className="space-y-4 mt-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Configure where Conduital syncs markdown files for your projects and areas.
+              </p>
               <div>
                 <label className="label">Sync Folder Root</label>
                 <input
                   type="text"
                   className="input"
-                  placeholder="/path/to/your/notes"
-                  disabled
+                  placeholder="C:\Users\you\Google Drive\Second Brain"
+                  value={syncFolderRoot}
+                  onChange={(e) => setSyncFolderRoot(e.target.value)}
+                  disabled={syncSaving}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Configure this in backend .env file
+                  Root folder for bidirectional markdown sync. Must be an existing directory.
                 </p>
               </div>
               <div>
@@ -709,12 +763,60 @@ export function Settings() {
                 <input
                   type="text"
                   className="input"
-                  value="10_Projects, 20_Areas"
-                  disabled
+                  placeholder="10_Projects, 20_Areas"
+                  value={watchDirectories}
+                  onChange={(e) => setWatchDirectories(e.target.value)}
+                  disabled={syncSaving}
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Comma-separated subfolder names within the sync root to watch for changes.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Sync Interval (seconds)</label>
+                  <input
+                    type="number"
+                    className="input"
+                    min={5}
+                    max={600}
+                    value={syncInterval}
+                    onChange={(e) => setSyncInterval(Math.min(600, Math.max(5, Number(e.target.value) || 5)))}
+                    disabled={syncSaving}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    How often to check for file changes (5-600s).
+                  </p>
+                </div>
+                <div>
+                  <label className="label">Conflict Strategy</label>
+                  <select
+                    className="input"
+                    value={conflictStrategy}
+                    onChange={(e) => setConflictStrategy(e.target.value)}
+                    disabled={syncSaving}
+                  >
+                    <option value="prompt">Prompt (ask user)</option>
+                    <option value="file_wins">File Wins</option>
+                    <option value="db_wins">Database Wins</option>
+                    <option value="merge">Merge</option>
+                  </select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    How to resolve conflicts between file and database.
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={handleSaveSyncSettings}
+                  className="btn btn-primary"
+                  disabled={syncSaving}
+                >
+                  {syncSaving ? 'Saving...' : 'Save Sync Settings'}
+                </button>
               </div>
             </div>
-          )}
+          ))}
         </section>
 
         {/* AI Configuration Section */}

@@ -2,15 +2,40 @@
 Context API endpoints
 """
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.context import Context as ContextModel
 from app.schemas.context import Context, ContextCreate, ContextUpdate
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+# Default contexts seeded on first startup (matches task context pick list)
+_DEFAULT_CONTEXTS = [
+    {"name": "work", "context_type": "location", "description": "Work environment tasks"},
+    {"name": "home", "context_type": "location", "description": "Tasks to do at home"},
+    {"name": "computer", "context_type": "tool", "description": "Tasks requiring a computer"},
+    {"name": "phone", "context_type": "tool", "description": "Tasks requiring a phone"},
+    {"name": "errands", "context_type": "location", "description": "Tasks requiring going out"},
+    {"name": "reading", "context_type": "energy", "description": "Reading and review tasks"},
+]
+
+
+def seed_default_contexts(db: Session) -> None:
+    """Seed the contexts table with defaults if empty. Runs once on first startup."""
+    count = db.scalar(select(func.count()).select_from(ContextModel))
+    if count and count > 0:
+        return
+    for ctx_data in _DEFAULT_CONTEXTS:
+        db.add(ContextModel(**ctx_data))
+    db.commit()
+    logger.info("Seeded %d default contexts", len(_DEFAULT_CONTEXTS))
 
 
 @router.get("", response_model=list[Context])

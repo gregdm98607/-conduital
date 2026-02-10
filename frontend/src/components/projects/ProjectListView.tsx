@@ -76,8 +76,19 @@ function getMomentumColorClass(score: number): string {
 }
 
 // Get project review status indicator for list view
-function getReviewIndicator(project: Project): { label: string; colorClass: string; title: string } | null {
-  if (!project.next_review_date) return null;
+function getReviewIndicator(project: Project): { label: string; colorClass: string; title: string } {
+  const lastReviewedDays = project.last_reviewed_at ? daysSince(project.last_reviewed_at) : null;
+  const lastReviewedText = lastReviewedDays !== null
+    ? `Last reviewed ${lastReviewedDays}d ago`
+    : 'Never reviewed';
+
+  if (!project.next_review_date) {
+    return {
+      label: 'No schedule',
+      colorClass: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',
+      title: lastReviewedText,
+    };
+  }
 
   const now = new Date();
   const reviewDate = new Date(project.next_review_date);
@@ -85,29 +96,30 @@ function getReviewIndicator(project: Project): { label: string; colorClass: stri
 
   if (diffDays < 0) {
     return {
-      label: 'Overdue',
+      label: `${Math.abs(diffDays)}d overdue`,
       colorClass: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300',
-      title: `Review was due ${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? 's' : ''} ago`,
+      title: `Review was due ${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? 's' : ''} ago. ${lastReviewedText}`,
     };
   }
   if (diffDays <= 3) {
     return {
-      label: 'Soon',
+      label: diffDays === 0 ? 'Due today' : `In ${diffDays}d`,
       colorClass: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300',
-      title: `Review due in ${diffDays} day${diffDays !== 1 ? 's' : ''}`,
+      title: `Review due ${diffDays === 0 ? 'today' : `in ${diffDays} day${diffDays !== 1 ? 's' : ''}`}. ${lastReviewedText}`,
     };
   }
-  if (project.last_reviewed_at) {
-    const lastReviewed = daysSince(project.last_reviewed_at);
-    if (lastReviewed !== null && lastReviewed <= 7) {
-      return {
-        label: 'Current',
-        colorClass: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300',
-        title: `Reviewed ${lastReviewed} day${lastReviewed !== 1 ? 's' : ''} ago`,
-      };
-    }
+  if (lastReviewedDays !== null && lastReviewedDays <= 7) {
+    return {
+      label: 'Current',
+      colorClass: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300',
+      title: `${lastReviewedText}. Next due in ${diffDays}d`,
+    };
   }
-  return null;
+  return {
+    label: `In ${diffDays}d`,
+    colorClass: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
+    title: `Next review in ${diffDays} days. ${lastReviewedText}`,
+  };
 }
 
 export function ProjectListView({ projects }: ProjectListViewProps) {
@@ -149,8 +161,8 @@ export function ProjectListView({ projects }: ProjectListViewProps) {
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {projects.map((project) => {
               const priorityInfo = getPriorityInfo(project.priority);
-              const completedTasks = project.tasks?.filter(t => t.status === 'completed').length || 0;
-              const totalTasks = project.tasks?.length || 0;
+              const totalTasks = project.task_count ?? project.tasks?.length ?? 0;
+              const completedTasks = project.completed_task_count ?? project.tasks?.filter(t => t.status === 'completed').length ?? 0;
               const momentumPct = Math.round(project.momentum_score * 100);
               const reviewIndicator = getReviewIndicator(project);
 
@@ -218,17 +230,13 @@ export function ProjectListView({ projects }: ProjectListViewProps) {
 
                   {/* Review */}
                   <td className="px-4 py-4">
-                    {reviewIndicator ? (
-                      <span
-                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${reviewIndicator.colorClass}`}
-                        title={reviewIndicator.title}
-                      >
-                        <Eye className="w-3 h-3" />
-                        {reviewIndicator.label}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-sm">-</span>
-                    )}
+                    <span
+                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${reviewIndicator.colorClass}`}
+                      title={reviewIndicator.title}
+                    >
+                      <Eye className="w-3 h-3" />
+                      {reviewIndicator.label}
+                    </span>
                   </td>
 
                   {/* Tasks */}

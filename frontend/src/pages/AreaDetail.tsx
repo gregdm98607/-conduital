@@ -325,7 +325,7 @@ export function AreaDetail() {
             </div>
 
             {/* Area Metrics */}
-            <div className="grid grid-cols-4 gap-4 mt-6 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 text-sm">
               <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{allProjects.length}</div>
                 <span className="text-gray-500 dark:text-gray-400">Total Projects</span>

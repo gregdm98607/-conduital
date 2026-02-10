@@ -10,6 +10,7 @@ import { Loading } from '../components/common/Loading';
 import { SearchInput } from '../components/common/SearchInput';
 import { Modal } from '../components/common/Modal';
 import type { InboxItem, InboxResultType, Project, InboxBatchActionType } from '../types';
+import { parseUTCDate } from '../utils/date';
 
 /**
  * BETA-034: Get age indicator for an unprocessed inbox item.
@@ -17,7 +18,7 @@ import type { InboxItem, InboxResultType, Project, InboxBatchActionType } from '
  */
 function getAgeIndicator(capturedAt: string): { colorClass: string; label: string } | null {
   const now = new Date();
-  const captured = new Date(capturedAt);
+  const captured = parseUTCDate(capturedAt);
   const diffMs = now.getTime() - captured.getTime();
   const diffHours = diffMs / (1000 * 60 * 60);
   const diffDays = Math.floor(diffHours / 24);

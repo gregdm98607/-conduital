@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Modal } from '@/components/common/Modal';
 import { useUpdateTask } from '@/hooks/useTasks';
+import { useContexts } from '@/hooks/useContexts';
 import { Task, UrgencyZone } from '@/types';
 import { Loader2 } from 'lucide-react';
 import { formatDateForApi } from '@/utils/date';
@@ -30,6 +31,7 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
   });
 
   const updateTask = useUpdateTask();
+  const { data: contexts } = useContexts();
 
   // Reset form data when task changes
   useEffect(() => {
@@ -248,12 +250,11 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
               disabled={updateTask.isPending}
             >
               <option value="">No Context</option>
-              <option value="work">Work</option>
-              <option value="home">Home</option>
-              <option value="computer">Computer</option>
-              <option value="phone">Phone</option>
-              <option value="errands">Errands</option>
-              <option value="reading">Reading</option>
+              {contexts?.map(ctx => (
+                <option key={ctx.id} value={ctx.name}>
+                  {ctx.name.charAt(0).toUpperCase() + ctx.name.slice(1)}
+                </option>
+              ))}
             </select>
           </div>
 

@@ -370,7 +370,7 @@ export function ProjectDetail() {
         <MomentumBar score={project.momentum_score} />
         <MomentumBreakdown projectId={project.id} />
 
-        <div className="grid grid-cols-3 gap-4 mt-6 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 text-sm">
           <div>
             <span className="text-gray-500 dark:text-gray-400">Last Activity</span>
             <div className="font-medium text-gray-900 dark:text-gray-100">{formatRelativeTime(project.last_activity_at)}</div>

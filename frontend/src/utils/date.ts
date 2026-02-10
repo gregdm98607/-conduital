@@ -5,9 +5,33 @@
 import { formatDistanceToNow, format, parseISO, isValid, differenceInDays } from 'date-fns';
 
 /**
+ * Parse an ISO date string from the API, treating timezone-naive strings as UTC.
+ *
+ * The backend stores UTC timestamps but SQLite's func.now() may produce naive
+ * datetime strings (without timezone suffix). date-fns parseISO treats naive
+ * strings as local time, which causes timezone-offset errors.
+ *
+ * This function appends 'Z' to naive strings so they're correctly interpreted as UTC.
+ */
+export function parseUTCDate(dateString: string): Date {
+  // Date-only strings (YYYY-MM-DD) should remain as-is for date comparisons
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return parseISO(dateString);
+  }
+  // If the string has no timezone info, append 'Z' to mark it as UTC
+  if (!dateString.endsWith('Z') && !dateString.includes('+') && !/[-]\d{2}:\d{2}$/.test(dateString)) {
+    return parseISO(dateString + 'Z');
+  }
+  return parseISO(dateString);
+}
+
+/**
  * Safely format a date string for API submission.
  * Returns the date in YYYY-MM-DD format, or undefined if empty/invalid.
  * This ensures consistent date format between create and edit operations.
+ *
+ * Note: Uses parseISO directly since this handles HTML date input strings,
+ * not API response timestamps.
  *
  * @param dateString - Date string from form input (usually YYYY-MM-DD from HTML date input)
  * @returns Date string in YYYY-MM-DD format, or undefined
@@ -33,18 +57,24 @@ export function formatDateForApi(dateString: string | undefined | null): string 
 export function formatRelativeTime(dateString?: string): string {
   if (!dateString) return 'Never';
   try {
-    const date = parseISO(dateString);
+    const date = parseUTCDate(dateString);
     if (!isValid(date)) return 'Invalid date';
 
     const now = new Date();
     const diffDays = differenceInDays(now, date);
 
-    // Clamp future dates — likely a timezone mismatch, not a real future event
-    if (date > now) return 'Just now';
-
     // For old dates (30+ days), show absolute date for clarity
     if (diffDays >= 30) {
       return format(date, 'MMM d, yyyy');
+    }
+
+    // For very recent timestamps that may appear slightly in the future due to
+    // clock skew (< 60 seconds), show "Just now"
+    if (date > now) {
+      const diffMs = date.getTime() - now.getTime();
+      if (diffMs < 60000) return 'Just now';
+      // If genuinely in the future by more than a minute, show the distance
+      return formatDistanceToNow(date, { addSuffix: true });
     }
 
     return formatDistanceToNow(date, { addSuffix: true });
@@ -56,7 +86,7 @@ export function formatRelativeTime(dateString?: string): string {
 export function formatDate(dateString?: string): string {
   if (!dateString) return '';
   try {
-    const date = parseISO(dateString);
+    const date = parseUTCDate(dateString);
     return format(date, 'MMM d, yyyy');
   } catch {
     return 'Invalid date';
@@ -66,7 +96,7 @@ export function formatDate(dateString?: string): string {
 export function formatDateTime(dateString?: string): string {
   if (!dateString) return '';
   try {
-    const date = parseISO(dateString);
+    const date = parseUTCDate(dateString);
     return format(date, 'MMM d, yyyy h:mm a');
   } catch {
     return 'Invalid date';
@@ -76,7 +106,7 @@ export function formatDateTime(dateString?: string): string {
 export function daysSince(dateString?: string): number | null {
   if (!dateString) return null;
   try {
-    const date = parseISO(dateString);
+    const date = parseUTCDate(dateString);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -190,6 +220,7 @@ export function getDueDateInfo(
   }
 
   try {
+    // Due dates are date-only strings (YYYY-MM-DD), use parseISO directly
     const dueDate = parseISO(dueDateString);
     const today = new Date();
     // Reset time to compare dates only

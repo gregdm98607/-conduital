@@ -262,6 +262,10 @@ class AIService:
         return {
             "title": project.title,
             "description": project.description or "",
+            "purpose": project.purpose or "",
+            "vision_statement": project.vision_statement or "",
+            "brainstorm_notes": project.brainstorm_notes or "",
+            "organizing_notes": project.organizing_notes or "",
             "area": project.area.name if project.area else None,
             "status": project.status,
             "days_stalled": days_stalled,
@@ -287,6 +291,11 @@ Area: {context['area'] or 'Not specified'}
 
 Description:
 {context['description'] or 'No description available'}
+
+Purpose: {context['purpose'] or 'Not defined'}
+Vision: {context['vision_statement'] or 'Not defined'}
+Brainstorm Notes: {context['brainstorm_notes'] or 'Not available'}
+Organizing Notes: {context['organizing_notes'] or 'Not available'}
 
 Current Phase: {context['current_phase'] or 'Not specified'}
 
@@ -342,6 +351,8 @@ Task:"""
         prompt = f"""Analyze the health of this project and provide recommendations.
 
 Project: {context['title']}
+Purpose: {context['purpose'] or 'Not defined'}
+Vision: {context['vision_statement'] or 'Not defined'}
 Momentum Score: {context['momentum_score']}/1.0
 Days Since Activity: {context['days_stalled']}
 Current Phase: {context['current_phase'] or 'Not specified'}
@@ -384,6 +395,8 @@ Recommendations:
         prompt = f"""Suggest the single most important next action for this project.
 
 Project: {context['title']}
+Purpose: {context['purpose'] or 'Not specified'}
+Vision: {context['vision_statement'] or 'Not specified'}
 Current Phase: {context['current_phase'] or 'Not specified'}
 
 Description:

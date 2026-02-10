@@ -31,8 +31,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BETA-031:** Inbox batch processing — `POST /inbox/batch-process` endpoint for bulk actions (assign_to_project, delete, convert_to_task). Frontend: multi-select checkboxes, select-all toggle, bulk action toolbar with project dropdown.
 - **BETA-032:** Inbox processing stats — `GET /inbox/stats` returns `unprocessed_count`, `processed_today`, `avg_processing_time_hours`. Replaces client-side calculation (DEBT-064).
 - **BETA-034:** Inbox item age indicator — subtle visual aging on unprocessed items: gray clock (24h-3d), amber (3d-7d), red (>7d). Informational, not gamified.
+- **BACKLOG-125:** Goals, Visions, and Contexts frontend pages — full CRUD UI for GTD Horizons of Focus (backend existed with no frontend). Includes search, filters, grid/list toggle, create/edit modals. Goals: status + timeframe filters. Visions: timeframe filter. Contexts: type filter.
+- **BACKLOG-125:** "Horizons" navigation section in sidebar — Goals (Crosshair icon), Visions (Eye icon), Contexts (Tag icon)
+- **BACKLOG-124:** NPM fields (purpose, vision, brainstorm, organizing notes) included in all AI prompts — unstuck task generation, project health analysis, next action suggestion
+- **BACKLOG-123:** File Sync Settings UI — editable sync folder root, watch directories, sync interval (5-600s), and conflict strategy (prompt/file_wins/db_wins/merge). New `GET/PUT /settings/sync` endpoints with path validation and .env persistence.
 
 ### Changed
+- **BACKLOG-127:** Projects page "Review" column redesigned — always shows a status instead of "-". New states: "No schedule" (gray), "Xd overdue" (red), "Due today" / "In Xd" (yellow/gray), "Current" (green). Tooltips now show both last review date and next review date.
+- **BACKLOG-122:** UTC time normalization — new `parseUTCDate()` helper appends `Z` to timezone-naive ISO strings from backend; all date formatting functions use it. Backend `TimestampMixin` now uses Python-side `datetime.now(timezone.utc)` defaults alongside SQLite `func.now()`.
+- **BACKLOG-126:** Responsive grid normalization — ProjectDetail metrics grid (`grid-cols-1 sm:grid-cols-3`) and AreaDetail metrics grid (`grid-cols-2 md:grid-cols-4`) now responsive on mobile
 - **DEBT-083:** Installer graceful shutdown — `InitializeSetup()` and `InitializeUninstall()` now try `POST /api/v1/shutdown` before falling back to `taskkill /F`. Gives the running app 8 seconds to shut down cleanly.
 - **BACKLOG-116 / DEBT-080:** Version single source of truth — `config.py` now reads version from `pyproject.toml` at startup; `scripts/sync_version.py` propagates to `package.json`, `conduital.iss`, and `config.py` fallback. Only edit `pyproject.toml` to change version.
 - **DEBT-061:** Project model `task_count` and `completed_task_count` are now explicit class attributes with defaults, replacing fragile dynamic `setattr()` assignment in service layer.

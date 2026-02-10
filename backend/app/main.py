@@ -126,6 +126,19 @@ async def lifespan(app: FastAPI):
 
     enable_wal_mode()
 
+    # Seed default contexts if table is empty (links Horizons > Contexts to task pick list)
+    from app.core.database import get_db
+    from app.api.contexts import seed_default_contexts
+    db_gen = get_db()
+    db = next(db_gen)
+    try:
+        seed_default_contexts(db)
+    finally:
+        try:
+            next(db_gen)
+        except StopIteration:
+            pass
+
     enabled_modules = register_modules()
 
     logger.info(f"{settings.APP_NAME} v{settings.VERSION} started")

@@ -341,6 +341,48 @@ export interface WeeklyReviewHistory {
   days_since_last_review: number | null;
 }
 
+// ============================================================================
+// Goals, Visions, Contexts (GTD Horizons)
+// ============================================================================
+
+export type GoalTimeframe = '1_year' | '2_year' | '3_year';
+export type GoalStatus = 'active' | 'achieved' | 'deferred' | 'abandoned';
+
+export interface Goal {
+  id: number;
+  title: string;
+  description?: string;
+  timeframe?: GoalTimeframe;
+  target_date?: string;
+  status: GoalStatus;
+  completed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type VisionTimeframe = '3_year' | '5_year' | 'life_purpose';
+
+export interface Vision {
+  id: number;
+  title: string;
+  description?: string;
+  timeframe?: VisionTimeframe;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ContextType = 'location' | 'energy' | 'work_type' | 'time' | 'tool';
+
+export interface Context {
+  id: number;
+  name: string;
+  context_type?: ContextType;
+  description?: string;
+  icon?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Sync types
 export interface SyncFileStatus {
   file_path: string;

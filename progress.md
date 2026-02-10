@@ -1,5 +1,86 @@
 # Progress Log
 
+## Session: 2026-02-09 — Beta Session 5: Remaining Pillar 3 — Code-Actionable Items
+
+### Completed Items (6 backlog items)
+
+#### BACKLOG-126: Normalize Grid View Layouts
+- ProjectDetail metrics grid: `grid grid-cols-3` → `grid grid-cols-1 sm:grid-cols-3` (responsive on mobile)
+- AreaDetail metrics grid: `grid grid-cols-4` → `grid grid-cols-2 md:grid-cols-4` (responsive on mobile)
+
+#### BACKLOG-124: NPM Fields in AI Prompts
+- `_build_project_context()` already returned NPM fields — confirmed present in context dict
+- `_create_unstuck_task_prompt()`: Added Purpose, Vision, Brainstorm Notes, Organizing Notes block after Description
+- `analyze_project_health()`: Added Purpose + Vision to health analysis prompt
+- `suggest_next_action()`: Added Purpose + Vision to next action suggestion prompt
+- All 3 AI methods now receive full NPM context for better suggestions
+
+#### BACKLOG-125: Goals/Visions/Contexts Frontend
+Backend had full CRUD (models, schemas, routers mounted in main.py) but zero frontend implementation.
+
+**New files created (11):**
+- `frontend/src/types/index.ts` — Goal, Vision, Context interfaces + enum types (GoalTimeframe, GoalStatus, VisionTimeframe, ContextType)
+- `frontend/src/services/api.ts` — 15 API methods (5 per entity: getAll, getOne, create, update, delete)
+- `frontend/src/hooks/useGoals.ts` — useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal
+- `frontend/src/hooks/useVisions.ts` — same pattern
+- `frontend/src/hooks/useContexts.ts` — same pattern
+- `frontend/src/components/goals/GoalModal.tsx` — create/edit modal (title, description, timeframe, target_date, status)
+- `frontend/src/components/visions/VisionModal.tsx` — create/edit modal (title, description, timeframe)
+- `frontend/src/components/contexts/ContextModal.tsx` — create/edit modal (name, context_type, description, icon)
+- `frontend/src/pages/Goals.tsx` — full page with search, status/timeframe filters, grid/list toggle, cards with badges
+- `frontend/src/pages/Visions.tsx` — page with search, timeframe filter, grid/list toggle
+- `frontend/src/pages/Contexts.tsx` — page with search, type filter, grid/list toggle
+
+**Modified files:**
+- `frontend/src/App.tsx` — added /goals, /visions, /contexts routes
+- `frontend/src/components/layout/Layout.tsx` — added "Horizons" nav section (Goals=Crosshair, Visions=Eye, Contexts=Tag)
+
+**Design decisions:**
+- List-only pages (no detail pages) — GTD Horizons are reference pages, not primary work surfaces
+- Simplified vs Areas — no archive/unarchive, no health scores, no review tracking
+- Used Eye icon instead of Telescope (not available in installed lucide-react version)
+
+#### BACKLOG-122: UTC vs Local Time Normalization
+**Root cause:** SQLite `func.now()` returns timezone-naive datetimes → Pydantic serializes without `Z` suffix → `parseISO()` treats as local time → off by user's TZ offset.
+
+**Backend fix:**
+- `backend/app/models/base.py`: TimestampMixin now uses `default=lambda: datetime.now(timezone.utc)` alongside `server_default=func.now()`
+- New records get timezone-aware timestamps from Python side
+
+**Frontend fix:**
+- New `parseUTCDate()` helper in `frontend/src/utils/date.ts`: appends `Z` to naive datetime strings before parsing
+- Updated `formatRelativeTime()`, `formatDate()`, `formatDateTime()`, `daysSince()` to use `parseUTCDate()`
+- Replaced blanket future-date clamp workaround with clock-skew-aware check (< 60s = "Just now")
+- `frontend/src/pages/InboxPage.tsx`: `getAgeIndicator()` uses `parseUTCDate()` instead of `new Date()`
+
+#### BACKLOG-127: Projects Page "Review" Column Clarity
+- Redesigned `getReviewIndicator()` in `ProjectListView.tsx` to always return a status (never null/"-")
+- New states: "No schedule" (gray), "Xd overdue" (red), "Due today"/"In Xd" (yellow for ≤3d, gray for >3d), "Current" (green)
+- Tooltips now show both last review date and next review date for full context
+- Removed null check from Review cell — always renders a badge
+
+#### BACKLOG-123: File Sync Settings UI
+- **Backend:** New `GET /settings/sync` and `PUT /settings/sync` endpoints in `app/api/settings.py`
+  - `SyncSettingsResponse` and `SyncSettingsUpdate` Pydantic schemas
+  - Path validation (must exist, must be directory) for sync_folder_root
+  - Watch directories validation (non-empty list, no blank entries)
+  - Sync interval range: 5-600 seconds
+  - Conflict strategy enum: prompt, file_wins, db_wins, merge
+  - Persists all changes to .env via existing `_persist_to_env()` mechanism
+- **Frontend:** New `getSyncSettings()` and `updateSyncSettings()` API methods in `api.ts`
+- **Frontend:** Replaced read-only sync section in Settings.tsx with editable form:
+  - Sync Folder Root text input with validation feedback
+  - Watch Directories comma-separated input
+  - Sync Interval number input (5-600s)
+  - Conflict Strategy dropdown (Prompt/File Wins/DB Wins/Merge)
+  - Loading state, save button, error toast with backend validation messages
+
+#### Tests
+- Full suite: 216/216 passing (no regressions)
+- TypeScript: 0 errors
+
+---
+
 ## Session: 2026-02-09 — Beta Session 4: Pillar 3 — Infrastructure & Polish
 
 ### Completed Items (9 items)

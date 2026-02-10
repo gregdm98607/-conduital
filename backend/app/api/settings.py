@@ -64,6 +64,32 @@ class AITestResponse(BaseModel):
     model: Optional[str] = None
 
 
+class SyncSettingsResponse(BaseModel):
+    """File sync settings response"""
+    sync_folder_root: Optional[str] = None
+    watch_directories: list[str]
+    sync_interval: int
+    conflict_strategy: str
+
+
+class SyncSettingsUpdate(BaseModel):
+    """Schema for updating file sync settings"""
+    sync_folder_root: Optional[str] = Field(None, max_length=1000)
+    watch_directories: Optional[list[str]] = None
+    sync_interval: Optional[int] = Field(None, ge=5, le=600)
+    conflict_strategy: Optional[str] = Field(None, pattern=r"^(prompt|file_wins|db_wins|merge)$")
+
+    @model_validator(mode="after")
+    def validate_watch_dirs(self) -> "SyncSettingsUpdate":
+        if self.watch_directories is not None:
+            if len(self.watch_directories) == 0:
+                raise ValueError("At least one watch directory is required")
+            for d in self.watch_directories:
+                if not d.strip():
+                    raise ValueError("Watch directory names cannot be empty")
+        return self
+
+
 class MomentumSettingsResponse(BaseModel):
     """Momentum threshold settings"""
     stalled_threshold_days: int
@@ -333,3 +359,58 @@ def update_momentum_settings(update: MomentumSettingsUpdate):
         activity_decay_days=settings.MOMENTUM_ACTIVITY_DECAY_DAYS,
         recalculate_interval=settings.MOMENTUM_RECALCULATE_INTERVAL,
     )
+
+
+@router.get("/sync", response_model=SyncSettingsResponse)
+def get_sync_settings():
+    """Get current file sync settings"""
+    return SyncSettingsResponse(
+        sync_folder_root=settings.SECOND_BRAIN_ROOT,
+        watch_directories=settings.WATCH_DIRECTORIES,
+        sync_interval=settings.SYNC_INTERVAL,
+        conflict_strategy=settings.CONFLICT_STRATEGY,
+    )
+
+
+@router.put("/sync", response_model=SyncSettingsResponse)
+def update_sync_settings(update: SyncSettingsUpdate):
+    """Update file sync settings and persist to .env"""
+    env_updates: dict[str, str] = {}
+
+    if update.sync_folder_root is not None:
+        path_value = update.sync_folder_root.strip()
+        if path_value:
+            resolved = Path(path_value).resolve()
+            if not resolved.exists():
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Path does not exist: {path_value}",
+                )
+            if not resolved.is_dir():
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Path is not a directory: {path_value}",
+                )
+            settings.SECOND_BRAIN_ROOT = str(resolved)
+            env_updates["SECOND_BRAIN_ROOT"] = str(resolved)
+        else:
+            settings.SECOND_BRAIN_ROOT = None
+            env_updates["SECOND_BRAIN_ROOT"] = ""
+
+    if update.watch_directories is not None:
+        cleaned = [d.strip() for d in update.watch_directories if d.strip()]
+        settings.WATCH_DIRECTORIES = cleaned
+        env_updates["WATCH_DIRECTORIES"] = ",".join(cleaned)
+
+    if update.sync_interval is not None:
+        settings.SYNC_INTERVAL = update.sync_interval
+        env_updates["SYNC_INTERVAL"] = str(update.sync_interval)
+
+    if update.conflict_strategy is not None:
+        settings.CONFLICT_STRATEGY = update.conflict_strategy
+        env_updates["CONFLICT_STRATEGY"] = update.conflict_strategy
+
+    if env_updates:
+        _persist_to_env(env_updates)
+
+    return get_sync_settings()

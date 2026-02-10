@@ -34,6 +34,9 @@ import type {
   InboxBatchResponse,
   WeeklyReviewCompletion,
   WeeklyReviewHistory,
+  Goal,
+  Vision,
+  Context,
 } from '@/types';
 
 class APIClient {
@@ -459,6 +462,90 @@ class APIClient {
   }
 
   // ============================================================================
+  // Goals
+  // ============================================================================
+
+  async getGoals(signal?: AbortSignal): Promise<Goal[]> {
+    const response = await this.client.get<Goal[]>('/goals', { signal });
+    return response.data;
+  }
+
+  async getGoal(id: number, signal?: AbortSignal): Promise<Goal> {
+    const response = await this.client.get<Goal>(`/goals/${id}`, { signal });
+    return response.data;
+  }
+
+  async createGoal(goal: Partial<Goal>): Promise<Goal> {
+    const response = await this.client.post<Goal>('/goals', goal);
+    return response.data;
+  }
+
+  async updateGoal(id: number, goal: Partial<Goal>): Promise<Goal> {
+    const response = await this.client.put<Goal>(`/goals/${id}`, goal);
+    return response.data;
+  }
+
+  async deleteGoal(id: number): Promise<void> {
+    await this.client.delete(`/goals/${id}`);
+  }
+
+  // ============================================================================
+  // Visions
+  // ============================================================================
+
+  async getVisions(signal?: AbortSignal): Promise<Vision[]> {
+    const response = await this.client.get<Vision[]>('/visions', { signal });
+    return response.data;
+  }
+
+  async getVision(id: number, signal?: AbortSignal): Promise<Vision> {
+    const response = await this.client.get<Vision>(`/visions/${id}`, { signal });
+    return response.data;
+  }
+
+  async createVision(vision: Partial<Vision>): Promise<Vision> {
+    const response = await this.client.post<Vision>('/visions', vision);
+    return response.data;
+  }
+
+  async updateVision(id: number, vision: Partial<Vision>): Promise<Vision> {
+    const response = await this.client.put<Vision>(`/visions/${id}`, vision);
+    return response.data;
+  }
+
+  async deleteVision(id: number): Promise<void> {
+    await this.client.delete(`/visions/${id}`);
+  }
+
+  // ============================================================================
+  // Contexts
+  // ============================================================================
+
+  async getContexts(signal?: AbortSignal): Promise<Context[]> {
+    const response = await this.client.get<Context[]>('/contexts', { signal });
+    return response.data;
+  }
+
+  async getContext(id: number, signal?: AbortSignal): Promise<Context> {
+    const response = await this.client.get<Context>(`/contexts/${id}`, { signal });
+    return response.data;
+  }
+
+  async createContext(ctx: Partial<Context>): Promise<Context> {
+    const response = await this.client.post<Context>('/contexts', ctx);
+    return response.data;
+  }
+
+  async updateContext(id: number, ctx: Partial<Context>): Promise<Context> {
+    const response = await this.client.put<Context>(`/contexts/${id}`, ctx);
+    return response.data;
+  }
+
+  async deleteContext(id: number): Promise<void> {
+    await this.client.delete(`/contexts/${id}`);
+  }
+
+  // ============================================================================
   // Settings
   // ============================================================================
 
@@ -541,6 +628,35 @@ class APIClient {
     recalculate_interval: number;
   }> {
     const response = await this.client.put('/settings/momentum', settings);
+    return response.data;
+  }
+
+  // ============================================================================
+  // Sync Settings
+  // ============================================================================
+
+  async getSyncSettings(signal?: AbortSignal): Promise<{
+    sync_folder_root: string | null;
+    watch_directories: string[];
+    sync_interval: number;
+    conflict_strategy: string;
+  }> {
+    const response = await this.client.get('/settings/sync', { signal });
+    return response.data;
+  }
+
+  async updateSyncSettings(settings: {
+    sync_folder_root?: string;
+    watch_directories?: string[];
+    sync_interval?: number;
+    conflict_strategy?: string;
+  }): Promise<{
+    sync_folder_root: string | null;
+    watch_directories: string[];
+    sync_interval: number;
+    conflict_strategy: string;
+  }> {
+    const response = await this.client.put('/settings/sync', settings);
     return response.data;
   }
 

@@ -208,7 +208,7 @@
 - BETA-032: Processed Today stats endpoint ✅
 - BETA-034: Inbox item age indicator ✅
 
-### Session 4: Pillar 3 — Infrastructure & Polish ← **CURRENT SESSION**
+### Session 4: Pillar 3 — Infrastructure & Polish
 - DEBT-083: Installer graceful shutdown ✅
 - BACKLOG-116 / DEBT-080: Version SSoT ✅
 - DEBT-039: MemoryPage priority input fix ✅
@@ -218,10 +218,83 @@
 - BACKLOG-119: Task Push/Defer quick action ✅
 - DEBT-062: Closed by design ✅
 
-### Session 5 (Remaining): Distribution & Testing
+### Session 5: Remaining Pillar 3 — Code-Actionable Items ✅
+- BACKLOG-126: Normalize grid view layouts (ProjectDetail + AreaDetail) ✅
+- BACKLOG-124: NPM fields in AI prompts (all 3 AI methods) ✅
+- BACKLOG-125: Goals/Visions/Contexts frontend (types, API, hooks, modals, pages, routes, nav) ✅
+- BACKLOG-122: UTC vs local time normalization (parseUTCDate + TimestampMixin fix) ✅
+- BACKLOG-127: Review column clarity (always shows status, better labels/tooltips) ✅
+- BACKLOG-123: File Sync Settings UI (editable form, backend endpoints, .env persistence) ✅
+
+### Session 6: UI Review + Bug Fixes + Context Unification ✅
+- UI review via Chrome: 19 features verified across 8+ pages ✅
+- BUG-025: Fixed ProjectListView task count (0/0 → correct counts) ✅
+- Context unification: Seeded 6 default contexts + dynamic task dropdowns ✅
+- Findings documented in findings.md ✅
+
+### Session 7 (Remaining): Distribution & Testing
 - Privacy policy, app icon, screenshots
 - VM testing (Windows 10/11)
 - Upgrade-in-place testing
+
+---
+
+## Beta Release Plan (v1.0.0-beta)
+
+### Pre-Release Checklist
+
+| Step | Description | Status |
+|------|-------------|--------|
+| 1 | Commit Session 5+6 changes (21 files, ~623 insertions) | Pending |
+| 2 | Bump version: `1.0.0-alpha` → `1.0.0-beta` in pyproject.toml | Pending |
+| 3 | Run `sync_version.py` to propagate to package.json, installer, config.py | Pending |
+| 4 | Update .env.example VERSION to 1.0.0-beta | Pending |
+| 5 | Finalize CHANGELOG.md: move [Unreleased] → [1.0.0-beta] with date | Pending |
+| 6 | Add BUG-025 fix + context unification to CHANGELOG | Pending |
+| 7 | Run full backend test suite (expect 216/216) | Pending |
+| 8 | Run TypeScript check (expect 0 errors) | Pending |
+| 9 | Run Vite production build | Pending |
+| 10 | Commit all changes with release message | Pending |
+| 11 | Create annotated git tag `v1.0.0-beta` | Pending |
+| 12 | Build PyInstaller package (`build.bat`) | Pending |
+| 13 | Build Inno Setup installer (`ISCC conduital.iss`) | Pending |
+| 14 | Smoke test installed exe | Pending |
+
+### Version Files to Update (6 total)
+
+1. `backend/pyproject.toml` — canonical source (edit this only)
+2. `frontend/package.json` — synced by script
+3. `installer/conduital.iss` — synced by script (both `#define` and output filename)
+4. `backend/app/core/config.py` — synced by script (`_FALLBACK_VERSION`)
+5. `backend/.env.example` — manual update
+6. `CHANGELOG.md` — manual update
+
+### What Changed Since Alpha (Summary for CHANGELOG)
+
+**Added (38 items):**
+- Momentum Intelligence: graduated scoring (4 formula improvements), trend arrows, sparklines, progress bars, "almost there" nudge, dashboard summary, momentum history API, daily snapshots
+- GTD Inbox: weekly review tracking, batch processing, stats endpoint, age indicators
+- Horizons: Goals/Visions/Contexts full CRUD pages with sidebar navigation
+- Task Quick Actions: defer/push popover, make next action bulk toolbar
+- File Sync Settings: editable UI with backend validation
+- Context seeding: 6 default contexts auto-created on first startup
+- Dynamic context dropdowns in task create/edit modals
+
+**Changed (8 items):**
+- Review column redesign (always visible status)
+- UTC time normalization (timezone-aware parsing)
+- Responsive grid layouts
+- Installer graceful shutdown
+- Version SSoT from pyproject.toml
+- Project model explicit task count attributes
+
+**Fixed (3 items):**
+- BUG-025: Projects list view task counts showing 0/0
+- MemoryPage priority input range clamping
+- build.bat size reporting
+
+**Accessibility (4 items):**
+- Modal, UserMenu, ProjectCard, Settings ARIA improvements
 
 ---
 
@@ -241,4 +314,4 @@ The goal is to make the data *informative and visible*, not to gamify the experi
 
 ---
 
-*Last updated: 2026-02-09 (Session 4: Pillar 3 + alpha feedback — DEBT-039/061/062/064/080/083, BACKLOG-116/119/120)*
+*Last updated: 2026-02-09 (Session 6: UI Review + BUG-025 + Context Unification + Beta Release Plan)*
