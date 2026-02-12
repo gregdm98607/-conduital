@@ -395,6 +395,8 @@ export function Settings() {
     try {
       await api.downloadJSONExport();
       toast.success('JSON export downloaded');
+      // Refresh preview to reflect current state
+      handleLoadExportPreview();
     } catch {
       toast.error('Failed to download JSON export');
     }
@@ -406,6 +408,8 @@ export function Settings() {
     try {
       await api.downloadDatabaseBackup();
       toast.success('Database backup downloaded');
+      // Refresh preview to reflect current state
+      handleLoadExportPreview();
     } catch {
       toast.error('Failed to download database backup');
     }
@@ -922,7 +926,11 @@ export function Settings() {
                   className="input"
                   value={aiModel}
                   onChange={(e) => setAiModel(e.target.value)}
+                  disabled={currentModels.length === 0}
                 >
+                  {currentModels.length === 0 && (
+                    <option value="">Loading models...</option>
+                  )}
                   {currentModels.map((m) => (
                     <option key={m.id} value={m.id}>{m.name}</option>
                   ))}
