@@ -882,6 +882,11 @@ class APIClient {
     const response = await axios.get<{ enabled_modules: string[] }>('/modules', { signal });
     return response.data.enabled_modules;
   }
+
+  async getVersion(signal?: AbortSignal): Promise<string> {
+    const response = await axios.get<{ version: string }>('/health', { signal });
+    return response.data.version;
+  }
 }
 
 // Export singleton instance

@@ -422,6 +422,8 @@ This backlog is organized by commercial release milestones. Each release builds 
 | ~~BACKLOG-126~~ | ~~**Normalize Grid View Layouts Across Pages**~~ ✅ Done | **Alpha feedback:** Grid tile layouts are inconsistent. Some pages auto-arrange into 3 columns based on screen size, while others display as single column only. **Current state:** Standard 3-column responsive grid pattern (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3`) is used on: Dashboard areas widget, Projects grid view, Areas grid view, NextActions zones view, NextActions grid view. **Audit needed:** Identify any pages or sections where grid tiles render as single column when they should use the responsive 3-column pattern. Suspected locations: ProjectDetail task sections, AreaDetail project lists, Dashboard widgets that should tile but don't, any new pages added post-pattern-establishment. **Action:** (1) Audit all pages with card/tile content for grid consistency. (2) Extract a shared grid container component or Tailwind utility class (e.g., `responsive-card-grid`) to enforce the standard `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6` pattern. (3) Apply consistently. (4) Consider if some pages intentionally use single-column (e.g., detail pages with full-width content). Document the grid standard. |
 | ~~BACKLOG-127~~ | ~~**REVIEW: Projects Page "Review" Column — Unclear Output**~~ ✅ Done | **Alpha feedback:** The REVIEW column on the Projects page has unclear output. Review what the intent of this column is, whether the displayed data is correct and meaningful, and whether the label/format communicates its purpose to users. |
 | BACKLOG-128 | **REVIEW: Badge Configuration & Today's Focus Badge Layout** | **Alpha feedback:** Review badge configuration generally across the app. **Preferred design for Today's Focus page:** Badges at the top of Today's Focus are preferred. Each badge should show a single number with a highlighted/colored left side (accent bar or color-coded left border). Audit current badge usage and standardize the pattern. |
+| ~~BUG-026~~ | ~~**Inbox missing from sidebar in beta build**~~ ✅ Done | **Fix:** Added `gtd_inbox` to `basic` commercial preset (registry.py) and removed `requiresModule` gate from Inbox nav item. Inbox backend routes were always mounted regardless of module — frontend now matches. |
+| ~~BACKLOG-129~~ | ~~**Display application version number in UI**~~ ✅ Done | **Fix:** Sidebar footer now fetches version from `/health` endpoint and displays dynamically (e.g., "v1.0.0-beta"). Replaces hardcoded "v1.0". |
 
 ---
 
@@ -623,5 +625,5 @@ For each release, verify:
 
 ---
 
-*Last updated: 2026-02-09 (Beta Session 4: DEBT-039/061/062/064/080/083 + BACKLOG-116/119/120 done)*
+*Last updated: 2026-02-09 (v1.0.0-beta released; BUG-026 Inbox sidebar + BACKLOG-129 version display added)*
 *Reorganized by commercial release milestones*

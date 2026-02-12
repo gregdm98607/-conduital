@@ -41,7 +41,7 @@ const ALL_NAV_SECTIONS: NavSection[] = [
     items: [
       { name: 'Dashboard', href: '/', icon: Home },
       { name: "Today's Focus", href: '/daily', icon: Target },
-      { name: 'Inbox', href: '/inbox', icon: Inbox, requiresModule: 'gtd_inbox' },
+      { name: 'Inbox', href: '/inbox', icon: Inbox },
     ],
   },
   {
@@ -79,6 +79,7 @@ const ALL_NAV_SECTIONS: NavSection[] = [
 export function Layout() {
   const location = useLocation();
   const [enabledModules, setEnabledModules] = useState<string[] | null>(null);
+  const [appVersion, setAppVersion] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -86,6 +87,11 @@ export function Layout() {
       .then(modules => setEnabledModules(modules))
       .catch(() => {
         // On error, show all items (graceful degradation)
+      });
+    api.getVersion(controller.signal)
+      .then(version => setAppVersion(version))
+      .catch(() => {
+        // On error, leave version hidden
       });
     return () => controller.abort();
   }, []);
@@ -199,8 +205,12 @@ export function Layout() {
           <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-600">
             <CloudCog className="w-3 h-3" />
             <span>File Sync</span>
-            <span className="text-gray-700">·</span>
-            <span className="text-gray-700">v1.0</span>
+            {appVersion && (
+              <>
+                <span className="text-gray-700">·</span>
+                <span className="text-gray-700">v{appVersion}</span>
+              </>
+            )}
           </div>
         </div>
       </aside>
