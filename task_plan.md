@@ -1,317 +1,233 @@
-# Task Plan: v1.0.0-beta Preparation
+# Task Plan: v1.1.0 Full Commercial Release
 
-**Status:** in-progress
-**Date:** 2026-02-09
-**Goal:** Incremental beta release over v1.0.0-alpha — three pillars: Momentum Intelligence, GTD Inbox Enhancements, Distribution & Infrastructure.
-
----
-
-## Current State
-
-- **v1.0.0-alpha**: Shipped and distributed (2026-02-08)
-- **Commits**: `4a69e62` (alpha + post-release), `fd5af5f` (cleanup + beta planning)
-- **Tests**: 192/192 passing (100%)
-- **Root directory**: Cleaned — historical docs archived to `archive/`
-- **Tracking**: backlog.md, CHANGELOG.md, progress.md all current
+**Status:** planning
+**Date:** 2026-02-11
+**Goal:** First full commercial release of Conduital — AI-augmented productivity with all modules enabled.
+**Version:** v1.0.0-beta → v1.1.0
 
 ---
 
-## Pillar 1: Momentum Intelligence
+## Release Philosophy
 
-### Phase 1A — Granularity Improvements
+The full release builds on the solid beta foundation (v1.0.0-beta) by adding:
+1. **AI-powered features** that differentiate Conduital (R3/R4 items)
+2. **Professional polish** that meets commercial quality bar
+3. **Distribution readiness** (code signing, testing, documentation)
 
-**Problem:** 70-80% of projects cluster into 4-5 indistinguishable momentum scores due to:
-- Binary next-action gate (0 or 0.20 — cliff effect)
-- Linear activity decay over 30 days (no nuance for recent vs stale)
-- Hard 7-day window for completion ratio (cliff at boundary)
-- Frequency capped at 10 actions / 14 days (saturation too easy)
-
-**Current Formula:** `(Activity × 0.4) + (Completion × 0.3) + (NextAction × 0.2) + (Frequency × 0.1)`
-**Location:** `backend/app/services/intelligence_service.py`
-
-| ID | Task | Priority |
-|----|------|----------|
-| BETA-001 | **Graduated next-action scoring** — replace binary 0/1 with graduated scale: 0 (none), 0.3 (has next action but stale >7d), 0.7 (recent next action 1-7d), 1.0 (fresh <24h). Eliminates cliff effect. | ✅ Done |
-| BETA-002 | **Exponential activity decay** — replace linear `1 - (days/30)` with exponential `e^(-days/7)`. Recent activity matters more; old activity fades faster. | ✅ Done |
-| BETA-003 | **Sliding completion window** — replace hard 7-day window with weighted 30-day window: last 7d × 1.0, 8-14d × 0.5, 15-30d × 0.25. Prevents cliff at day 8. | ✅ Done |
-| BETA-004 | **Logarithmic frequency scaling** — replace `min(1.0, count/10)` with `log(1 + count) / log(11)`. Makes each additional action worth less, harder to saturate. | ✅ Done |
-| BETA-005 | **Task age weighting** — weight completed tasks by recency (completing old lingering tasks worth more). | Nice |
-
-### Phase 1B — Motivation Signals (Psychology-Backed)
-
-**Design Principle:** Subtle, informational, never gamified. No points, badges, streaks, or celebrations. Intrinsic motivation only.
-
-**Psychology Foundations:**
-- Progress Principle (Amabile & Kramer) — seeing progress is the #1 motivator
-- Goal Gradient Effect (Hull) — effort accelerates as you approach completion
-- Self-Determination Theory (Deci & Ryan) — autonomy, competence, relatedness
-- Zeigarnik Effect — incomplete tasks create psychological tension
-- Loss Aversion (Kahneman & Tversky) — protecting gains motivates more than seeking new ones
-
-| ID | Task | Priority | Principle |
-|----|------|----------|-----------|
-| BETA-010 | **Momentum trend indicator** — small up/down/stable arrow next to score, based on delta. | ✅ Done | Progress Principle |
-| BETA-011 | **Momentum sparkline** — inline SVG trend line on ProjectCard. | ✅ Done | Progress Principle |
-| BETA-012 | **Project completion progress bar** — thin gradient bar on ProjectCard: `completed / total` tasks. | ✅ Done | Goal Gradient |
-| BETA-013 | **"Almost there" nudge** — when >80% tasks complete, subtle text: "N tasks to finish line". | ✅ Done | Goal Gradient + Zeigarnik |
-| BETA-014 | **Dashboard momentum summary** — "5 gaining, 2 steady, 1 declining" aggregate view. | ✅ Done | Progress Principle |
-| BETA-015 | **Momentum history chart** — Settings or Dashboard widget: line chart of average momentum over 30/60/90 days. | Nice | Progress Principle |
-| BETA-016 | **Streak-free activity heatmap** — GitHub-style contribution grid showing activity density. No streak counter — just the visual pattern. | Nice | Variable Ratio |
-| BETA-017 | **Momentum protection framing** — when momentum is high, frame as "maintaining your progress" rather than "keep going". Loss aversion subtle cue. | Nice | Loss Aversion |
-
-### Phase 1C — Data Model Additions
-
-| ID | Task | Priority |
-|----|------|----------|
-| BETA-020 | Add `previous_momentum_score` column to projects table (for delta calculation) | ✅ Done |
-| BETA-021 | Create `MomentumSnapshot` table (project_id, score, factors_json, timestamp) — daily snapshots for sparklines | ✅ Done |
-| BETA-022 | Migration for both new tables/columns | ✅ Done |
-| BETA-023 | Snapshot creation in scheduled recalculation job | ✅ Done |
-| BETA-024 | API endpoints: `GET /intelligence/momentum-history/{id}`, `GET /intelligence/dashboard/momentum-summary` | ✅ Done |
+The beta already ships: momentum intelligence, GTD inbox, file sync, horizons (goals/visions/contexts), and the full module system. The full release adds the AI brain on top.
 
 ---
 
-## Pillar 2: GTD Inbox Enhancements
+## Phase 1: AI Core Features (Tier 1 Must-Ship)
 
-**Context:** GTD inbox is feature-complete for basic capture/clarify/process. R2 backlog items are marked complete. But there are meaningful enhancements for beta quality.
+*The primary value differentiator — "AI That Actually Helps"*
 
-| ID | Task | Priority | Status |
-|----|------|----------|--------|
-| BETA-030 | **Weekly review completion tracking** — `POST /weekly-review/complete` stub → persist completion, track history, show on Dashboard | Must | ✅ Done |
-| BETA-031 | **Inbox batch processing** — multi-select + bulk actions (assign, delete, convert) | Should | ✅ Done |
-| BETA-032 | **Inbox processing stats endpoint** — `GET /inbox/stats` replaces client-side calc (DEBT-064) | Should | ✅ Done |
-| BETA-033 | **Quick capture keyboard shortcut** — global `Ctrl+N` to open capture modal | Nice | Deferred |
-| BETA-034 | **Inbox item age indicator** — subtle visual aging on unprocessed items (24h/3d/7d) | Nice | ✅ Done |
+### Phase 1A: ROADMAP-002 — AI Features Integration
 
-### Phase 2A: BETA-030 — Weekly Review Completion Tracking
+**Scope:** Bring AI analysis, suggestions, and prioritization to the forefront. Currently the backend has:
+- `GET /ai/analyze/{project_id}` — project analysis
+- `POST /ai/suggest-next-action/{project_id}` — next action suggestion
+- `POST /tasks/{project_id}/unstuck` — generate unstuck task
+- NPM fields already fed into AI prompts (BACKLOG-124 done)
 
-**Backend:**
-1. New model `WeeklyReviewCompletion` → `backend/app/models/weekly_review.py`
-   - Fields: `id`, `user_id` (nullable FK), `completed_at` (DateTime tz), `notes` (Text optional)
-   - Inherits `Base` only (completed_at IS the timestamp)
-2. Register in `models/__init__.py` + `alembic/env.py`
-3. Alembic migration `012_weekly_review_completion` (down_revision=`011_momentum_snapshots`)
-4. Implement stub at `modules/gtd_inbox/routes.py:46-55` → persist to DB
-5. Add `GET /weekly-review/history` endpoint (last N completions + days_since)
-6. Tests: POST creates record, GET returns ordered history, days calculation
+**Work needed:**
+- [ ] AI analysis summary on ProjectDetail (prominent placement)
+- [ ] AI-suggested next actions surfaced on Dashboard ("AI recommends...")
+- [ ] Proactive stalled project analysis (auto-trigger when momentum drops)
+- [ ] AI task decomposition from brainstorm notes (NPM Step 3 → tasks)
+- [ ] Priority rebalancing suggestions when Opportunity Now overflows
+- [ ] Energy-matched task recommendations
 
-**Frontend:**
-7. New API methods + hook: `completeWeeklyReview()`, `getWeeklyReviewHistory()`, `useWeeklyReviewHistory()`
-8. Dashboard.tsx: "Last completed: X days ago" in review section
+**Estimated sessions:** 2-3
 
-### Phase 2B: BETA-032 — Inbox Stats Endpoint
+### Phase 1B: ROADMAP-007 — GTD Weekly Review with AI Advisors
 
-**Backend:**
-1. `GET /inbox/stats` → `unprocessed_count`, `processed_today`, `avg_processing_time_hours`
-2. Schema: `InboxStats` in `schemas/inbox.py`
-3. Tests for stats calculation
+**Scope:** Transform the weekly review from a manual checklist into an AI-guided dialogue.
 
-**Frontend:**
-4. `useInboxStats()` hook, `getInboxStats()` API method
-5. InboxPage: replace client-side stats with API data
+**Current state:** Weekly review is a localStorage-based checklist (BACKLOG-024 done) with completion tracking (BETA-030 done). No AI involvement.
 
-### Phase 2C: BETA-031 — Inbox Batch Processing
+**Work needed:**
+- [ ] AI review co-pilot: "Let's review your projects. Project X has been stalled for 14 days. What's blocking it?"
+- [ ] AI-generated review summary: portfolio health, trend analysis, recommendations
+- [ ] AI identifies projects that need attention (stalled, declining momentum, overdue reviews)
+- [ ] Suggested next actions for each reviewed project
+- [ ] Review session persistence (save AI dialogue + user decisions)
+- [ ] Integration with existing weekly review completion tracking
 
-**Backend:**
-1. `POST /inbox/batch-process` → `{ item_ids, action, project_id? }`
-2. Actions: `assign_to_project`, `delete`, `convert_to_task`
-3. Schema: `InboxBatchProcess` request, `InboxBatchResult` response
-4. Tests: batch assign, batch delete, error cases
-
-**Frontend:**
-5. Multi-select checkboxes on inbox items
-6. Bulk action toolbar: "Assign to Project", "Delete", "Convert to Tasks"
-7. Selection state management
-
-### Phase 2D: BETA-034 — Inbox Item Age Indicator
-
-**Frontend only:**
-1. Age tiers: <24h (none), 24h-3d (gray clock), 3d-7d (amber clock), >7d (red clock)
-2. Subtle badge on unprocessed items only. Informational, not gamified.
+**Estimated sessions:** 2-3
 
 ---
 
-## Pillar 3: Distribution & Infrastructure
+## Phase 2: Professional Polish (Tier 2 Should-Ship)
 
-### From distribution-checklist.md
+### Phase 2A: UI Consistency & Missing Features
 
-| Phase | Item | Status |
-|-------|------|--------|
-| 4.3 | Privacy Policy draft | Not started |
-| 5.1 | App icon (.ico, multiple sizes) | Not started |
-| 5.1 | Screenshots (5-8 polished) | Not started |
-| 5.1 | Product description | Not started |
-| 5.2 | Pricing research & decision | Not started |
-| 5.3 | Gumroad listing setup | Not started |
-| 5.4 | Support infrastructure (FAQ, email) | Not started |
-| 5.5 | Update mechanism | Not started |
+| ID | Task | Est. |
+|----|------|------|
+| BACKLOG-104 | Area Health Drill-Down UI (backend ready) | 1-2h |
+| BACKLOG-128 | Badge Configuration & Today's Focus layout | 2-3h |
+| BACKLOG-101 | Dashboard Stats Block visual consistency | 1-2h |
+| BACKLOG-099 | Archive Area confirmation dialog | 1h |
+| BACKLOG-062 | Project Standard of Excellence | 2-3h |
 
-### Testing
+### Phase 2B: Data & Memory Features
 
-| Item | Status |
-|------|--------|
-| BACKLOG-118: Clean Windows 10 VM testing | Not started |
-| BACKLOG-118: Clean Windows 11 VM testing | Not started |
-| BACKLOG-117: Upgrade-in-place testing | Not started |
+| ID | Task | Est. |
+|----|------|------|
+| BACKLOG-090 | Data Import from JSON backup | 2-3h |
+| BACKLOG-082 | Session Summary Capture | 3-4h |
+| BACKLOG-087 | Starter Templates by Persona | 2-3h |
 
-### Tech Debt (from backlog.md)
+### Phase 2C: Technical Housekeeping
 
-| ID | Description | Priority |
-|----|-------------|----------|
-| DEBT-007 | Soft delete for entities | Medium |
-| DEBT-080 | Installer version not SSoT | ✅ Done |
-| DEBT-083 | Installer kills without graceful shutdown attempt | ✅ Done |
-| BACKLOG-116 | Version single source of truth | ✅ Done |
+| ID | Task | Est. |
+|----|------|------|
+| DEBT-010 | Update outdated dependencies | 1-2h |
+| DOC-005 | Module system user documentation | 2-3h |
+| DEBT-081 | App icon (.ico with 16-256px variants) | 1h (design) + 30m (integration) |
 
-### Code Quality & Polish
-
-| ID | Description | Priority |
-|----|-------------|----------|
-| DEBT-013 | Mobile views not optimized | Low |
-| DEBT-016 | WebSocket updates not integrated | Low |
-| DEBT-039 | MemoryPage priority input out-of-range | ✅ Done |
-| DEBT-061 | Dynamic attribute assignment fragility | ✅ Done |
+**Estimated sessions:** 3-4
 
 ---
 
-## What's NOT in Beta Scope
+## Phase 3: Distribution Readiness (Tier 1 Must-Ship)
 
-- License key system (Phase 4.1) — shipping free, deferred to paid transition
-- Code signing (Phase 3.1) — deferred, saves $200-500/year
-- Multi-user/teams
-- SaaS/cloud deployment
-- Full R3/R4 features (memory layer improvements, AI weekly review advisors)
+### Phase 3A: Testing
+
+| ID | Task | Notes |
+|----|------|-------|
+| BACKLOG-118 | Clean Windows VM testing | Win10 + Win11 VMs, no Python/Node |
+| BACKLOG-117 | Upgrade-in-place testing | Install v1.0.0-beta, then v1.1.0 over it |
+
+### Phase 3B: Code Signing & Packaging
+
+| ID | Task | Notes |
+|----|------|-------|
+| DIST-030 | Windows code signing certificate | ~$70-200/yr, eliminates "Unknown Publisher" |
+| Rebuild | Installer + exe with new icon + version | Full build.bat + ISCC cycle |
+
+### Phase 3C: Documentation
+
+| ID | Task | Notes |
+|----|------|-------|
+| DOC-005 | Module system docs (user-facing) | How presets work, what each enables |
+| DOC-001 | Area mapping configuration guide | For file sync users |
+| DOC-002 | Folder watcher troubleshooting | Common issues + fixes |
+
+**Estimated sessions:** 2-3
+
+---
+
+## Phase 4: Nice to Have (Tier 3 — if time permits)
+
+| ID | Task |
+|----|------|
+| BACKLOG-093 | Quick Capture success animation |
+| BACKLOG-095 | Collapsible sections extension |
+| BACKLOG-049 | Project Workload Indicator |
+| BACKLOG-050 | Project Blocked/Waiting Status |
+| R3 Nice-to-Have | Memory Namespace UI, Prefetch Config, Progress Dashboard, Memory Diff |
+
+---
+
+## Phase 5: Release (v1.1.0)
+
+### Pre-Release Checklist
+
+| Step | Description |
+|------|-------------|
+| 1 | All Tier 1 items complete |
+| 2 | All Tier 2 items complete or explicitly deferred with rationale |
+| 3 | Bump version `1.0.0-beta` → `1.1.0` |
+| 4 | Run `sync_version.py` to propagate |
+| 5 | Finalize CHANGELOG.md |
+| 6 | Full test suite pass (target: 250+ tests) |
+| 7 | TypeScript clean build |
+| 8 | Vite production build |
+| 9 | Build signed installer |
+| 10 | Clean VM testing pass |
+| 11 | Upgrade-in-place testing pass |
+| 12 | Create annotated git tag `v1.1.0` |
+| 13 | Distribution (Gumroad, GitHub) |
 
 ---
 
 ## Implementation Order (Suggested Sessions)
 
-### Session 1: Momentum Granularity (Backend)
-- BETA-001: Graduated next-action scoring
-- BETA-002: Exponential activity decay
-- BETA-003: Sliding completion window
-- BETA-004: Logarithmic frequency scaling
-- BETA-020/021/022/023: Data model additions + migration + snapshot job
-- Run all 174+ tests, verify no regressions
+### Session 1: Backlog Cleanup + App Icon + Quick Wins
+- Clean up backlog.md (move completed items, mark done DIST items)
+- DEBT-081: Design and integrate app icon
+- BACKLOG-104: Area Health Drill-Down UI (backend ready, frontend only)
+- BACKLOG-099: Archive Area confirmation dialog
 
-### Session 2: Motivation Signals (Frontend + API)
-- BETA-010: Trend indicator (up/down/stable arrow)
-- BETA-011: Sparkline on ProjectCard
-- BETA-012: Completion progress bar
-- BETA-013: "Almost there" nudge
-- BETA-014: Dashboard momentum summary
-- BETA-024: History + summary API endpoints
+### Session 2-3: AI Features Integration (ROADMAP-002)
+- AI analysis prominent on ProjectDetail
+- AI suggestions on Dashboard
+- Proactive stalled project analysis
+- AI task decomposition from brainstorm notes
 
-### Session 3: GTD Inbox + Polish
-- BETA-030: Weekly review completion tracking ✅
-- BETA-031: Batch processing ✅
-- BETA-032: Processed Today stats endpoint ✅
-- BETA-034: Inbox item age indicator ✅
+### Session 4-5: AI Weekly Review Co-Pilot (ROADMAP-007)
+- AI review dialogue system
+- Review summary generation
+- Integration with existing review tracking
+- Review session persistence
 
-### Session 4: Pillar 3 — Infrastructure & Polish
-- DEBT-083: Installer graceful shutdown ✅
-- BACKLOG-116 / DEBT-080: Version SSoT ✅
-- DEBT-039: MemoryPage priority input fix ✅
-- DEBT-061: Dynamic attribute assignment fix ✅
-- DEBT-064: Marked done (fixed by BETA-032) ✅
-- BACKLOG-120: "Make Next Action" quick action ✅
-- BACKLOG-119: Task Push/Defer quick action ✅
-- DEBT-062: Closed by design ✅
+### Session 6: UI Polish Batch (Phase 2A)
+- BACKLOG-128: Badge configuration
+- BACKLOG-101: Dashboard stats consistency
+- BACKLOG-062: Project Standard of Excellence
 
-### Session 5: Remaining Pillar 3 — Code-Actionable Items ✅
-- BACKLOG-126: Normalize grid view layouts (ProjectDetail + AreaDetail) ✅
-- BACKLOG-124: NPM fields in AI prompts (all 3 AI methods) ✅
-- BACKLOG-125: Goals/Visions/Contexts frontend (types, API, hooks, modals, pages, routes, nav) ✅
-- BACKLOG-122: UTC vs local time normalization (parseUTCDate + TimestampMixin fix) ✅
-- BACKLOG-127: Review column clarity (always shows status, better labels/tooltips) ✅
-- BACKLOG-123: File Sync Settings UI (editable form, backend endpoints, .env persistence) ✅
+### Session 7: Data & Memory Features (Phase 2B)
+- BACKLOG-090: Data import
+- BACKLOG-082: Session summary capture
+- BACKLOG-087: Starter templates
 
-### Session 6: UI Review + Bug Fixes + Context Unification ✅
-- UI review via Chrome: 19 features verified across 8+ pages ✅
-- BUG-025: Fixed ProjectListView task count (0/0 → correct counts) ✅
-- Context unification: Seeded 6 default contexts + dynamic task dropdowns ✅
-- Findings documented in findings.md ✅
+### Session 8: Tech Debt & Docs (Phase 2C)
+- DEBT-010: Dependency updates
+- DOC-005, DOC-001, DOC-002: Documentation
 
-### Session 7 (Remaining): Distribution & Testing
-- Privacy policy, app icon, screenshots
-- VM testing (Windows 10/11)
-- Upgrade-in-place testing
+### Session 9: Distribution (Phase 3)
+- DIST-030: Code signing setup
+- BACKLOG-118: Windows VM testing
+- BACKLOG-117: Upgrade testing
+- Installer rebuild with icon + signing
+
+### Session 10: Release (Phase 5)
+- Version bump, CHANGELOG, full test suite
+- Build signed installer
+- Clean VM smoke test
+- Tag + distribute
 
 ---
 
-## Beta Release Plan (v1.0.0-beta)
+## Parking Lot Promotions Summary
 
-### Pre-Release Checklist
+**Promoted to Tier 2 (Should Ship):**
+- BACKLOG-104 (Area Health Drill-Down) — from Parking Lot
+- BACKLOG-128 (Badges) — from Parking Lot
+- BACKLOG-101 (Dashboard consistency) — from Parking Lot
+- BACKLOG-099 (Archive confirmation) — from Parking Lot
+- BACKLOG-090 (Data Import) — from Parking Lot
 
-| Step | Description | Status |
-|------|-------------|--------|
-| 1 | Commit Session 5+6 changes (21 files, ~623 insertions) | Pending |
-| 2 | Bump version: `1.0.0-alpha` → `1.0.0-beta` in pyproject.toml | Pending |
-| 3 | Run `sync_version.py` to propagate to package.json, installer, config.py | Pending |
-| 4 | Update .env.example VERSION to 1.0.0-beta | Pending |
-| 5 | Finalize CHANGELOG.md: move [Unreleased] → [1.0.0-beta] with date | Pending |
-| 6 | Add BUG-025 fix + context unification to CHANGELOG | Pending |
-| 7 | Run full backend test suite (expect 216/216) | Pending |
-| 8 | Run TypeScript check (expect 0 errors) | Pending |
-| 9 | Run Vite production build | Pending |
-| 10 | Commit all changes with release message | Pending |
-| 11 | Create annotated git tag `v1.0.0-beta` | Pending |
-| 12 | Build PyInstaller package (`build.bat`) | Pending |
-| 13 | Build Inno Setup installer (`ISCC conduital.iss`) | Pending |
-| 14 | Smoke test installed exe | Pending |
+**Promoted to Tier 3 (Nice to Have):**
+- BACKLOG-093 (Capture animation) — from Parking Lot
+- BACKLOG-095 (Collapsible sections) — from Parking Lot
 
-### Version Files to Update (6 total)
-
-1. `backend/pyproject.toml` — canonical source (edit this only)
-2. `frontend/package.json` — synced by script
-3. `installer/conduital.iss` — synced by script (both `#define` and output filename)
-4. `backend/app/core/config.py` — synced by script (`_FALLBACK_VERSION`)
-5. `backend/.env.example` — manual update
-6. `CHANGELOG.md` — manual update
-
-### What Changed Since Alpha (Summary for CHANGELOG)
-
-**Added (38 items):**
-- Momentum Intelligence: graduated scoring (4 formula improvements), trend arrows, sparklines, progress bars, "almost there" nudge, dashboard summary, momentum history API, daily snapshots
-- GTD Inbox: weekly review tracking, batch processing, stats endpoint, age indicators
-- Horizons: Goals/Visions/Contexts full CRUD pages with sidebar navigation
-- Task Quick Actions: defer/push popover, make next action bulk toolbar
-- File Sync Settings: editable UI with backend validation
-- Context seeding: 6 default contexts auto-created on first startup
-- Dynamic context dropdowns in task create/edit modals
-
-**Changed (8 items):**
-- Review column redesign (always visible status)
-- UTC time normalization (timezone-aware parsing)
-- Responsive grid layouts
-- Installer graceful shutdown
-- Version SSoT from pyproject.toml
-- Project model explicit task count attributes
-
-**Fixed (3 items):**
-- BUG-025: Projects list view task counts showing 0/0
-- MemoryPage priority input range clamping
-- build.bat size reporting
-
-**Accessibility (4 items):**
-- Modal, UserMenu, ProjectCard, Settings ARIA improvements
+**Kept in Parking Lot (Deferred):**
+- BACKLOG-009, 040, 110, 121 — low impact or large scope
+- BACKLOG-113, 114 — separate marketing workstreams
 
 ---
 
-## Anti-Patterns to Avoid
+## Risk Assessment
 
-Per research on psychology-backed motivation:
-
-- **No points/XP systems** — extrinsic reward undermines intrinsic motivation
-- **No badges/achievements** — creates "achievement hunting" behavior
-- **No streak counters** — creates anxiety about breaking streaks
-- **No leaderboards** — single-user app, comparison is irrelevant
-- **No celebration modals** — interrupts flow, feels patronizing
-- **No daily login rewards** — creates obligation, not motivation
-- **No loss penalties** — never punish the user for taking a break
-
-The goal is to make the data *informative and visible*, not to gamify the experience.
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| AI features take longer than estimated | Delays release | Start with minimal viable AI features, iterate |
+| Code signing process complex | Minor delay | Research process early, purchase cert in Session 1 |
+| Windows VM testing reveals issues | Could be significant | Test early (before AI work), fix in parallel |
+| Dependency updates break things | Test regressions | Update one at a time, run full suite after each |
 
 ---
 
-*Last updated: 2026-02-09 (Session 6: UI Review + BUG-025 + Context Unification + Beta Release Plan)*
+*Plan created 2026-02-11*

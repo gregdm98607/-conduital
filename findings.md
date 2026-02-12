@@ -1,99 +1,228 @@
-# Beta Release UI Review — Findings
+# Full Release Planning — Open Items Inventory
 
-**Date:** 2026-02-09
-**Reviewer:** Claude (via Chrome browser inspection)
-**Target:** localhost:5173 (development server)
-
----
-
-## Overall Assessment: READY FOR BETA (with 1 bug to fix)
-
-The UI is polished, consistent, and all major beta features are visually confirmed working. One bug found in the Projects list view.
+**Date:** 2026-02-11
+**Purpose:** Comprehensive analysis of all open backlog items to inform the v1.1.0 full commercial release plan.
+**Current Version:** v1.0.0-beta (commit `ad02145`)
 
 ---
 
-## Feature Verification Results
+## Open Items by Section
 
-### Pillar 1: Momentum Intelligence
+### R1.1 Beta — Remaining Open Items
 
-| Feature | ID | Status | Notes |
-|---------|-----|--------|-------|
-| Momentum trend arrows | BETA-010 | PASS | Green up arrows visible on ProjectCards |
-| Momentum sparkline | BETA-011 | PASS | Inline SVG trend lines on ProjectCards |
-| Completion progress bar | BETA-012 | PASS | Thin gradient bars under stats on each card |
-| "Almost there" nudge | BETA-013 | PASS (code verified) | Renders when >80% complete + active. Operation Granny Files (80%) is at exactly 80%, nudge shows for >80% — correct threshold behavior |
-| Dashboard momentum summary | BETA-014 | NOT VISIBLE | Expected: no momentum snapshots exist yet (daily job hasn't run). Not a bug — conditional rendering when no data. |
+| ID | Description | Type |
+|----|-------------|------|
+| BACKLOG-118 | Clean Windows VM testing (Win10 + Win11) | Testing |
+| BACKLOG-117 | Installer upgrade-in-place testing | Testing |
+| DEBT-081 | No app icon (.ico) — installer and exe use defaults | Polish |
 
-### Pillar 2: GTD Inbox Enhancements
+### R3: Proactive Assistant — Should Have (Open)
 
-| Feature | ID | Status | Notes |
-|---------|-----|--------|-------|
-| Inbox stats cards | BETA-032 | PASS | Unprocessed count, Processed Today, Last Capture all showing |
-| Multi-select checkboxes | BETA-031 | PASS | Checkboxes on items + "Select all" toggle |
-| Batch action toolbar | BETA-031 | PASS | "2 selected" counter, project dropdown, Assign to Project, Delete, Clear |
-| Item age indicators | BETA-034 | NOT VISIBLE | Expected: test items were "Just now" (<24h). Age indicators only show for >24h items. Correct behavior. |
-| Weekly review status | BETA-030 | PASS | Dashboard shows "Never completed" with "Start Review" link |
+| ID | Description | Backend Status |
+|----|-------------|----------------|
+| BACKLOG-087 | Starter Templates by Persona | Open — no code yet |
+| BACKLOG-082 | Session Summary Capture | Open — no code yet |
+| DOC-006 | Memory Layer API Documentation | Open |
+| DOC-007 | AI Context API Documentation | Open |
 
-### Pillar 3: Infrastructure & Polish
+### R3: Proactive Assistant — Nice to Have (Open)
 
-| Feature | ID | Status | Notes |
-|---------|-----|--------|-------|
-| Goals page | BACKLOG-125 | PASS | Full CRUD page with search, status/timeframe filters, grid/list toggle, empty state |
-| Visions page | BACKLOG-125 | PASS | Full CRUD page with search, timeframe filter, grid/list toggle, empty state |
-| Contexts page | BACKLOG-125 | PASS | Full CRUD page with search, type filter, grid/list toggle, empty state |
-| Horizons sidebar nav | BACKLOG-125 | PASS | "HORIZONS" section with Goals (Crosshair), Visions (Eye), Contexts (Tag) |
-| File Sync Settings | BACKLOG-123 | PASS | Editable sync root, watch dirs, interval, conflict strategy with Save button |
-| Review column (list) | BACKLOG-127 | PASS | Always shows status: "No schedule", "5d overdue" (red), "In 2d" (yellow) |
-| Task defer popover | BACKLOG-119 | PASS | Clock icon opens popover with 1 Week / 1 Month presets + custom date |
-| Make Next Action | BACKLOG-120 | PASS | Bulk toolbar shows "→ Next Action" when Other Tasks selected |
-| Responsive grids | BACKLOG-126 | PASS | AreaDetail 4-col metrics, ProjectDetail 3-col — both responsive |
-| UTC time normalization | BACKLOG-122 | PASS | Dates showing correctly ("3 days ago", "Just now", etc.) |
-| Momentum Thresholds | DEBT-073/074 | PASS | Activity icon, recalculation interval now visible |
+| ID | Description |
+|----|-------------|
+| BACKLOG-089 | Memory Namespace Management UI |
+| BACKLOG-088 | Prefetch Rule Configuration UI |
+| BACKLOG-083 | Progress Dashboard (Memory) |
+| BACKLOG-085 | Memory Diff View |
+
+### R4: Full Suite — Must Have (Open)
+
+| ID | Description | Significance |
+|----|-------------|--------------|
+| ROADMAP-007 | GTD Weekly Review with AI Advisors | Core differentiator — AI-powered review dialogue |
+| ROADMAP-002 | AI Features Integration | Analysis, suggestions, prioritization |
+
+### R4: Full Suite — Should Have (Open)
+
+| ID | Description |
+|----|-------------|
+| BACKLOG-049 | Project Workload Indicator |
+| BACKLOG-050 | Project Blocked/Waiting Status |
+| BACKLOG-062 | Project Standard of Excellence |
+
+### R4: Full Suite — Nice to Have (Open)
+
+| ID | Description |
+|----|-------------|
+| BACKLOG-001 | Sub-Projects |
+| BACKLOG-056 | Project Dependencies |
+| BACKLOG-046 | Project Completion Criteria Checklist |
+| BACKLOG-051 | Project Type Classification |
+| BACKLOG-052 | Project Cloning/Templates UI |
+| BACKLOG-055 | Project Time Investment Tracking |
+| BACKLOG-057 | Project Archive with History |
+| BACKLOG-060 | Delegation/Accountability Tracking |
+
+### Infrastructure — Open Items
+
+| ID | Description | Section |
+|----|-------------|---------|
+| ROADMAP-010 | BYOS Foundation | Storage & Sync |
+| DEBT-020 | SyncEngine area markdown handling | Storage & Sync |
+| DIST-012 | PyInstaller backend bundling | Build (already done via build.bat?) |
+| DIST-013 | Production React build pipeline | Build (already done via Vite build?) |
+| DIST-014 | Desktop wrapper (Tauri) | Build — deferred |
+| DIST-015 | Windows installer (NSIS/Inno Setup) | Build — already done via Inno Setup |
+| DIST-023 | Path resolution for packaged exe | Build |
+| DIST-030 | Windows code signing certificate | Distribution |
+| DIST-031 | Auto-update mechanism | Distribution |
+| DIST-001 | Landing Page | Marketing |
+| DIST-002 | Pricing Model | Marketing |
+| DIST-003 | Payment Integration | Marketing |
+| DIST-004 | Documentation Site | Marketing |
+| DIST-005 | Email/Newsletter System | Marketing |
+| DIST-041 | GitHub repo setup | CI/CD |
+| DIST-042 | CI/CD pipeline (GitHub Actions) | CI/CD |
+| DIST-051 | Register conduital.app domain | Branding |
+
+### Technical Debt — Medium Priority (Open)
+
+| ID | Description |
+|----|-------------|
+| DEBT-007 | Soft delete not implemented |
+| DEBT-010 | Outdated dependencies |
+| DEBT-021 | Area discovery direct DB session |
+| DEBT-022 | Area folder pattern reuses project pattern |
+| DEBT-023 | Memory migration down_revision |
+| DEBT-041 | create_unstuck_task commits inside larger transaction |
+
+### Technical Debt — Low Priority (Open)
+
+| ID | Description |
+|----|-------------|
+| DEBT-008 | File watcher disabled by default |
+| DEBT-013 | Mobile views not optimized |
+| DEBT-015 | Overlapping setup docs |
+| DEBT-016 | WebSocket updates not integrated |
+| DEBT-017 | Auto-discovery debounce |
+| DEBT-018 | Google Drive network interruptions |
+| DEBT-019 | Silent auto-discovery failures |
+| DEBT-075 | Momentum PUT endpoint mutates singleton settings |
+| DEBT-078 | Test run requires explicit venv python |
+
+### Documentation — Open
+
+| ID | Description | Priority |
+|----|-------------|----------|
+| DOC-005 | Module system user documentation | High |
+| DOC-001 | Area mapping configuration guide | Medium |
+| DOC-002 | Folder watcher troubleshooting | Medium |
+| DOC-004 | Areas page user guide | Medium |
+| DOC-003 | Area discovery API docs | Low |
+
+### Parking Lot — Candidates for Promotion
+
+| ID | Description | Recommendation |
+|----|-------------|----------------|
+| BACKLOG-104 | Area Health Score Drill-Down (backend READY) | **PROMOTE to Tier 2** — backend exists, frontend only |
+| BACKLOG-128 | Badge Configuration & Today's Focus Layout | **PROMOTE to Tier 2** — UI polish |
+| BACKLOG-101 | Dashboard Stats Block Visual Consistency | **PROMOTE to Tier 2** — UI polish |
+| BACKLOG-099 | Archive Area Confirmation Dialog | **PROMOTE to Tier 2** — safety UX |
+| BACKLOG-090 | Data Import from JSON Backup | **PROMOTE to Tier 2** — complements export |
+| BACKLOG-093 | Quick Capture Success Animation | **PROMOTE to Tier 3** — polish |
+| BACKLOG-095 | Collapsible Sections Extension | **PROMOTE to Tier 3** — consistency |
+| BACKLOG-009 | Inline target date edit on Task Card | Defer |
+| BACKLOG-040 | Area Visual Hierarchy (color-coding) | Defer |
+| BACKLOG-110 | Auto-Discovery as Optional Setting | Defer |
+| BACKLOG-121 | Area Prefix Mapping UX Redesign | Defer — larger UX project |
+| BACKLOG-113 | Website Redesign & Launch Content | **Separate workstream** — marketing |
+| BACKLOG-114 | Social Media & Marketing Plan | **Separate workstream** — marketing |
 
 ---
 
-## Bugs Found
+## Backlog Cleanup Observations
 
-### BUG-025: Projects List View Shows 0/0 Task Counts
+### Items to Remove (Completed Inline)
+The following items are marked done inline but still appear in active sections — they should be moved to Completed Items or struck through:
+- BACKLOG-103 (review frequency) — done, still in Parking Lot
+- BACKLOG-111 (momentum validation) — done, still in Parking Lot
+- BACKLOG-112 (export refresh) — done, still in Parking Lot
+- BACKLOG-115, 116, 119, 120, 122-127, 129 — all done, all in Parking Lot
+- BUG-026 — done, still in Parking Lot
 
-**Severity:** Medium (cosmetic, data is correct elsewhere)
-**Location:** `frontend/src/components/projects/ProjectListView.tsx:164-165`
-**Symptom:** TASKS column shows "0/0" for all projects in list view, while grid view cards show correct counts (e.g., 4/12, 5/10, 4/5)
+### Infrastructure Items Already Done
+Several DIST items in the Build & Packaging section are effectively done but not marked:
+- DIST-012/013 — PyInstaller + React build are working via build.bat
+- DIST-015 — Windows installer IS Inno Setup (done)
+- DIST-043 — Test suite stabilization at 216 tests (done)
 
-**Root Cause:** List view reads task counts from `project.tasks` array:
-```tsx
-const completedTasks = project.tasks?.filter(t => t.status === 'completed').length || 0;
-const totalTasks = project.tasks?.length || 0;
-```
-
-Grid view (ProjectCard) correctly prefers API-computed fields:
-```tsx
-const totalTasks = project.task_count ?? project.tasks?.length ?? 0;
-const completedTasks = project.completed_task_count ?? project.tasks?.filter(t => t.status === 'completed').length ?? 0;
-```
-
-**Fix:** Update list view to use `project.task_count` / `project.completed_task_count` like the grid view does. Two-line change.
+### Sections with All Items Complete
+R2 Must Have, R2 Should Have, R2 Nice to Have, R3 Must Have all show "All items complete" — these sections could be collapsed to reduce noise.
 
 ---
 
-## Items Not Testable (expected)
+## Full Release Tiering
 
-- **BETA-014 (momentum summary)**: Requires daily snapshot job to have run at least once. Will show "N gaining, N steady, N declining" once snapshots exist.
-- **BETA-034 (age indicators)**: Requires inbox items >24h old. Will show gray/amber/red clock icons with "Xd" text.
-- **BETA-013 (nudge text)**: Threshold is >80%, and the highest completion project visible is exactly 80%. Code verified correct.
+### Tier 1: Must Ship (release blockers)
+
+| ID | Description | Rationale |
+|----|-------------|-----------|
+| DEBT-081 | App icon (.ico) | Professional appearance — default icons look amateur |
+| BACKLOG-118 | Windows VM testing (Win10 + Win11) | Can't ship without testing on clean machines |
+| DIST-030 | Code signing certificate | "Unknown Publisher" warnings kill trust |
+| BACKLOG-117 | Upgrade-in-place testing | Must verify data preservation on upgrade |
+| ROADMAP-002 | AI Features Integration | Core value prop — AI analysis/suggestions/prioritization |
+| ROADMAP-007 | GTD Weekly Review with AI Advisors | Key differentiator — AI-powered review dialogue |
+
+### Tier 2: Should Ship (quality bar)
+
+| ID | Description | Rationale |
+|----|-------------|-----------|
+| BACKLOG-104 | Area Health Drill-Down UI | Backend ready, frontend ~2h work |
+| BACKLOG-128 | Badge Configuration | UI polish consistency |
+| BACKLOG-101 | Dashboard Stats Consistency | Visual polish |
+| BACKLOG-099 | Archive Area Confirmation | Safety UX |
+| BACKLOG-082 | Session Summary Capture | Memory layer value |
+| BACKLOG-087 | Starter Templates by Persona | Onboarding quality |
+| BACKLOG-090 | Data Import from JSON | Complements existing export |
+| DOC-005 | Module System Documentation | User-facing docs |
+| DEBT-010 | Outdated dependencies | Maintenance hygiene |
+| BACKLOG-062 | Project Standard of Excellence | Mirrors area feature |
+
+### Tier 3: Nice to Have (polish)
+
+| ID | Description | Rationale |
+|----|-------------|-----------|
+| BACKLOG-093 | Quick Capture Animation | Delight factor |
+| BACKLOG-095 | Collapsible Sections Extension | Consistency |
+| BACKLOG-049 | Project Workload Indicator | Capacity insight |
+| BACKLOG-050 | Project Blocked/Waiting Status | Dependency tracking |
+| BACKLOG-009 | Inline target date edit | UX convenience |
+| BACKLOG-040 | Area Visual Hierarchy | Color customization |
+
+### Defer to Post-Release
+
+| ID | Description | Reason |
+|----|-------------|--------|
+| BACKLOG-001 | Sub-Projects | Major architecture change |
+| BACKLOG-056 | Project Dependencies | Complex, low demand |
+| BACKLOG-060 | Delegation/Accountability | Multi-user foundation needed |
+| BACKLOG-055 | Time Investment Tracking | Scope creep risk |
+| DIST-014 | Tauri Desktop Wrapper | Inno Setup works fine |
+| DIST-031 | Auto-update Mechanism | Post-launch optimization |
+| BACKLOG-121 | Area Prefix Mapping Redesign | Large UX project |
+| BACKLOG-110 | Auto-Discovery Toggle | Low demand |
+
+### Separate Workstreams (Not Software)
+
+| ID | Description | Owner |
+|----|-------------|-------|
+| DIST-001 | Landing Page | Marketing |
+| DIST-002 | Pricing Model | Business |
+| DIST-003 | Payment Integration | Business |
+| DIST-004 | Documentation Site | Marketing |
+| BACKLOG-113 | Website Redesign | Marketing |
+| BACKLOG-114 | Social Media Strategy | Marketing |
 
 ---
 
-## UI Quality Notes
-
-- Sidebar navigation is well-organized with clear section headers (MANAGE, HORIZONS, REVIEW)
-- Collapsible Settings sections work consistently
-- Empty states on Goals/Visions/Contexts are helpful with descriptive text and CTA buttons
-- Color coding is consistent (green = good, orange = moderate, red = critical/overdue)
-- Dark sidebar with light content area provides good contrast
-- Branding is correct: "Conduital — The Conduit for Intelligent Momentum"
-- Footer shows "File Sync · v1.0"
-
----
-
-*Review completed 2026-02-09*
+*Analysis completed 2026-02-11*

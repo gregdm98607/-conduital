@@ -1,5 +1,45 @@
 # Progress Log
 
+## Session: 2026-02-11 — Full Release Planning + Beta Patches
+
+### Beta Patch Work
+
+#### BUG-026: Inbox Missing from Sidebar (committed `8e3a9b8`)
+- Added `gtd_inbox` to `basic` commercial preset in `registry.py`
+- Removed `requiresModule` gate from Inbox nav item in Layout.tsx
+
+#### BACKLOG-129: Display Version Number in UI (committed `8e3a9b8`)
+- Sidebar footer fetches version from `/health` endpoint
+- Displays dynamically (e.g., "v1.0.0-beta")
+
+#### BACKLOG-103: Project Review Frequency (committed `d9ff41f`)
+- Replaced manual `next_review_date` date picker with `review_frequency` dropdown
+- Backend: added column, migration, auto-calculation in service/API
+- Frontend: both Create and Edit modals updated
+
+#### BACKLOG-112: Export Preview Refresh + DEBT-052: Model Dropdown (committed `ad02145`)
+- Export preview auto-refreshes after JSON or DB backup download
+- Model dropdown disabled with "Loading models..." when provider_models empty
+
+### Full Release Planning
+
+Comprehensive analysis of all open backlog items completed:
+- **Total open items inventoried:** ~70 across R1.1, R3, R4, Infrastructure, Debt, Docs, Parking Lot
+- **Tier 1 Must Ship:** 6 items (app icon, VM testing, code signing, upgrade testing, ROADMAP-002, ROADMAP-007)
+- **Tier 2 Should Ship:** 10 items (5 promoted from Parking Lot + 5 existing)
+- **Tier 3 Nice to Have:** 6 items (2 promoted from Parking Lot + 4 existing)
+- **Deferred:** 8 items (sub-projects, dependencies, delegation, time tracking, Tauri, auto-update, prefix redesign, discovery toggle)
+- **Separate Workstreams:** 5 items (landing page, pricing, payments, docs site, marketing)
+
+Planning files written:
+- `findings.md` — Full open items inventory with tiered recommendations
+- `task_plan.md` — 5-phase, 10-session implementation plan for v1.1.0
+- `progress.md` — This session log
+
+Backlog cleanup pending.
+
+---
+
 ## Session: 2026-02-09 — Beta Session 5: Remaining Pillar 3 — Code-Actionable Items
 
 ### Completed Items (6 backlog items)
