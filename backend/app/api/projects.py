@@ -2,7 +2,7 @@
 Project API endpoints
 """
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -153,6 +153,12 @@ def mark_project_reviewed(
         raise HTTPException(status_code=404, detail="Project not found")
 
     project.last_reviewed_at = datetime.now(timezone.utc)
+
+    # Auto-calculate next review date from review_frequency
+    freq_days = {"daily": 1, "weekly": 7, "monthly": 30}
+    days = freq_days.get(project.review_frequency, 7)
+    project.next_review_date = date.today() + timedelta(days=days)
+
     db.commit()
     db.refresh(project)
     return project

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.schemas.common import StatusEnum, strip_whitespace
+from app.schemas.common import ReviewFrequencyEnum, StatusEnum, strip_whitespace
 
 if TYPE_CHECKING:
     from app.schemas.task import Task
@@ -51,7 +51,9 @@ class ProjectBase(BaseModel):
     status: StatusEnum = Field(StatusEnum.ACTIVE, description="Project status")
     priority: int = Field(5, ge=1, le=10, description="Project priority (1-10, 1 is highest)")
     target_completion_date: Optional[date] = Field(None, description="Target completion date")
-    next_review_date: Optional[date] = Field(None, description="When to review this project")
+    review_frequency: ReviewFrequencyEnum = Field(
+        ReviewFrequencyEnum.WEEKLY, description="Review frequency: daily, weekly, monthly"
+    )
     area_id: Optional[int] = Field(None, description="Area of responsibility ID")
     goal_id: Optional[int] = Field(None, description="Goal ID (1-3 year)")
     vision_id: Optional[int] = Field(None, description="Vision ID (3-5 year)")
@@ -81,7 +83,7 @@ class ProjectUpdate(BaseModel):
     status: Optional[StatusEnum] = None
     priority: Optional[int] = Field(None, ge=1, le=10)
     target_completion_date: Optional[date] = None
-    next_review_date: Optional[date] = None
+    review_frequency: Optional[ReviewFrequencyEnum] = None
     area_id: Optional[int] = None
     goal_id: Optional[int] = None
     vision_id: Optional[int] = None
@@ -101,6 +103,7 @@ class Project(ProjectBase):
     last_activity_at: Optional[datetime] = Field(None, description="Last activity timestamp")
     stalled_since: Optional[datetime] = Field(None, description="When project became stalled")
     completed_at: Optional[datetime] = Field(None, description="Completion timestamp")
+    next_review_date: Optional[date] = Field(None, description="Auto-calculated next review date")
     last_reviewed_at: Optional[datetime] = Field(None, description="When project was last reviewed")
     file_path: Optional[str] = Field(None, description="Path to project file in synced notes")
     created_at: datetime

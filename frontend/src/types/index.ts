@@ -24,7 +24,8 @@ export interface Project {
   last_activity_at?: string;
   stalled_since?: string;
   target_completion_date?: string;
-  next_review_date?: string; // When to review this project
+  review_frequency: 'daily' | 'weekly' | 'monthly';
+  next_review_date?: string; // Auto-calculated from review_frequency
   last_reviewed_at?: string; // When project was last reviewed
   file_path?: string;
   created_at: string;

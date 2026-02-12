@@ -286,6 +286,7 @@ class ExportService:
             "goal_id": project.goal_id,
             "vision_id": project.vision_id,
             "target_completion_date": cls._serialize_date(project.target_completion_date),
+            "review_frequency": project.review_frequency,
             "next_review_date": cls._serialize_date(project.next_review_date),
             "last_reviewed_at": cls._serialize_datetime(project.last_reviewed_at),
             "last_activity_at": cls._serialize_datetime(project.last_activity_at),

@@ -28,9 +28,7 @@ export function EditProjectModal({ isOpen, onClose, project }: EditProjectModalP
     target_completion_date: project.target_completion_date
       ? project.target_completion_date.split('T')[0]
       : '',
-    next_review_date: project.next_review_date
-      ? project.next_review_date.split('T')[0]
-      : '',
+    review_frequency: project.review_frequency || 'weekly' as 'daily' | 'weekly' | 'monthly',
   });
   const [showNPM, setShowNPM] = useState(false);
 
@@ -54,9 +52,7 @@ export function EditProjectModal({ isOpen, onClose, project }: EditProjectModalP
       target_completion_date: project.target_completion_date
         ? project.target_completion_date.split('T')[0]
         : '',
-      next_review_date: project.next_review_date
-        ? project.next_review_date.split('T')[0]
-        : '',
+      review_frequency: project.review_frequency || 'weekly' as 'daily' | 'weekly' | 'monthly',
     });
     // Auto-expand NPM section if any field has content
     setShowNPM(!!(project.purpose || project.vision_statement || project.brainstorm_notes || project.organizing_notes));
@@ -98,7 +94,7 @@ export function EditProjectModal({ isOpen, onClose, project }: EditProjectModalP
           priority: formData.priority,
           area_id: formData.area_id || undefined,
           target_completion_date: formatDateForApi(formData.target_completion_date),
-          next_review_date: formatDateForApi(formData.next_review_date),
+          review_frequency: formData.review_frequency,
         },
       },
       {
@@ -337,22 +333,25 @@ export function EditProjectModal({ isOpen, onClose, project }: EditProjectModalP
           </div>
         </div>
 
-        {/* Next Review Date */}
+        {/* Review Frequency */}
         <div>
-          <label htmlFor="next_review_date" className="label">
-            Next Review Date
+          <label htmlFor="review_frequency" className="label">
+            Review Frequency
           </label>
-          <input
-            id="next_review_date"
-            type="date"
+          <select
+            id="review_frequency"
             className="input"
-            value={formData.next_review_date}
+            value={formData.review_frequency}
             onChange={(e) =>
-              setFormData({ ...formData, next_review_date: e.target.value })
+              setFormData({ ...formData, review_frequency: e.target.value as 'daily' | 'weekly' | 'monthly' })
             }
             disabled={updateProject.isPending}
-          />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">When should this project be reviewed?</p>
+          >
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">How often should this project be reviewed?</p>
         </div>
 
         {/* Form Actions */}

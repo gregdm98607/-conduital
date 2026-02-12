@@ -82,9 +82,12 @@ class Project(Base, TimestampMixin):
     target_completion_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
     # Review tracking
+    review_frequency: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="weekly"
+    )  # daily, weekly, monthly
     next_review_date: Mapped[Optional[date]] = mapped_column(
         Date, nullable=True, index=True
-    )  # When project should next be reviewed
+    )  # Auto-calculated from review_frequency + last_reviewed_at
     last_reviewed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )  # When project was last reviewed

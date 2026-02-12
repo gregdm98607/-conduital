@@ -21,7 +21,7 @@ export function CreateProjectModal({ isOpen, onClose, defaultAreaId }: CreatePro
     priority: number;
     area_id: number | undefined;
     target_completion_date: string;
-    next_review_date: string;
+    review_frequency: 'daily' | 'weekly' | 'monthly';
   }>({
     title: '',
     description: '',
@@ -30,7 +30,7 @@ export function CreateProjectModal({ isOpen, onClose, defaultAreaId }: CreatePro
     priority: 5,
     area_id: defaultAreaId,
     target_completion_date: '',
-    next_review_date: '',
+    review_frequency: 'weekly',
   });
 
   // Update area_id when defaultAreaId changes (e.g., opening from different area cards)
@@ -72,7 +72,7 @@ export function CreateProjectModal({ isOpen, onClose, defaultAreaId }: CreatePro
         description: formData.description.trim() || undefined,
         outcome_statement: formData.outcome_statement.trim() || undefined,
         target_completion_date: formData.target_completion_date || undefined,
-        next_review_date: formData.next_review_date || undefined,
+        review_frequency: formData.review_frequency,
         area_id: formData.area_id || undefined,
       },
       {
@@ -87,7 +87,7 @@ export function CreateProjectModal({ isOpen, onClose, defaultAreaId }: CreatePro
             priority: 5,
             area_id: undefined,
             target_completion_date: '',
-            next_review_date: '',
+            review_frequency: 'weekly',
           });
           onClose();
         },
@@ -253,22 +253,25 @@ export function CreateProjectModal({ isOpen, onClose, defaultAreaId }: CreatePro
           </div>
         </div>
 
-        {/* Next Review Date */}
+        {/* Review Frequency */}
         <div>
-          <label htmlFor="next_review_date" className="label">
-            Next Review Date
+          <label htmlFor="review_frequency" className="label">
+            Review Frequency
           </label>
-          <input
-            id="next_review_date"
-            type="date"
+          <select
+            id="review_frequency"
             className="input"
-            value={formData.next_review_date}
+            value={formData.review_frequency}
             onChange={(e) =>
-              setFormData({ ...formData, next_review_date: e.target.value })
+              setFormData({ ...formData, review_frequency: e.target.value as 'daily' | 'weekly' | 'monthly' })
             }
             disabled={createProject.isPending}
-          />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">When should this project be reviewed?</p>
+          >
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">How often should this project be reviewed?</p>
         </div>
 
         {/* Form Actions */}

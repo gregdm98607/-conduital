@@ -113,7 +113,7 @@ class UrgencyZoneEnum(str, Enum):
 
 
 class ReviewFrequencyEnum(str, Enum):
-    """Review frequency values for areas"""
+    """Review frequency values for areas and projects"""
 
     DAILY = "daily"
     WEEKLY = "weekly"

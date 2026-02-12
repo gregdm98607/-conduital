@@ -2,7 +2,7 @@
 Project service - business logic for projects
 """
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from sqlalchemy import func, or_, select
@@ -13,6 +13,15 @@ from app.models.area import Area
 from app.models.project import Project
 from app.models.task import Task
 from app.schemas.project import ProjectCreate, ProjectHealth, ProjectUpdate
+
+
+REVIEW_FREQ_DAYS = {"daily": 1, "weekly": 7, "monthly": 30}
+
+
+def _calculate_next_review_date(frequency: str, base_date: date | None = None) -> date:
+    """Calculate next review date from frequency and a base date (defaults to today)."""
+    days = REVIEW_FREQ_DAYS.get(frequency, 7)
+    return (base_date or date.today()) + timedelta(days=days)
 
 
 class ProjectService:
@@ -142,6 +151,8 @@ class ProjectService:
         """
         project = Project(**project_data.model_dump())
         project.last_activity_at = datetime.now(timezone.utc)
+        # Auto-set initial next_review_date from review_frequency
+        project.next_review_date = _calculate_next_review_date(project.review_frequency)
 
         db.add(project)
         db.flush()
@@ -184,6 +195,11 @@ class ProjectService:
             if getattr(project, field) != value:
                 changes[field] = {"old": getattr(project, field), "new": value}
                 setattr(project, field, value)
+
+        # If review_frequency changed, recompute next_review_date
+        if "review_frequency" in changes:
+            base = project.last_reviewed_at.date() if project.last_reviewed_at else date.today()
+            project.next_review_date = _calculate_next_review_date(project.review_frequency, base)
 
         if changes:
             # Update activity timestamp
