@@ -64,3 +64,40 @@ export function useCompleteWeeklyReview() {
     },
   });
 }
+
+// ROADMAP-002: Proactive stalled project analysis
+export function useProactiveAnalysis() {
+  return useMutation({
+    mutationFn: (limit: number = 5) => api.getProactiveAnalysis(limit),
+  });
+}
+
+// ROADMAP-002: AI task decomposition from brainstorm notes
+export function useDecomposeTasksFromNotes() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (projectId: number) => api.decomposeTasksFromNotes(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+}
+
+// ROADMAP-002: Priority rebalancing suggestions
+export function useRebalanceSuggestions(threshold: number = 7, enabled: boolean = false) {
+  return useQuery({
+    queryKey: ['intelligence', 'rebalance', threshold],
+    queryFn: ({ signal }) => api.getRebalanceSuggestions(threshold, signal),
+    enabled,
+  });
+}
+
+// ROADMAP-002: Energy-matched task recommendations
+export function useEnergyRecommendations(energyLevel: string, limit: number = 5, enabled: boolean = false) {
+  return useQuery({
+    queryKey: ['intelligence', 'energy-recommendations', energyLevel, limit],
+    queryFn: ({ signal }) => api.getEnergyRecommendations(energyLevel, limit, signal),
+    enabled,
+  });
+}

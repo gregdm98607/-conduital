@@ -20,6 +20,7 @@ import { Error } from '../components/common/Error';
 import { MomentumBar } from '../components/projects/MomentumBar';
 import { formatRelativeTime, getReviewStatus } from '../utils/date';
 import { AreaModal } from '../components/areas/AreaModal';
+import { AreaHealthBreakdown } from '../components/areas/AreaHealthBreakdown';
 import { ProjectHeaderSkeleton, ProjectCardSkeleton } from '@/components/common/Skeleton';
 import { SearchInput } from '@/components/common/SearchInput';
 import type { Project } from '@/types';
@@ -322,6 +323,7 @@ export function AreaDetail() {
                   style={{ width: `${Math.round(area.health_score * 100)}%` }}
                 />
               </div>
+              <AreaHealthBreakdown areaId={area.id} />
             </div>
 
             {/* Area Metrics */}

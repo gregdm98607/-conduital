@@ -409,6 +409,16 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-114 | **Social Media & Marketing Content Plan** | Separate marketing workstream. Multi-platform strategy, AI agent automation, launch sequence. |
 | BACKLOG-121 | **Area Prefix Mapping UX Redesign** | Clarify auto-discovery concept, show folder paths, progressive disclosure |
 | BACKLOG-128 | **Badge Configuration & Today's Focus Layout** | Standardize badge pattern across app. Accent-bar style badges on Today's Focus. |
+| BACKLOG-130 | **Momentum Pulse Ring** | Animated concentric ring around momentum score on ProjectDetail — gentle pulse when momentum is rising, static glow at steady, fade when declining. CSS-only, ~30 lines. Makes the score feel alive. |
+| BACKLOG-131 | **Task Completion Celebration** | Satisfying checkmark animation on task complete: checkbox morphs to checkmark with a brief green ripple. Scale up slightly then settle. CSS keyframes only. Dopamine hit for every completed task. |
+| BACKLOG-132 | **Streak Counter on Dashboard** | "X-day streak" badge showing consecutive days with at least one task completed. Flame icon intensifies (amber → orange → red) as streak grows. Backend: simple query on task completion dates. Motivates daily engagement. |
+| BACKLOG-133 | **Smooth Card Reorder Transitions** | When project cards shift position (sort by momentum, filter change), animate card movement with `layout` transitions instead of instant DOM reflow. Uses CSS `View Transitions API` or FLIP technique. Makes sorting feel premium. |
+| BACKLOG-134 | **Momentum Delta Toast** | After completing a task, show a subtle floating "+0.05 momentum" toast near the momentum bar with a gentle slide-up fade. Real-time feedback connecting actions to progress. Reinforces the Progress Principle. |
+| BACKLOG-135 | **Empty State Illustrations** | Replace "No projects found" / "No tasks" / "Inbox empty" bare text with lightweight SVG illustrations + encouraging copy. "All clear — what's next?" for empty inbox, "Time to build something" for no projects. Small investment, big polish signal. |
+| BACKLOG-136 | **Keyboard Shortcut Overlay** | Press `?` anywhere to show a floating shortcut cheat-sheet (modal). `N` = new task, `P` = new project, `/` = search, `G D` = go dashboard. Power-user signal. Feels like a pro tool. |
+| BACKLOG-137 | **Momentum Color Glow on Sidebar Active Item** | Sidebar active nav item gets a subtle left-border glow that matches the user's average momentum color. Green glow when things are going well, amber when attention needed. Ambient awareness without being distracting. |
+| BACKLOG-138 | **Stalled Project Shake** | Stalled project cards get a very subtle CSS shake animation (2px, 0.3s) when first rendered into view, then stop. Draws the eye without being annoying. Urgency without anxiety. Single `animation-iteration-count: 1`. |
+| BACKLOG-139 | **Daily Momentum Heatmap** | GitHub-style contribution heatmap on Dashboard showing momentum scores over the last 90 days. Green = high momentum days, gray = low. Uses existing momentum history data. One glance tells the whole story. |
 
 ---
 

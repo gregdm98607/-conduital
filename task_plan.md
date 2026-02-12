@@ -33,10 +33,10 @@ The beta already ships: momentum intelligence, GTD inbox, file sync, horizons (g
 **Work needed:**
 - [ ] AI analysis summary on ProjectDetail (prominent placement)
 - [ ] AI-suggested next actions surfaced on Dashboard ("AI recommends...")
-- [ ] Proactive stalled project analysis (auto-trigger when momentum drops)
-- [ ] AI task decomposition from brainstorm notes (NPM Step 3 → tasks)
-- [ ] Priority rebalancing suggestions when Opportunity Now overflows
-- [ ] Energy-matched task recommendations
+- [x] Proactive stalled project analysis (auto-trigger when momentum drops) ✅
+- [x] AI task decomposition from brainstorm notes (NPM Step 3 → tasks) ✅
+- [x] Priority rebalancing suggestions when Opportunity Now overflows ✅
+- [x] Energy-matched task recommendations ✅
 
 **Estimated sessions:** 2-3
 
@@ -154,17 +154,19 @@ The beta already ships: momentum intelligence, GTD inbox, file sync, horizons (g
 
 ## Implementation Order (Suggested Sessions)
 
-### Session 1: Backlog Cleanup + App Icon + Quick Wins
-- Clean up backlog.md (move completed items, mark done DIST items)
-- DEBT-081: Design and integrate app icon
-- BACKLOG-104: Area Health Drill-Down UI (backend ready, frontend only)
-- BACKLOG-099: Archive Area confirmation dialog
+### Session 1: Quick Wins + AI Surface ✅ DONE
+- ~~DEBT-081: Design and integrate app icon~~ ✅
+- ~~BACKLOG-104: Area Health Drill-Down UI~~ ✅
+- ~~BACKLOG-099: Archive Area confirmation dialog~~ ✅
+- ~~DEBT-010: Dependency audit (pyproject.toml + package.json)~~ ✅
+- ~~AI analysis prominent on ProjectDetail~~ ✅
+- ~~AI suggestions on Dashboard~~ ✅
 
-### Session 2-3: AI Features Integration (ROADMAP-002)
-- AI analysis prominent on ProjectDetail
-- AI suggestions on Dashboard
-- Proactive stalled project analysis
-- AI task decomposition from brainstorm notes
+### Session 2-3: AI Features Integration (ROADMAP-002) ✅ DONE
+- ~~Proactive stalled project analysis~~ ✅
+- ~~AI task decomposition from brainstorm notes~~ ✅
+- ~~Priority rebalancing suggestions (Opportunity Now overflow)~~ ✅
+- ~~Energy-matched task recommendations~~ ✅
 
 ### Session 4-5: AI Weekly Review Co-Pilot (ROADMAP-007)
 - AI review dialogue system

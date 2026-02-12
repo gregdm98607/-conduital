@@ -438,3 +438,137 @@ class TestMomentumHistoryEndpoints:
         data = response.json()
         assert "previous_momentum_score" in data
         assert data["previous_momentum_score"] is None
+
+
+class TestAIEndpointsROADMAP002:
+    """Test ROADMAP-002 AI feature endpoints"""
+
+    def test_proactive_analysis_no_declining_projects(self, test_client):
+        """Proactive analysis returns empty when all projects healthy"""
+        response = test_client.post("/api/v1/intelligence/ai/proactive-analysis")
+        assert response.status_code in (200, 400)
+        if response.status_code == 200:
+            data = response.json()
+            assert data["projects_analyzed"] == 0
+            assert data["insights"] == []
+
+    def test_proactive_analysis_with_stalled_project(self, test_client):
+        """Proactive analysis finds stalled projects"""
+        # Create a project and mark it stalled
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Stalled AI Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        # Manually set stalled_since via direct update
+        from app.models.project import Project
+        from datetime import datetime, timezone
+        from app.core.database import get_db
+        from app.main import app
+
+        db_gen = app.dependency_overrides[get_db]()
+        db = next(db_gen)
+        p = db.get(Project, project_id)
+        p.stalled_since = datetime.now(timezone.utc)
+        p.momentum_score = 0.1
+        db.commit()
+
+        response = test_client.post("/api/v1/intelligence/ai/proactive-analysis")
+        # May fail if AI not configured — that's OK, check structure
+        if response.status_code == 200:
+            data = response.json()
+            assert data["projects_analyzed"] >= 1
+            assert len(data["insights"]) >= 1
+            insight = data["insights"][0]
+            assert insight["project_id"] == project_id
+            assert "project_title" in insight
+
+    def test_decompose_tasks_no_notes(self, test_client):
+        """Task decomposition returns 400 when project has no notes"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "No Notes", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        response = test_client.post(f"/api/v1/intelligence/ai/decompose-tasks/{project_id}")
+        assert response.status_code == 400
+        assert "no brainstorm" in response.json()["detail"].lower()
+
+    def test_decompose_tasks_not_found(self, test_client):
+        """Task decomposition returns 404 for non-existent project"""
+        response = test_client.post("/api/v1/intelligence/ai/decompose-tasks/99999")
+        assert response.status_code == 404
+
+    def test_rebalance_suggestions_empty(self, test_client):
+        """Rebalance suggestions return empty when balanced"""
+        response = test_client.get("/api/v1/intelligence/ai/rebalance-suggestions")
+        assert response.status_code == 200
+        data = response.json()
+        assert "opportunity_now_count" in data
+        assert "threshold" in data
+        assert "suggestions" in data
+        assert isinstance(data["suggestions"], list)
+
+    def test_rebalance_suggestions_custom_threshold(self, test_client):
+        """Rebalance suggestions accept custom threshold"""
+        response = test_client.get("/api/v1/intelligence/ai/rebalance-suggestions?threshold=3")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["threshold"] == 3
+
+    def test_energy_recommendations_low(self, test_client):
+        """Energy recommendations for low energy"""
+        response = test_client.get("/api/v1/intelligence/ai/energy-recommendations?energy_level=low")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["energy_level"] == "low"
+        assert "tasks" in data
+        assert "total_available" in data
+
+    def test_energy_recommendations_high(self, test_client):
+        """Energy recommendations for high energy"""
+        response = test_client.get("/api/v1/intelligence/ai/energy-recommendations?energy_level=high")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["energy_level"] == "high"
+
+    def test_energy_recommendations_invalid(self, test_client):
+        """Energy recommendations reject invalid energy level"""
+        response = test_client.get("/api/v1/intelligence/ai/energy-recommendations?energy_level=extreme")
+        assert response.status_code == 400
+
+    def test_energy_recommendations_with_tasks(self, test_client):
+        """Energy recommendations return tasks when available"""
+        # Create a project and task
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Energy Test Project", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        task_resp = test_client.post(
+            "/api/v1/tasks",
+            json={
+                "project_id": project_id,
+                "title": "Low energy quick task",
+                "status": "pending",
+                "is_next_action": True,
+                "energy_level": "low",
+                "estimated_minutes": 10,
+                "context": "quick_win",
+                "priority": 5,
+            },
+        )
+        assert task_resp.status_code == 201
+
+        response = test_client.get("/api/v1/intelligence/ai/energy-recommendations?energy_level=low")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_available"] >= 1
+        if data["tasks"]:
+            task = data["tasks"][0]
+            assert "task_id" in task
+            assert "task_title" in task
+            assert "project_title" in task

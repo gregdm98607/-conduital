@@ -72,8 +72,9 @@ export function useArchiveArea() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => api.archiveArea(id),
-    onSuccess: (_, id) => {
+    mutationFn: ({ id, force = false }: { id: number; force?: boolean }) =>
+      api.archiveArea(id, force),
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['areas'] });
       queryClient.invalidateQueries({ queryKey: ['areas', id] });
     },

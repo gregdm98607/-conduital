@@ -1,5 +1,122 @@
 # Progress Log
 
+## Session: 2026-02-11 — v1.1.0 Session 2: AI Features Integration (ROADMAP-002)
+
+### Completed Items
+
+#### Proactive Stalled Project Analysis
+- `POST /ai/proactive-analysis` endpoint — finds stalled/declining/low-momentum projects
+- Prioritizes by severity (stalled=3, declining=2, low=1), generates AI analysis + recommended action
+- `ProactiveInsight` / `ProactiveAnalysisResponse` Pydantic models
+- `AIProactiveInsights.tsx` Dashboard component — "Analyze Projects" button, per-project cards with analysis + recommendations
+- `useProactiveAnalysis` mutation hook
+
+#### AI Task Decomposition from Brainstorm Notes
+- `POST /ai/decompose-tasks/{project_id}` endpoint — reads brainstorm_notes + organizing_notes
+- Sends structured prompt to AI, parses TASK: lines with title|minutes|energy|context format
+- `DecomposedTask` / `TaskDecompositionResponse` Pydantic models
+- `AITaskDecomposition.tsx` component on ProjectDetail (NPM section)
+- Per-task "+" button, "Create All" batch button, green checkmark on created tasks
+- `useDecomposeTasksFromNotes` mutation hook
+
+#### Priority Rebalancing Suggestions
+- `GET /ai/rebalance-suggestions` endpoint — counts opportunity_now tasks across active projects
+- When exceeding threshold (default 7), scores tasks by age/priority/momentum
+- Suggests demotions to over_the_horizon or promotions to critical_now for due-soon tasks
+- `RebalanceSuggestion` / `RebalanceResponse` Pydantic models
+- `AIRebalanceSuggestions.tsx` Dashboard component — expandable card with suggestion count badge
+- Per-suggestion "Critical" / "Horizon" action buttons, applies urgency_zone changes directly
+- `useRebalanceSuggestions` query hook
+
+#### Energy-Matched Task Recommendations
+- `GET /ai/energy-recommendations` endpoint — scores all pending next-action tasks by energy compatibility
+- Different scoring weights for low/medium/high energy preferences
+- Boosts tasks from higher-momentum projects
+- `EnergyTask` / `EnergyRecommendationResponse` Pydantic models
+- `AIEnergyRecommendations.tsx` Dashboard component — Low/Medium/High energy toggle buttons
+- Clickable task cards linking to project detail
+- `useEnergyRecommendations` query hook
+
+#### Tests
+- 10 new tests in `TestAIEndpointsROADMAP002` class covering all 4 new endpoints
+- Full suite: **226/226 pass** (216 original + 10 new)
+
+#### New Files
+- `frontend/src/components/intelligence/AIProactiveInsights.tsx`
+- `frontend/src/components/intelligence/AIEnergyRecommendations.tsx`
+- `frontend/src/components/intelligence/AIRebalanceSuggestions.tsx`
+- `frontend/src/components/projects/AITaskDecomposition.tsx`
+
+#### Modified Files
+- `backend/app/api/intelligence.py` — 4 new endpoints, 8 new Pydantic models
+- `frontend/src/types/index.ts` — 8 new interfaces
+- `frontend/src/services/api.ts` — 4 new API methods
+- `frontend/src/hooks/useIntelligence.ts` — 4 new hooks
+- `frontend/src/pages/Dashboard.tsx` — integrated 3 new AI components
+- `frontend/src/pages/ProjectDetail.tsx` — integrated AITaskDecomposition
+- `backend/tests/test_api_basic.py` — 10 new tests
+
+### Verification
+- TypeScript: clean (0 errors)
+- Vite build: clean
+- Backend: 226/226 tests pass
+
+---
+
+## Session: 2026-02-11 — v1.1.0 Session 1: Quick Wins + AI Surface
+
+### Completed Items
+
+#### DEBT-081: App Icon
+- Created `scripts/generate_icon.py` — PIL-based generator for multi-res .ico (16-256px)
+- Design: stylized "C" with momentum arrow on blue gradient rounded square
+- Generated `assets/conduital.ico` and individual PNGs
+- Uncommented `SetupIconFile` in `installer/conduital.iss`
+- Copied as `frontend/public/favicon.ico`, updated `index.html`
+- Existing refs in `conduital.spec` and `tray.py` already pointed to correct path
+
+#### BACKLOG-104: Area Health Drill-Down UI
+- Added `AreaHealthBreakdown` interface to `types/index.ts`
+- Added `getAreaHealthBreakdown` API method to `api.ts`
+- Created `AreaHealthBreakdown.tsx` — expandable factor bars mirroring `MomentumBreakdown.tsx`
+- Integrated into `AreaDetail.tsx` after health score bar
+
+#### BACKLOG-099: Archive Area Confirmation Dialog
+- Updated `api.archiveArea` to accept `force` parameter
+- Updated `useArchiveArea` hook to accept `{id, force}` object
+- Replaced browser `confirm()` with proper Modal in `Areas.tsx`
+- Checks `active_project_count` — modal warns with cascade options when >0
+
+#### DEBT-010: Dependency Audit
+- **pyproject.toml**: Updated all pure-Python packages (fastapi, uvicorn, anthropic, httpx, alembic, pydantic, etc.)
+- Constrained Python range to `>=3.11,<3.15` (pyinstaller compatibility)
+- Regenerated `poetry.lock` and ran `poetry install` — all 216 tests pass
+- **package.json**: Updated safe minor/patch bumps; fixed axios vulnerability via `npm audit fix`
+- Skipped breaking majors: React 19, react-router 7, tailwind 4, date-fns 4
+
+#### Phase 1A: Surface AI on ProjectDetail
+- Created `AIProjectInsights.tsx` — expandable violet-themed section
+- Two sub-sections: "Project Analysis" (useAnalyzeProject) + "Suggested Next Action" (useSuggestNextAction)
+- On-demand fetch, error handling for AI not configured, localStorage persistence
+- Integrated into `ProjectDetail.tsx` after NPM section
+
+#### Phase 1A: Surface AI on Dashboard
+- Created `AIDashboardSuggestions.tsx` — takes top 3 stalled projects
+- "Get AI Suggestions" button with `Promise.allSettled` parallel fetch
+- Per-project cards with loading/error/suggestion states, violet theme
+- Integrated into `Dashboard.tsx` after StalledAlert section
+
+### Verification
+- TypeScript: clean (0 errors)
+- Backend: 216/216 tests pass (12.73s)
+- Poetry lock regenerated with updated constraints
+
+### Notes
+- Binary packages (SQLAlchemy .pyd files) were updated via `poetry install` after lock regen
+- Removed unused `projectTitle` prop from `AIProjectInsights` destructuring (TS6133)
+
+---
+
 ## Session: 2026-02-11 — Full Release Planning + Beta Patches
 
 ### Beta Patch Work

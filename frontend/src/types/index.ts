@@ -180,6 +180,13 @@ export interface MomentumBreakdown {
   factors: MomentumFactor[];
 }
 
+export interface AreaHealthBreakdown {
+  area_id: number;
+  title: string;
+  total_score: number;
+  factors: MomentumFactor[];
+}
+
 export interface MomentumSnapshotItem {
   score: number;
   snapshot_at: string;
@@ -227,6 +234,70 @@ export interface AIAnalysis {
 export interface AITaskSuggestion {
   suggestion: string;
   ai_generated: boolean;
+}
+
+// ROADMAP-002: Proactive analysis
+export interface ProactiveInsight {
+  project_id: number;
+  project_title: string;
+  momentum_score: number;
+  trend: 'rising' | 'falling' | 'stable';
+  analysis?: string;
+  recommended_action?: string;
+  error?: string;
+}
+
+export interface ProactiveAnalysisResponse {
+  projects_analyzed: number;
+  insights: ProactiveInsight[];
+}
+
+// ROADMAP-002: Task decomposition from brainstorm notes
+export interface DecomposedTask {
+  title: string;
+  estimated_minutes?: number;
+  energy_level?: 'high' | 'medium' | 'low';
+  context?: string;
+}
+
+export interface TaskDecompositionResponse {
+  project_id: number;
+  tasks: DecomposedTask[];
+  source: string;
+}
+
+// ROADMAP-002: Priority rebalancing
+export interface RebalanceSuggestion {
+  task_id: number;
+  task_title: string;
+  project_title: string;
+  current_zone: string | null;
+  suggested_zone: string;
+  reason: string;
+}
+
+export interface RebalanceResponse {
+  opportunity_now_count: number;
+  threshold: number;
+  suggestions: RebalanceSuggestion[];
+}
+
+// ROADMAP-002: Energy-matched recommendations
+export interface EnergyTask {
+  task_id: number;
+  task_title: string;
+  project_id: number;
+  project_title: string;
+  energy_level: string | null;
+  estimated_minutes: number | null;
+  context: string | null;
+  urgency_zone: string | null;
+}
+
+export interface EnergyRecommendationResponse {
+  energy_level: string;
+  tasks: EnergyTask[];
+  total_available: number;
 }
 
 // API Response types

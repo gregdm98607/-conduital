@@ -25,6 +25,7 @@ import type {
   DailyDashboard,
   Area,
   AreaWithProjects,
+  AreaHealthBreakdown,
   SyncStatus,
   InboxItem,
   InboxItemCreate,
@@ -34,6 +35,10 @@ import type {
   InboxBatchResponse,
   WeeklyReviewCompletion,
   WeeklyReviewHistory,
+  ProactiveAnalysisResponse,
+  TaskDecompositionResponse,
+  RebalanceResponse,
+  EnergyRecommendationResponse,
   Goal,
   Vision,
   Context,
@@ -415,6 +420,38 @@ class APIClient {
     return response.data;
   }
 
+  async getProactiveAnalysis(limit: number = 5): Promise<ProactiveAnalysisResponse> {
+    const response = await this.client.post<ProactiveAnalysisResponse>(
+      '/intelligence/ai/proactive-analysis',
+      null,
+      { params: { limit } }
+    );
+    return response.data;
+  }
+
+  async decomposeTasksFromNotes(projectId: number): Promise<TaskDecompositionResponse> {
+    const response = await this.client.post<TaskDecompositionResponse>(
+      `/intelligence/ai/decompose-tasks/${projectId}`
+    );
+    return response.data;
+  }
+
+  async getRebalanceSuggestions(threshold: number = 7, signal?: AbortSignal): Promise<RebalanceResponse> {
+    const response = await this.client.get<RebalanceResponse>(
+      '/intelligence/ai/rebalance-suggestions',
+      { params: { threshold }, signal }
+    );
+    return response.data;
+  }
+
+  async getEnergyRecommendations(energyLevel: string = 'low', limit: number = 5, signal?: AbortSignal): Promise<EnergyRecommendationResponse> {
+    const response = await this.client.get<EnergyRecommendationResponse>(
+      '/intelligence/ai/energy-recommendations',
+      { params: { energy_level: energyLevel, limit }, signal }
+    );
+    return response.data;
+  }
+
   // ============================================================================
   // Areas
   // ============================================================================
@@ -451,13 +488,20 @@ class APIClient {
     return response.data;
   }
 
-  async archiveArea(id: number): Promise<Area> {
-    const response = await this.client.post<Area>(`/areas/${id}/archive`);
+  async archiveArea(id: number, force: boolean = false): Promise<Area> {
+    const response = await this.client.post<Area>(`/areas/${id}/archive`, null, {
+      params: force ? { force: true } : undefined,
+    });
     return response.data;
   }
 
   async unarchiveArea(id: number): Promise<Area> {
     const response = await this.client.post<Area>(`/areas/${id}/unarchive`);
+    return response.data;
+  }
+
+  async getAreaHealthBreakdown(areaId: number, signal?: AbortSignal): Promise<AreaHealthBreakdown> {
+    const response = await this.client.get<AreaHealthBreakdown>(`/areas/${areaId}/health`, { signal });
     return response.data;
   }
 

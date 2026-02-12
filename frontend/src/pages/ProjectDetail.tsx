@@ -7,6 +7,8 @@ import { useUpdateTask, useDeleteTask } from '../hooks/useTasks';
 import { Error } from '../components/common/Error';
 import { MomentumBar } from '../components/projects/MomentumBar';
 import { MomentumBreakdown } from '../components/projects/MomentumBreakdown';
+import { AIProjectInsights } from '../components/projects/AIProjectInsights';
+import { AITaskDecomposition } from '../components/projects/AITaskDecomposition';
 import { formatRelativeTime, getReviewStatus } from '../utils/date';
 import { EditProjectModal } from '../components/projects/EditProjectModal';
 import { CreateTaskModal } from '../components/tasks/CreateTaskModal';
@@ -362,10 +364,24 @@ export function ProjectDetail() {
                     <p className="text-gray-800 dark:text-gray-200 text-sm whitespace-pre-wrap">{project.organizing_notes}</p>
                   </div>
                 )}
+
+                {/* AI Task Decomposition — ROADMAP-002 */}
+                <AITaskDecomposition
+                  projectId={project.id}
+                  hasBrainstormNotes={!!project.brainstorm_notes}
+                  hasOrganizingNotes={!!project.organizing_notes}
+                />
               </div>
             )}
           </div>
         )}
+
+        {/* AI Insights — Prominent Placement */}
+        <AIProjectInsights
+          projectId={project.id}
+          projectTitle={project.title}
+          isActive={project.status === 'active'}
+        />
 
         <MomentumBar score={project.momentum_score} />
         <MomentumBreakdown projectId={project.id} />

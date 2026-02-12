@@ -46,9 +46,8 @@ AllowNoIcons=yes
 ; Output installer location and naming
 OutputDir=Output
 OutputBaseFilename=ConduitalSetup-{#MyAppVersion}
-; Use the app icon if available, otherwise Inno Setup default
-; Uncomment when icon is available:
-; SetupIconFile=..\assets\conduital.ico
+; Use the app icon for the installer wizard
+SetupIconFile=..\assets\conduital.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
 ; Modern installer UI

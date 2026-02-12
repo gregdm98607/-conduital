@@ -8,6 +8,10 @@ import { useAreas } from '../hooks/useAreas';
 import { useDashboardStats, useMomentumSummary, useWeeklyReviewHistory } from '../hooks/useIntelligence';
 import { useUpdateTask } from '../hooks/useTasks';
 import { StalledAlert } from '../components/intelligence/StalledAlert';
+import { AIDashboardSuggestions } from '../components/intelligence/AIDashboardSuggestions';
+import { AIProactiveInsights } from '../components/intelligence/AIProactiveInsights';
+import { AIEnergyRecommendations } from '../components/intelligence/AIEnergyRecommendations';
+import { AIRebalanceSuggestions } from '../components/intelligence/AIRebalanceSuggestions';
 import { StatsSkeleton, NextActionSkeleton } from '../components/common/Skeleton';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { ContextExportModal } from '../components/common/ContextExportModal';
@@ -233,6 +237,20 @@ export function Dashboard() {
           <StalledAlert projects={stalled} />
         </div>
       )}
+
+      {/* AI Recommendations for Stalled Projects */}
+      {!stalledLoading && stalled && stalled.length > 0 && (
+        <AIDashboardSuggestions stalledProjects={stalled} />
+      )}
+
+      {/* AI Proactive Analysis — ROADMAP-002 */}
+      <AIProactiveInsights />
+
+      {/* AI Intelligence Grid — ROADMAP-002 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-0">
+        <AIEnergyRecommendations />
+        <AIRebalanceSuggestions />
+      </div>
 
       {/* Weekly Review Status — BETA-030 */}
       <section className="mb-8">

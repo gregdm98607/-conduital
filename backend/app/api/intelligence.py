@@ -17,7 +17,7 @@ from app.core.database import get_db
 from app.models.momentum_snapshot import MomentumSnapshot
 from app.models.project import Project
 from app.schemas.task import Task as TaskSchema
-from app.services.intelligence_service import IntelligenceService
+from app.services.intelligence_service import IntelligenceService, _ensure_tz_aware
 
 router = APIRouter()
 
@@ -113,6 +113,82 @@ class AITaskSuggestion(BaseModel):
 
     suggestion: str
     ai_generated: bool
+
+
+class ProactiveInsight(BaseModel):
+    """Single project proactive insight"""
+
+    project_id: int
+    project_title: str
+    momentum_score: float
+    trend: str
+    analysis: str | None = None
+    recommended_action: str | None = None
+    error: str | None = None
+
+
+class ProactiveAnalysisResponse(BaseModel):
+    """Response for proactive stalled/declining analysis"""
+
+    projects_analyzed: int
+    insights: list[ProactiveInsight]
+
+
+class DecomposedTask(BaseModel):
+    """A task decomposed from brainstorm notes"""
+
+    title: str
+    estimated_minutes: int | None = None
+    energy_level: str | None = None
+    context: str | None = None
+
+
+class TaskDecompositionResponse(BaseModel):
+    """Response for AI task decomposition from brainstorm notes"""
+
+    project_id: int
+    tasks: list[DecomposedTask]
+    source: str  # "brainstorm_notes" or "organizing_notes"
+
+
+class RebalanceSuggestion(BaseModel):
+    """Single rebalancing suggestion"""
+
+    task_id: int
+    task_title: str
+    project_title: str
+    current_zone: str | None
+    suggested_zone: str
+    reason: str
+
+
+class RebalanceResponse(BaseModel):
+    """Response for priority rebalancing suggestions"""
+
+    opportunity_now_count: int
+    threshold: int
+    suggestions: list[RebalanceSuggestion]
+
+
+class EnergyTask(BaseModel):
+    """Task matched by energy level"""
+
+    task_id: int
+    task_title: str
+    project_id: int
+    project_title: str
+    energy_level: str | None
+    estimated_minutes: int | None
+    context: str | None
+    urgency_zone: str | None
+
+
+class EnergyRecommendationResponse(BaseModel):
+    """Response for energy-matched task recommendations"""
+
+    energy_level: str
+    tasks: list[EnergyTask]
+    total_available: int
 
 
 class DashboardStatsResponse(BaseModel):
@@ -688,3 +764,479 @@ def suggest_next_action_with_ai(project_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=500, detail=f"AI suggestion failed: {str(e)}"
         )
+
+
+@router.post("/ai/proactive-analysis", response_model=ProactiveAnalysisResponse)
+def proactive_stalled_analysis(
+    limit: int = Query(5, ge=1, le=10, description="Max projects to analyze"),
+    db: Session = Depends(get_db),
+):
+    """
+    Proactively analyze declining and stalled projects with AI.
+
+    Finds projects that are stalled or declining in momentum and generates
+    AI-powered insights and recommended actions for each.
+
+    ROADMAP-002: Proactive stalled project analysis.
+    """
+    if not settings.AI_FEATURES_ENABLED:
+        raise HTTPException(status_code=400, detail="AI features not enabled")
+
+    # Find stalled + declining projects
+    active_projects = (
+        db.execute(select(Project).where(Project.status == "active"))
+        .scalars()
+        .all()
+    )
+
+    # Prioritize: stalled first, then declining trend, then low momentum
+    candidates = []
+    for p in active_projects:
+        trend = _compute_trend(p.momentum_score or 0.0, p.previous_momentum_score)
+        priority = 0
+        if p.stalled_since:
+            priority = 3  # Stalled — highest priority
+        elif trend == "falling":
+            priority = 2  # Declining
+        elif (p.momentum_score or 0.0) < 0.3:
+            priority = 1  # Low momentum
+        else:
+            continue  # Skip healthy projects
+        candidates.append((priority, p, trend))
+
+    # Sort by priority descending, take top N
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    targets = candidates[:limit]
+
+    if not targets:
+        return ProactiveAnalysisResponse(projects_analyzed=0, insights=[])
+
+    from app.services.ai_service import AIService
+
+    try:
+        ai_service = AIService()
+    except Exception:
+        # AI not configured — return insights without AI analysis
+        insights = [
+            ProactiveInsight(
+                project_id=p.id,
+                project_title=p.title,
+                momentum_score=p.momentum_score or 0.0,
+                trend=trend,
+                error="AI not configured",
+            )
+            for _, p, trend in targets
+        ]
+        return ProactiveAnalysisResponse(
+            projects_analyzed=len(insights), insights=insights
+        )
+
+    insights: list[ProactiveInsight] = []
+    for _, project, trend in targets:
+        try:
+            result = ai_service.analyze_project_health(db, project)
+            suggestion = ai_service.suggest_next_action(db, project)
+            insights.append(
+                ProactiveInsight(
+                    project_id=project.id,
+                    project_title=project.title,
+                    momentum_score=project.momentum_score or 0.0,
+                    trend=trend,
+                    analysis=result.get("analysis", ""),
+                    recommended_action=suggestion,
+                )
+            )
+        except Exception as e:
+            logger.warning(f"Proactive analysis failed for project {project.id}: {e}")
+            insights.append(
+                ProactiveInsight(
+                    project_id=project.id,
+                    project_title=project.title,
+                    momentum_score=project.momentum_score or 0.0,
+                    trend=trend,
+                    error=str(e),
+                )
+            )
+
+    return ProactiveAnalysisResponse(
+        projects_analyzed=len(insights), insights=insights
+    )
+
+
+@router.post("/ai/decompose-tasks/{project_id}", response_model=TaskDecompositionResponse)
+def decompose_brainstorm_to_tasks(
+    project_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Use AI to decompose brainstorm/organizing notes into concrete tasks.
+
+    Reads the project's brainstorm_notes and organizing_notes, then uses AI
+    to generate a list of actionable tasks with estimated effort and energy levels.
+
+    ROADMAP-002: AI task decomposition from brainstorm notes (NPM Step 3 → tasks).
+    """
+    if not settings.AI_FEATURES_ENABLED:
+        raise HTTPException(status_code=400, detail="AI features not enabled")
+
+    project = db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    notes = (project.brainstorm_notes or "").strip()
+    organizing = (project.organizing_notes or "").strip()
+
+    if not notes and not organizing:
+        raise HTTPException(
+            status_code=400,
+            detail="Project has no brainstorm or organizing notes to decompose",
+        )
+
+    source_text = ""
+    source_label = "brainstorm_notes"
+    if notes:
+        source_text += f"Brainstorm Notes:\n{notes}\n\n"
+    if organizing:
+        source_text += f"Organizing Notes:\n{organizing}\n\n"
+        if not notes:
+            source_label = "organizing_notes"
+
+    from app.services.ai_service import AIService
+
+    try:
+        ai_service = AIService()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"AI not configured: {e}")
+
+    # Get existing tasks to avoid duplicates
+    from app.models.task import Task as TaskModel
+
+    existing_tasks = (
+        db.execute(
+            select(TaskModel)
+            .where(TaskModel.project_id == project_id, TaskModel.status != "cancelled")
+            .limit(20)
+        )
+        .scalars()
+        .all()
+    )
+    existing_titles = [t.title for t in existing_tasks]
+
+    prompt = f"""Decompose the following project notes into concrete, actionable tasks.
+
+Project: {project.title}
+Purpose: {project.purpose or 'Not specified'}
+Vision: {project.vision_statement or 'Not specified'}
+
+{source_text}
+
+Existing tasks (avoid duplicates):
+{chr(10).join(f'- {t}' for t in existing_titles[:10]) if existing_titles else '- None'}
+
+Generate 3-8 concrete tasks from these notes. For each task, provide:
+- title: A clear, actionable task title (max 80 chars, start with a verb)
+- estimated_minutes: Estimated time (15, 30, 60, 120, or 240)
+- energy_level: Required energy (high, medium, or low)
+- context: Best context (deep_work, creative, administrative, communication, research, or quick_win)
+
+Format each task as exactly one line:
+TASK: [title] | [minutes] | [energy] | [context]
+
+Example:
+TASK: Draft initial outline for chapter 3 | 60 | high | deep_work
+TASK: Send follow-up email to reviewer | 15 | low | communication
+
+Return ONLY TASK lines, nothing else."""
+
+    try:
+        response = ai_service.provider.generate(prompt, max_tokens=800, temperature=0.7)
+        tasks: list[DecomposedTask] = []
+        for line in response.strip().split("\n"):
+            line = line.strip()
+            if not line.startswith("TASK:"):
+                continue
+            parts = line[5:].strip().split("|")
+            title = parts[0].strip() if len(parts) > 0 else ""
+            if not title:
+                continue
+            minutes = None
+            energy = None
+            context = None
+            if len(parts) > 1:
+                try:
+                    minutes = int(parts[1].strip())
+                except (ValueError, IndexError):
+                    pass
+            if len(parts) > 2:
+                e = parts[2].strip().lower()
+                if e in ("high", "medium", "low"):
+                    energy = e
+            if len(parts) > 3:
+                c = parts[3].strip().lower()
+                if c in ("deep_work", "creative", "administrative", "communication", "research", "quick_win"):
+                    context = c
+            tasks.append(
+                DecomposedTask(
+                    title=title[:80],
+                    estimated_minutes=minutes,
+                    energy_level=energy,
+                    context=context,
+                )
+            )
+
+        return TaskDecompositionResponse(
+            project_id=project_id,
+            tasks=tasks,
+            source=source_label,
+        )
+    except Exception as e:
+        logger.error(f"Task decomposition failed for project {project_id}: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Task decomposition failed: {str(e)}"
+        )
+
+
+@router.get("/ai/rebalance-suggestions", response_model=RebalanceResponse)
+def get_rebalance_suggestions(
+    threshold: int = Query(7, ge=3, le=20, description="Max items before Opportunity Now overflows"),
+    db: Session = Depends(get_db),
+):
+    """
+    Suggest priority rebalancing when Opportunity Now zone overflows.
+
+    Analyzes tasks in the Opportunity Now urgency zone across all active projects.
+    When the count exceeds the threshold, suggests which tasks to demote to
+    Over the Horizon or promote to Critical Now.
+
+    ROADMAP-002: Priority rebalancing suggestions.
+    """
+    from app.models.task import Task as TaskModel
+
+    # Count Opportunity Now tasks across active projects
+    opportunity_tasks = (
+        db.execute(
+            select(TaskModel)
+            .join(Project, TaskModel.project_id == Project.id)
+            .where(
+                Project.status == "active",
+                TaskModel.status == "pending",
+                TaskModel.is_next_action.is_(True),
+                TaskModel.urgency_zone == "opportunity_now",
+            )
+            .options(joinedload(TaskModel.project))
+        )
+        .unique()
+        .scalars()
+        .all()
+    )
+
+    on_count = len(opportunity_tasks)
+    if on_count <= threshold:
+        return RebalanceResponse(
+            opportunity_now_count=on_count,
+            threshold=threshold,
+            suggestions=[],
+        )
+
+    # Generate suggestions — rank tasks by staleness/priority
+    now = datetime.now(timezone.utc)
+    scored: list[tuple[float, TaskModel]] = []
+    for t in opportunity_tasks:
+        score = 0.0
+        # Older tasks should be demoted first
+        created = _ensure_tz_aware(t.created_at) if t.created_at else None
+        if created:
+            age_days = (now - created).total_seconds() / 86400
+            score += min(age_days / 30, 1.0) * 0.4  # Older → more demotable
+
+        # Lower priority tasks demoted first
+        score += (t.priority or 5) / 10 * 0.3
+
+        # Tasks from low-momentum projects demoted first
+        if t.project and t.project.momentum_score is not None:
+            score += (1.0 - t.project.momentum_score) * 0.3
+
+        scored.append((score, t))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+
+    # Suggest demoting the excess tasks
+    excess = on_count - threshold
+    suggestions: list[RebalanceSuggestion] = []
+
+    # Tasks with due dates coming up should be promoted to Critical Now
+    for _, t in scored:
+        if t.due_date:
+            due = _ensure_tz_aware(t.due_date) if isinstance(t.due_date, datetime) else None
+            if due and (due - now).days <= 3:
+                suggestions.append(
+                    RebalanceSuggestion(
+                        task_id=t.id,
+                        task_title=t.title,
+                        project_title=t.project.title if t.project else "Unknown",
+                        current_zone="opportunity_now",
+                        suggested_zone="critical_now",
+                        reason=f"Due in {(due - now).days} days",
+                    )
+                )
+                excess -= 1
+        if excess <= 0:
+            break
+
+    # Remaining excess: demote to Over the Horizon
+    if excess > 0:
+        already_suggested = {s.task_id for s in suggestions}
+        for _, t in scored:
+            if t.id in already_suggested:
+                continue
+            if excess <= 0:
+                break
+            reason_parts = []
+            created = _ensure_tz_aware(t.created_at) if t.created_at else None
+            if created:
+                age = (now - created).days
+                if age > 7:
+                    reason_parts.append(f"Created {age}d ago")
+            if t.project and (t.project.momentum_score or 0) < 0.3:
+                reason_parts.append("Low project momentum")
+            if not reason_parts:
+                reason_parts.append("Lower priority")
+            suggestions.append(
+                RebalanceSuggestion(
+                    task_id=t.id,
+                    task_title=t.title,
+                    project_title=t.project.title if t.project else "Unknown",
+                    current_zone="opportunity_now",
+                    suggested_zone="over_the_horizon",
+                    reason="; ".join(reason_parts),
+                )
+            )
+            excess -= 1
+
+    return RebalanceResponse(
+        opportunity_now_count=on_count,
+        threshold=threshold,
+        suggestions=suggestions,
+    )
+
+
+@router.get("/ai/energy-recommendations", response_model=EnergyRecommendationResponse)
+def get_energy_recommendations(
+    energy_level: str = Query("low", description="Current energy level: high, medium, or low"),
+    limit: int = Query(5, ge=1, le=15, description="Max tasks to return"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get task recommendations matched to current energy level.
+
+    Returns actionable tasks filtered and sorted by energy compatibility.
+    Low energy → quick wins, administrative tasks
+    Medium energy → standard tasks, communication
+    High energy → deep work, creative tasks
+
+    ROADMAP-002: Energy-matched task recommendations.
+    """
+    from app.models.task import Task as TaskModel
+
+    if energy_level not in ("high", "medium", "low"):
+        raise HTTPException(status_code=400, detail="energy_level must be high, medium, or low")
+
+    now = datetime.now(timezone.utc)
+    today = now.date()
+
+    # Base query: pending next actions from active projects, not deferred
+    base_query = (
+        select(TaskModel)
+        .join(Project, TaskModel.project_id == Project.id)
+        .where(
+            Project.status == "active",
+            TaskModel.status == "pending",
+            TaskModel.is_next_action.is_(True),
+        )
+        .options(joinedload(TaskModel.project))
+    )
+
+    # Exclude deferred tasks
+    base_query = base_query.where(
+        (TaskModel.defer_until.is_(None)) | (TaskModel.defer_until <= today)
+    )
+
+    all_tasks = db.execute(base_query).unique().scalars().all()
+
+    # Score tasks by energy match
+    scored: list[tuple[float, TaskModel]] = []
+    for t in all_tasks:
+        score = 0.0
+        t_energy = (t.energy_level or "medium").lower()
+        t_context = (t.context or "").lower()
+        t_minutes = t.estimated_minutes or 30
+
+        if energy_level == "low":
+            # Prefer: low energy, quick tasks, admin/quick_win
+            if t_energy == "low":
+                score += 1.0
+            elif t_energy == "medium":
+                score += 0.4
+            else:
+                score += 0.1
+            if t_minutes <= 15:
+                score += 0.5
+            elif t_minutes <= 30:
+                score += 0.3
+            if t_context in ("quick_win", "administrative", "communication"):
+                score += 0.3
+
+        elif energy_level == "medium":
+            # Prefer: medium energy, moderate tasks
+            if t_energy == "medium":
+                score += 1.0
+            elif t_energy == "low":
+                score += 0.6
+            else:
+                score += 0.3
+            if 15 <= t_minutes <= 60:
+                score += 0.3
+            if t_context in ("communication", "research", "administrative"):
+                score += 0.2
+
+        else:  # high
+            # Prefer: high energy, deep work, longer tasks
+            if t_energy == "high":
+                score += 1.0
+            elif t_energy == "medium":
+                score += 0.5
+            else:
+                score += 0.1
+            if t_minutes >= 60:
+                score += 0.4
+            elif t_minutes >= 30:
+                score += 0.2
+            if t_context in ("deep_work", "creative", "research"):
+                score += 0.3
+
+        # Boost tasks from higher-momentum projects
+        if t.project and t.project.momentum_score:
+            score += t.project.momentum_score * 0.2
+
+        scored.append((score, t))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    top_tasks = scored[:limit]
+
+    return EnergyRecommendationResponse(
+        energy_level=energy_level,
+        tasks=[
+            EnergyTask(
+                task_id=t.id,
+                task_title=t.title,
+                project_id=t.project_id,
+                project_title=t.project.title if t.project else "Unknown",
+                energy_level=t.energy_level,
+                estimated_minutes=t.estimated_minutes,
+                context=t.context,
+                urgency_zone=t.urgency_zone,
+            )
+            for _, t in top_tasks
+        ],
+        total_available=len(all_tasks),
+    )

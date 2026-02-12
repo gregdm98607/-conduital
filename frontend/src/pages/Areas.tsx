@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Filter, ArrowUpDown, LayoutGrid, List, Archive } from 'lucide-react';
+import { Plus, Filter, ArrowUpDown, LayoutGrid, List, Archive, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAreas, useDeleteArea, useMarkAreaReviewed, useArchiveArea, useUnarchiveArea } from '../hooks/useAreas';
 import { Error } from '../components/common/Error';
 import { AreaCard } from '../components/areas/AreaCard';
 import { AreaListView } from '../components/areas/AreaListView';
 import { AreaModal } from '../components/areas/AreaModal';
+import { Modal } from '../components/common/Modal';
 import { CreateProjectModal } from '../components/projects/CreateProjectModal';
 import { AreaCardSkeleton, TableRowSkeleton } from '@/components/common/Skeleton';
 import { SearchInput } from '@/components/common/SearchInput';
@@ -57,6 +58,13 @@ export function Areas() {
   // State for creating a project from area quick action
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
   const [createProjectAreaId, setCreateProjectAreaId] = useState<number | undefined>();
+
+  // State for archive confirmation dialog
+  const [archiveConfirm, setArchiveConfirm] = useState<{
+    areaId: number;
+    areaTitle: string;
+    activeProjectCount: number;
+  } | null>(null);
 
   const { data: areas, isLoading, error } = useAreas(showArchived);
   const deleteArea = useDeleteArea();
@@ -163,12 +171,37 @@ export function Areas() {
   };
 
   const handleArchive = (id: number) => {
-    if (confirm('Are you sure you want to archive this area? It can be restored later.')) {
-      archiveArea.mutate(id, {
+    const area = allAreas.find((a) => a.id === id);
+    const activeCount = area?.active_project_count ?? 0;
+
+    if (activeCount > 0) {
+      // Show confirmation dialog with cascade warning
+      setArchiveConfirm({
+        areaId: id,
+        areaTitle: area?.title ?? 'this area',
+        activeProjectCount: activeCount,
+      });
+    } else {
+      // No active projects — archive directly with simple confirmation
+      archiveArea.mutate({ id }, {
         onSuccess: () => toast.success('Area archived'),
         onError: () => toast.error('Failed to archive area', { id: 'area-archive-error' }),
       });
     }
+  };
+
+  const handleForceArchive = () => {
+    if (!archiveConfirm) return;
+    archiveArea.mutate({ id: archiveConfirm.areaId, force: true }, {
+      onSuccess: () => {
+        toast.success('Area archived — active projects moved to On Hold');
+        setArchiveConfirm(null);
+      },
+      onError: () => {
+        toast.error('Failed to archive area', { id: 'area-archive-error' });
+        setArchiveConfirm(null);
+      },
+    });
   };
 
   const handleUnarchive = (id: number) => {
@@ -421,6 +454,46 @@ export function Areas() {
         }}
         defaultAreaId={createProjectAreaId}
       />
+
+      {/* Archive Confirmation Dialog */}
+      <Modal
+        isOpen={!!archiveConfirm}
+        onClose={() => setArchiveConfirm(null)}
+        title="Archive Area"
+        size="sm"
+      >
+        {archiveConfirm && (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-amber-800 dark:text-amber-300">
+                  "{archiveConfirm.areaTitle}" has {archiveConfirm.activeProjectCount} active project{archiveConfirm.activeProjectCount !== 1 ? 's' : ''}
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                  Archiving will move all active projects to <strong>On Hold</strong> status. You can unarchive the area later to restore it.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setArchiveConfirm(null)}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleForceArchive}
+                disabled={archiveArea.isPending}
+                className="btn bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                {archiveArea.isPending ? 'Archiving...' : 'Archive Anyway'}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
