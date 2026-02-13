@@ -248,3 +248,115 @@
 ---
 
 *Session 6 completed: 2026-02-12*
+
+---
+
+# Session 7: DEBT-115 TZ-Naive Fix + GitHub Remote + CI Pipeline (2026-02-12)
+
+## Phase 1: Verify + Commit Session 6
+- Status: COMPLETE
+- Git clean, all 257 tests passing, TS clean, Vite clean
+
+## Phase 2: DEBT-115 — TZ-Naive Datetime Arithmetic (HIGH Priority)
+- Status: COMPLETE
+- Added `ensure_tz_aware()` utility to `app/core/db_utils.py`
+- Audited all datetime arithmetic — found 6 locations using model datetime fields without tz awareness
+- Applied `ensure_tz_aware()` wrapper at all 6 locations across:
+  - `ai_service.py` (2 locations)
+  - `project_service.py` (2 locations)
+  - `intelligence_service.py` (2 locations)
+- Added 6 regression tests specifically for tz-naive datetime arithmetic
+- **257 → 263 tests**, all passing
+
+## Phase 3: GitHub Remote + CI Pipeline (DIST-041 + DIST-042)
+- Status: COMPLETE
+- Created private GitHub repo: `gregdm98607/-conduital`
+- Pushed master branch
+- Created `.github/workflows/ci.yml` with:
+  - `backend-tests` job: Python 3.11, Poetry install, pytest
+  - `frontend-check` job: Node 20, npm ci, tsc --noEmit, vite build
+- First CI run: GREEN
+
+## Verification
+- [x] Backend tests: 263 passing
+- [x] Frontend TypeScript: 0 errors
+- [x] Vite production build: clean
+- [x] CI pipeline green
+
+## Files Modified
+| File | Changes |
+|------|---------|
+| `backend/app/core/db_utils.py` | Added `ensure_tz_aware()` utility |
+| `backend/app/services/ai_service.py` | Wrapped 2 datetime arithmetic sites |
+| `backend/app/services/project_service.py` | Wrapped 2 datetime arithmetic sites |
+| `backend/app/services/intelligence_service.py` | Wrapped 2 datetime arithmetic sites |
+| `backend/tests/test_api_basic.py` | 6 new regression tests |
+| `.github/workflows/ci.yml` | **New** — CI pipeline |
+
+---
+
+*Session 7 completed: 2026-02-12*
+
+---
+
+# Session 8: Backlog Hygiene + Quick Wins + Soft Delete (2026-02-12)
+
+## Phase 1: Backlog Housekeeping
+- Status: COMPLETE
+- Marked DEBT-115, DIST-041, DIST-042 as Done (Session 7 completions)
+- Updated backlog stats (271 tests)
+- Added Session 7 log entry to progress.md
+- Added 2 new lessons to lessons.md (AI feature gating, fixing tests alongside bugs)
+
+## Phase 2a: BACKLOG-143 — CompleteTaskButton Accessibility (XS)
+- Status: COMPLETE
+- Added `aria-label="Complete task"`, `aria-disabled`, `focus-visible` ring
+- Added `type="button"` for form safety
+
+## Phase 2b: DEBT-007 — Soft Delete Foundation (S)
+- Status: COMPLETE
+- Added `SoftDeleteMixin` to `base.py` with `deleted_at` nullable DateTime column
+- Applied mixin to Project, Task, Area models
+- Created Alembic migration 015 (`deleted_at` column + index for all 3 tables)
+- Implemented `soft_delete()` and `restore_soft_deleted()` in `db_utils.py`
+- Updated delete methods in ProjectService, TaskService, areas API → soft delete
+- ProjectService.delete cascades soft-delete to child tasks
+- Added `deleted_at.is_(None)` filtering to:
+  - ProjectService: get_all, get_by_id, get_stalled_projects, search, task count subqueries
+  - TaskService: get_all, get_by_id, get_by_context, get_overdue, get_two_minute_tasks, search, recalculate_all_urgency_zones
+  - Areas API: list_areas, project count subqueries
+- **8 new tests** covering: hide from list, 404 on GET, cascade to tasks, area delete, double-delete, search exclusion, data preservation
+- **263 → 271 tests**, all passing
+
+## Phase 3: CI Enhancement
+- Status: COMPLETE
+- Added `--cov=app --cov-report=term-missing:skip-covered` to pytest in CI
+- Verified CI triggers already include main + master branches
+
+## Verification
+- [x] Backend tests: 271 passing
+- [x] Frontend TypeScript: 0 errors
+- [x] Vite production build: clean
+
+## Files Modified
+| File | Changes |
+|------|---------|
+| `backend/app/models/base.py` | Added `SoftDeleteMixin` |
+| `backend/app/models/project.py` | Added `SoftDeleteMixin` |
+| `backend/app/models/task.py` | Added `SoftDeleteMixin` |
+| `backend/app/models/area.py` | Added `SoftDeleteMixin` |
+| `backend/app/core/db_utils.py` | Implemented `soft_delete()`, `restore_soft_deleted()` |
+| `backend/app/services/project_service.py` | Soft delete + query filtering |
+| `backend/app/services/task_service.py` | Soft delete + query filtering |
+| `backend/app/api/areas.py` | Soft delete + query filtering |
+| `backend/alembic/versions/20260212_add_soft_delete_columns.py` | **New** — migration 015 |
+| `backend/tests/test_api_basic.py` | 8 new soft delete tests |
+| `frontend/src/components/tasks/CompleteTaskButton.tsx` | a11y attributes |
+| `.github/workflows/ci.yml` | Added coverage reporting |
+| `backlog.md` | Marked 5 items Done |
+| `tasks/progress.md` | Session 7 + 8 entries |
+| `tasks/lessons.md` | Session 7 lessons |
+
+---
+
+*Session 8 completed: 2026-02-12*

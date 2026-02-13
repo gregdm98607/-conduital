@@ -9,14 +9,14 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.project import Project
     from app.models.user import User
 
 
-class Area(Base, TimestampMixin):
+class Area(Base, TimestampMixin, SoftDeleteMixin):
     """
     Area of Responsibility model
 

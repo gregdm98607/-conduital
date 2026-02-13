@@ -15,6 +15,14 @@ class Base(DeclarativeBase):
     pass
 
 
+class SoftDeleteMixin:
+    """Mixin for soft delete support via deleted_at timestamp"""
+
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None, index=True
+    )
+
+
 class TimestampMixin:
     """Mixin for created_at and updated_at timestamps"""
 

@@ -39,10 +39,12 @@ export function CompleteTaskButton({
 
   return (
     <button
+      type="button"
       onClick={handleClick}
       disabled={disabled}
-      title="Complete task"
-      className={`${buttonSize} rounded-full transition-all duration-200 ${
+      aria-label="Complete task"
+      aria-disabled={disabled || celebrating}
+      className={`${buttonSize} rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1 ${
         celebrating
           ? 'text-green-500 bg-green-50 dark:bg-green-900/30 animate-celebrate-ripple'
           : 'text-gray-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20'

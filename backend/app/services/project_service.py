@@ -8,7 +8,7 @@ from typing import Optional
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.db_utils import ensure_tz_aware, log_activity, update_project_activity
+from app.core.db_utils import ensure_tz_aware, log_activity, soft_delete, update_project_activity
 from app.models.area import Area
 from app.models.project import Project
 from app.models.task import Task
@@ -49,7 +49,7 @@ class ProjectService:
             Tuple of (projects, total_count)
         """
         # Base filter query (reused for count and main query)
-        base = select(Project)
+        base = select(Project).where(Project.deleted_at.is_(None))
         if status:
             base = base.where(Project.status == status)
         if area_id:
@@ -59,17 +59,17 @@ class ProjectService:
         count_query = select(func.count()).select_from(base.subquery())
         total = db.execute(count_query).scalar_one()
 
-        # Task count subqueries (avoid N+1 by annotating in SQL)
+        # Task count subqueries (avoid N+1 by annotating in SQL, exclude soft-deleted)
         task_count_sq = (
             select(func.count(Task.id))
-            .where(Task.project_id == Project.id)
+            .where(Task.project_id == Project.id, Task.deleted_at.is_(None))
             .correlate(Project)
             .scalar_subquery()
             .label("task_count")
         )
         completed_task_count_sq = (
             select(func.count(Task.id))
-            .where(Task.project_id == Project.id, Task.status == "completed")
+            .where(Task.project_id == Project.id, Task.deleted_at.is_(None), Task.status == "completed")
             .correlate(Project)
             .scalar_subquery()
             .label("completed_task_count")
@@ -107,7 +107,7 @@ class ProjectService:
         Returns:
             Project or None
         """
-        query = select(Project).where(Project.id == project_id)
+        query = select(Project).where(Project.id == project_id, Project.deleted_at.is_(None))
 
         # Always load area relationship
         query = query.options(joinedload(Project.area))
@@ -125,13 +125,15 @@ class ProjectService:
                     1 for t in project.tasks if t.status == "completed"
                 )
             else:
-                # Use SQL count queries
+                # Use SQL count queries (exclude soft-deleted tasks)
                 project.task_count = db.execute(
-                    select(func.count(Task.id)).where(Task.project_id == project_id)
+                    select(func.count(Task.id)).where(
+                        Task.project_id == project_id, Task.deleted_at.is_(None)
+                    )
                 ).scalar_one()
                 project.completed_task_count = db.execute(
                     select(func.count(Task.id)).where(
-                        Task.project_id == project_id, Task.status == "completed"
+                        Task.project_id == project_id, Task.deleted_at.is_(None), Task.status == "completed"
                     )
                 ).scalar_one()
 
@@ -231,10 +233,10 @@ class ProjectService:
             True if deleted, False if not found
         """
         project = db.get(Project, project_id)
-        if not project:
+        if not project or project.deleted_at is not None:
             return False
 
-        # Log activity before deletion
+        # Log activity before soft deletion
         log_activity(
             db,
             entity_type="project",
@@ -243,7 +245,11 @@ class ProjectService:
             details={"title": project.title},
         )
 
-        db.delete(project)
+        soft_delete(db, project)
+        # Also soft-delete child tasks
+        for task in project.tasks:
+            if task.deleted_at is None:
+                soft_delete(db, task)
         db.commit()
         return True
 
@@ -362,7 +368,9 @@ class ProjectService:
             List of stalled projects
         """
         query = select(Project).where(
-            Project.status == "active", Project.stalled_since.is_not(None)
+            Project.deleted_at.is_(None),
+            Project.status == "active",
+            Project.stalled_since.is_not(None),
         )
 
         return list(db.execute(query).scalars().all())
@@ -384,10 +392,11 @@ class ProjectService:
         query = (
             select(Project)
             .where(
+                Project.deleted_at.is_(None),
                 or_(
                     Project.title.ilike(search_pattern),
                     Project.description.ilike(search_pattern),
-                )
+                ),
             )
             .limit(limit)
         )

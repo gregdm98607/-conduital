@@ -8,7 +8,7 @@ from typing import Optional
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.db_utils import ensure_unique_file_marker, log_activity, update_project_activity
+from app.core.db_utils import ensure_unique_file_marker, log_activity, soft_delete, update_project_activity
 from app.models.task import Task
 from app.schemas.common import UrgencyZoneEnum
 from app.schemas.task import TaskCreate, TaskUpdate
@@ -78,7 +78,7 @@ def recalculate_all_urgency_zones(db: Session) -> int:
     """
     # Only recalculate for tasks that are still actionable
     active_statuses = ("pending", "in_progress", "waiting")
-    query = select(Task).where(Task.status.in_(active_statuses))
+    query = select(Task).where(Task.deleted_at.is_(None), Task.status.in_(active_statuses))
     tasks = db.execute(query).scalars().all()
 
     updated_count = 0
@@ -137,7 +137,7 @@ class TaskService:
         Returns:
             Tuple of (tasks, total_count)
         """
-        query = select(Task)
+        query = select(Task).where(Task.deleted_at.is_(None))
 
         # Include project relationship if requested
         if include_project:
@@ -163,7 +163,7 @@ class TaskService:
             query = query.where(Task.priority <= priority_max)
 
         # Get total count (need subquery without joinedload for count)
-        count_subquery = select(Task.id)
+        count_subquery = select(Task.id).where(Task.deleted_at.is_(None))
         if project_id:
             count_subquery = count_subquery.where(Task.project_id == project_id)
         if status:
@@ -215,7 +215,7 @@ class TaskService:
         Returns:
             Task or None
         """
-        query = select(Task).where(Task.id == task_id)
+        query = select(Task).where(Task.id == task_id, Task.deleted_at.is_(None))
 
         if include_project:
             query = query.options(joinedload(Task.project))
@@ -339,7 +339,7 @@ class TaskService:
             True if deleted, False if not found
         """
         task = db.get(Task, task_id)
-        if not task:
+        if not task or task.deleted_at is not None:
             return False
 
         project_id = task.project_id
@@ -353,7 +353,7 @@ class TaskService:
             details={"title": task.title, "project_id": project_id},
         )
 
-        db.delete(task)
+        soft_delete(db, task)
 
         # Update project activity
         update_project_activity(db, project_id)
@@ -454,6 +454,7 @@ class TaskService:
         query = (
             select(Task)
             .where(
+                Task.deleted_at.is_(None),
                 Task.context == context,
                 Task.status.in_(["pending", "in_progress"]),
             )
@@ -480,6 +481,7 @@ class TaskService:
         query = (
             select(Task)
             .where(
+                Task.deleted_at.is_(None),
                 Task.due_date < date.today(),
                 Task.status.in_(["pending", "in_progress"]),
             )
@@ -504,6 +506,7 @@ class TaskService:
         query = (
             select(Task)
             .where(
+                Task.deleted_at.is_(None),
                 Task.is_two_minute_task.is_(True),
                 Task.status == "pending",
             )
@@ -530,10 +533,11 @@ class TaskService:
         query = (
             select(Task)
             .where(
+                Task.deleted_at.is_(None),
                 or_(
                     Task.title.ilike(search_pattern),
                     Task.description.ilike(search_pattern),
-                )
+                ),
             )
             .limit(limit)
         )

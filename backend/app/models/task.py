@@ -8,14 +8,14 @@ from typing import TYPE_CHECKING, Optional
 from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.project import Project
     from app.models.project_phase import ProjectPhase
 
 
-class Task(Base, TimestampMixin):
+class Task(Base, TimestampMixin, SoftDeleteMixin):
     """
     Task model - represents a single action item
 

@@ -739,6 +739,32 @@ For SQLAlchemy self-referential relationships:
 
 ---
 
+## 2026-02-12: Session 7 — DEBT-115 TZ-Naive Fix + GitHub Remote + CI
+
+### What Went Well
+1. **Systematic audit via grep** — Found 6 locations (not just the 2 documented in DEBT-115) by grepping for all datetime arithmetic patterns across the backend
+2. **Regression tests with naive datetimes** — Each test explicitly sets naive datetimes to simulate SQLite behavior, catching the exact TypeError that would occur in production
+3. **CI pipeline green on first push** — No CI-specific issues despite Windows dev → Ubuntu CI transition
+
+### Lessons Learned
+
+#### 1. Tests That Hit AI-Gated Endpoints Must Patch AI_FEATURES_ENABLED=True
+**Issue:** CI environment has no `.env` file, so `AI_FEATURES_ENABLED` defaults to `False`. Tests that call AI endpoints get 400 "AI features are not enabled" responses and fail — but only in CI, not locally (where `.env` has the flag set).
+**Fix:** Use `@patch.dict(os.environ, {"AI_FEATURES_ENABLED": "true"})` decorator on test classes/methods that test AI endpoints.
+**Rule:** Any test hitting an endpoint gated by `AI_FEATURES_ENABLED` must explicitly patch the env var. Don't rely on local `.env` — CI won't have it.
+
+#### 2. When a Test Only Passed Because of a Bug You're Fixing, Update the Test Too
+**Issue:** A test asserted that an endpoint returned a specific result, but the result was wrong due to the tz-naive bug. Fixing the bug broke the test because the assertion matched the buggy behavior.
+**Fix:** Update the test assertion to match the correct (fixed) behavior.
+**Rule:** When fixing a bug, always check if any existing tests are asserting the buggy behavior. If a test "passes" only because it was written against broken output, fixing the bug will break the test — update both simultaneously.
+
+### Technical Debt Resolved
+- [x] DEBT-115: TZ-naive datetime arithmetic → FIXED (6 locations, `ensure_tz_aware()` utility)
+- [x] DIST-041: GitHub repo setup → DONE (`gregdm98607/-conduital`)
+- [x] DIST-042: CI/CD pipeline → DONE (backend tests + frontend checks)
+
+---
+
 ## Template for Future Sessions
 
 ```markdown

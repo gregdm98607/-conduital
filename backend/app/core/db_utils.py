@@ -118,12 +118,28 @@ def get_or_create(
 
 def soft_delete(db: Session, instance: Any) -> None:
     """
-    Soft delete an instance by marking as archived/deleted
+    Soft delete an instance by setting deleted_at timestamp.
 
-    Note: Currently we use hard deletes. This is a placeholder for future soft delete support.
+    The instance must have a ``deleted_at`` column (provided by SoftDeleteMixin).
     """
-    # TODO: Implement soft delete when we add deleted_at/archived_at columns
-    raise NotImplementedError("Soft delete not yet implemented")
+    if not hasattr(instance, "deleted_at"):
+        raise AttributeError(
+            f"{type(instance).__name__} does not support soft delete (missing deleted_at column)"
+        )
+    instance.deleted_at = datetime.now(timezone.utc)
+    db.flush()
+
+
+def restore_soft_deleted(db: Session, instance: Any) -> None:
+    """
+    Restore a soft-deleted instance by clearing deleted_at.
+    """
+    if not hasattr(instance, "deleted_at"):
+        raise AttributeError(
+            f"{type(instance).__name__} does not support soft delete (missing deleted_at column)"
+        )
+    instance.deleted_at = None
+    db.flush()
 
 
 def bulk_create(db: Session, instances: list[Any]) -> None:

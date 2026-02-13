@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Optional
 from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.area import Area
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from app.models.vision import Vision
 
 
-class Project(Base, TimestampMixin):
+class Project(Base, TimestampMixin, SoftDeleteMixin):
     """
     Project model - represents a multi-step outcome with a clear endpoint
 

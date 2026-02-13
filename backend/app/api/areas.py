@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 logger = logging.getLogger(__name__)
 
 from app.core.database import get_db
-from app.core.db_utils import get_or_create
+from app.core.db_utils import get_or_create, soft_delete
 from app.models.area import Area as AreaModel
 from app.models.project import Project as ProjectModel
 from app.schemas.area import Area, AreaCreate, AreaUpdate, AreaWithCounts, AreaWithProjects
@@ -26,29 +26,29 @@ def list_areas(include_archived: bool = False, db: Session = Depends(get_db)):
     """List all areas with project counts"""
     from sqlalchemy import select, func, case
 
-    # Get all areas (filter archived by default)
-    query = select(AreaModel)
+    # Get all areas (filter archived and soft-deleted by default)
+    query = select(AreaModel).where(AreaModel.deleted_at.is_(None))
     if not include_archived:
         query = query.where(AreaModel.is_archived.is_(False))
     areas = db.execute(query).scalars().all()
 
-    # Get total project counts per area
+    # Get total project counts per area (exclude soft-deleted projects)
     total_counts = db.execute(
         select(
             ProjectModel.area_id,
             func.count(ProjectModel.id).label('total')
         )
-        .where(ProjectModel.area_id.isnot(None))
+        .where(ProjectModel.area_id.isnot(None), ProjectModel.deleted_at.is_(None))
         .group_by(ProjectModel.area_id)
     ).all()
 
-    # Get active project counts per area
+    # Get active project counts per area (exclude soft-deleted projects)
     active_counts = db.execute(
         select(
             ProjectModel.area_id,
             func.count(ProjectModel.id).label('active')
         )
-        .where(ProjectModel.area_id.isnot(None))
+        .where(ProjectModel.area_id.isnot(None), ProjectModel.deleted_at.is_(None))
         .where(ProjectModel.status == 'active')
         .group_by(ProjectModel.area_id)
     ).all()
@@ -154,15 +154,8 @@ def delete_area(area_id: int, db: Session = Depends(get_db)):
     if not area:
         raise HTTPException(status_code=404, detail="Area not found")
 
-    try:
-        db.delete(area)
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail="Cannot delete area: it has associated projects. Remove or reassign projects first.",
-        )
+    soft_delete(db, area)
+    db.commit()
     return None
 
 

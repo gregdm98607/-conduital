@@ -111,8 +111,8 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 | ID | Description | Status | Target | Notes |
 |----|-------------|--------|--------|-------|
-| DIST-041 | GitHub repo setup + .gitignore | Open | Pre-R1 | Remote hosting, issue tracking, PR workflow |
-| DIST-042 | CI/CD pipeline (GitHub Actions) | Open | R1 | Automated tests, build, produce installer on release tag |
+| DIST-041 | GitHub repo setup + .gitignore | **Done** (Session 7) | Pre-R1 | Remote: `gregdm98607/-conduital` (private) |
+| DIST-042 | CI/CD pipeline (GitHub Actions) | **Done** (Session 7) | R1 | Backend tests + frontend checks; installer-on-tag still TODO |
 
 ---
 
@@ -122,14 +122,14 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 | ID | Description | Location | Status |
 |----|-------------|----------|--------|
-| DEBT-007 | Soft delete not implemented | `db_utils.py:99-106` | Open |
+| DEBT-007 | Soft delete not implemented | `db_utils.py:99-106` | **Done** (Session 8) |
 | DEBT-010 | Outdated dependencies | `pyproject.toml`, `package.json` | Open |
 | DEBT-021 | Area discovery direct DB session | `auto_discovery_service.py` | Open |
 | DEBT-022 | Area folder pattern reuses project pattern | `auto_discovery_service.py` | Open |
 | DEBT-023 | Memory migration down_revision | `006_add_memory_layer_tables.py` | Open |
 | DEBT-041 | `create_unstuck_task` commits inside potentially larger transaction | `intelligence_service.py:494` | Open |
 | DEBT-112 | JSON fence stripping in AI service uses naive string ops — fragile | `ai_service.py:482-502` | **Done** (Session 6) |
-| DEBT-115 | TZ-naive datetime arithmetic — `datetime.now(tz) - project.stalled_since` crashes when SQLite returns naive dt | `ai_service.py:261`, `project_service.py:317` | **HIGH** — latent bug |
+| DEBT-115 | TZ-naive datetime arithmetic — `datetime.now(tz) - project.stalled_since` crashes when SQLite returns naive dt | `ai_service.py:261`, `project_service.py:317` | **Done** (Session 7) |
 
 ### Low Priority (Address when touched)
 
@@ -245,7 +245,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-139 | Daily Momentum Heatmap | GitHub-style 90-day heatmap on Dashboard |
 | BACKLOG-141 | List View Column Header Sorting | Sort-by-column with ascending/descending toggle |
 | BACKLOG-142 | localStorage Key Namespacing | **Done** (Session 6) — all keys use `pt-` prefix |
-| BACKLOG-143 | CompleteTaskButton accessibility (aria-label, focus-visible ring, aria-disabled) | XS — a11y gap in new component |
+| BACKLOG-143 | CompleteTaskButton accessibility (aria-label, focus-visible ring, aria-disabled) | **Done** (Session 8) |
 
 ---
 
@@ -278,10 +278,11 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~70 |
-| Open tech debt | ~18 |
+| Open backlog items | ~66 |
+| Open tech debt | ~15 |
 | Open documentation | 7 |
-| Completed items (archived) | 175+ |
+| Completed items (archived) | 183+ |
+| Backend tests | 271 |
 
-*Last updated: 2026-02-12*
+*Last updated: 2026-02-12 (Session 8)*
 *Full history: `backlog-archive-2026-02-12.md`*

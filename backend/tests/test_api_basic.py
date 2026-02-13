@@ -1195,3 +1195,150 @@ class TestDEBT115TzNaiveDatetime:
         context = service._build_project_context(db, p_fresh)
         assert "days_stalled" in context
         assert context["days_stalled"] >= 0
+
+
+class TestSoftDelete:
+    """Tests for DEBT-007: Soft delete foundation"""
+
+    def test_soft_delete_project_hides_from_list(self, test_client):
+        """Soft-deleted project should not appear in list endpoint"""
+        create = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Soft Delete Me", "status": "active", "priority": 5},
+        )
+        project_id = create.json()["id"]
+
+        # Delete (now soft)
+        resp = test_client.delete(f"/api/v1/projects/{project_id}")
+        assert resp.status_code == 204
+
+        # Should not appear in list
+        list_resp = test_client.get("/api/v1/projects")
+        assert list_resp.status_code == 200
+        titles = [p["title"] for p in list_resp.json()["projects"]]
+        assert "Soft Delete Me" not in titles
+
+    def test_soft_delete_project_returns_404_on_get(self, test_client):
+        """GET on soft-deleted project should return 404"""
+        create = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Ghost Project", "status": "active", "priority": 5},
+        )
+        project_id = create.json()["id"]
+
+        test_client.delete(f"/api/v1/projects/{project_id}")
+        get_resp = test_client.get(f"/api/v1/projects/{project_id}")
+        assert get_resp.status_code == 404
+
+    def test_soft_delete_project_cascades_to_tasks(self, test_client):
+        """Deleting a project should soft-delete its child tasks"""
+        create = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Parent Project", "status": "active", "priority": 5},
+        )
+        project_id = create.json()["id"]
+
+        task_resp = test_client.post(
+            "/api/v1/tasks",
+            json={"title": "Child Task", "project_id": project_id, "priority": 5},
+        )
+        task_id = task_resp.json()["id"]
+
+        # Delete project
+        test_client.delete(f"/api/v1/projects/{project_id}")
+
+        # Task should also be hidden
+        get_task = test_client.get(f"/api/v1/tasks/{task_id}")
+        assert get_task.status_code == 404
+
+    def test_soft_delete_task_hides_from_list(self, test_client):
+        """Soft-deleted task should not appear in list endpoint"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Task Host", "status": "active", "priority": 5},
+        )
+        project_id = proj.json()["id"]
+
+        task = test_client.post(
+            "/api/v1/tasks",
+            json={"title": "Delete This Task", "project_id": project_id, "priority": 5},
+        )
+        task_id = task.json()["id"]
+
+        # Delete task
+        resp = test_client.delete(f"/api/v1/tasks/{task_id}")
+        assert resp.status_code == 204
+
+        # Should not appear in list
+        list_resp = test_client.get("/api/v1/tasks", params={"project_id": project_id, "show_completed": True})
+        titles = [t["title"] for t in list_resp.json()["tasks"]]
+        assert "Delete This Task" not in titles
+
+    def test_soft_delete_area_hides_from_list(self, test_client):
+        """Soft-deleted area should not appear in list endpoint"""
+        create = test_client.post(
+            "/api/v1/areas",
+            json={"title": "Trash Area"},
+        )
+        area_id = create.json()["id"]
+
+        resp = test_client.delete(f"/api/v1/areas/{area_id}")
+        assert resp.status_code == 204
+
+        list_resp = test_client.get("/api/v1/areas")
+        titles = [a["title"] for a in list_resp.json()]
+        assert "Trash Area" not in titles
+
+    def test_double_delete_returns_404(self, test_client):
+        """Deleting an already-deleted item should return 404"""
+        create = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Double Delete", "status": "active", "priority": 5},
+        )
+        project_id = create.json()["id"]
+
+        resp1 = test_client.delete(f"/api/v1/projects/{project_id}")
+        assert resp1.status_code == 204
+
+        resp2 = test_client.delete(f"/api/v1/projects/{project_id}")
+        assert resp2.status_code == 404
+
+    def test_soft_delete_project_excluded_from_search(self, test_client):
+        """Soft-deleted project should not appear in search results"""
+        create = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Searchable Ghost", "status": "active", "priority": 5},
+        )
+        project_id = create.json()["id"]
+
+        test_client.delete(f"/api/v1/projects/{project_id}")
+
+        search_resp = test_client.get("/api/v1/projects/search", params={"q": "Searchable Ghost"})
+        assert search_resp.status_code == 200
+        titles = [p["title"] for p in search_resp.json()]
+        assert "Searchable Ghost" not in titles
+
+    def test_soft_delete_preserves_data_in_db(self, test_client):
+        """Soft delete should set deleted_at, not remove the row"""
+        from app.main import app
+        from app.core.database import get_db
+
+        create = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Still In DB", "status": "active", "priority": 5},
+        )
+        project_id = create.json()["id"]
+
+        test_client.delete(f"/api/v1/projects/{project_id}")
+
+        # Verify directly in DB that the row still exists with deleted_at set
+        db_gen = app.dependency_overrides[get_db]()
+        db = next(db_gen)
+        try:
+            from app.models.project import Project
+            project = db.get(Project, project_id)
+            assert project is not None, "Row should still exist in DB"
+            assert project.deleted_at is not None, "deleted_at should be set"
+            assert project.title == "Still In DB"
+        finally:
+            db.close()
