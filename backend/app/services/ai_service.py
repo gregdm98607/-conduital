@@ -429,3 +429,162 @@ Next Action:"""
         except Exception as e:
             logger.warning(f"AI suggestion failed: {e}")
             return f"Review project status and define next steps for {project.title}"
+
+    def generate_weekly_review_summary(
+        self, review_data: dict, project_momentum_data: list[dict]
+    ) -> dict:
+        """Generate AI-powered weekly review summary with portfolio narrative."""
+        import json
+
+        # Build project momentum context
+        momentum_lines = []
+        for p in project_momentum_data:
+            line = f"- {p['title']}: momentum {p['score']:.2f}/1.0 ({p['trend']})"
+            if p.get("days_since_activity") is not None:
+                line += f", {p['days_since_activity']}d since activity"
+            if p.get("is_stalled"):
+                line += " [STALLED]"
+            momentum_lines.append(line)
+
+        prompt = f"""You are a productivity coach analyzing a weekly review for a GTD/momentum-based task system.
+
+Portfolio Overview:
+- Active projects: {review_data['active_projects_count']}
+- Tasks completed this week: {review_data['tasks_completed_this_week']}
+- Projects needing review: {review_data['projects_needing_review']}
+- Projects without next actions: {review_data['projects_without_next_action']}
+- Inbox items pending: {review_data.get('inbox_count', 0)}
+- Someday/Maybe projects: {review_data.get('someday_maybe_count', 0)}
+
+Project Momentum:
+{chr(10).join(momentum_lines) if momentum_lines else "No project data available"}
+
+Projects Needing Review:
+{json.dumps(review_data.get('projects_needing_review_details', []), indent=2)}
+
+Projects Without Next Actions:
+{json.dumps(review_data.get('projects_without_next_action_details', []), indent=2)}
+
+Generate a weekly review summary in this EXACT JSON format (no markdown, no code fences):
+{{
+  "portfolio_narrative": "2-3 sentence overview of the portfolio health and week's progress",
+  "wins": ["win 1", "win 2"],
+  "attention_items": [
+    {{
+      "project_id": 123,
+      "project_title": "Project Name",
+      "momentum_score": 0.5,
+      "trend": "falling",
+      "reason": "Why this needs attention",
+      "suggested_action": "Specific action to take"
+    }}
+  ],
+  "recommendations": ["recommendation 1", "recommendation 2", "recommendation 3"]
+}}
+
+Rules:
+1. attention_items should include 0-5 projects that most need review attention
+2. Only include projects from the provided data (use real project_id values)
+3. wins should highlight positive progress from completed tasks
+4. recommendations should be actionable and specific
+5. Return ONLY valid JSON, no explanations"""
+
+        try:
+            response = self.provider.generate(prompt, max_tokens=1000, temperature=0.7)
+            # Strip markdown code fences if present
+            response = response.strip()
+            if response.startswith("```"):
+                response = response.split("\n", 1)[1] if "\n" in response else response
+            if response.endswith("```"):
+                response = response.rsplit("```", 1)[0]
+            response = response.strip()
+
+            parsed = json.loads(response)
+            return {
+                "portfolio_narrative": parsed.get("portfolio_narrative", ""),
+                "wins": parsed.get("wins", []),
+                "attention_items": parsed.get("attention_items", []),
+                "recommendations": parsed.get("recommendations", []),
+            }
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse AI review summary JSON: {e}")
+            return {
+                "portfolio_narrative": "Unable to generate portfolio summary. Please review your projects manually.",
+                "wins": [],
+                "attention_items": [],
+                "recommendations": ["Review stalled projects", "Ensure all active projects have next actions"],
+            }
+        except Exception as e:
+            logger.warning(f"AI weekly review summary failed: {e}")
+            raise
+
+    def generate_project_review_insight(
+        self, db: Session, project: "Project"
+    ) -> dict:
+        """Generate AI-powered per-project review insight."""
+        import json
+
+        context = self._build_project_context(db, project)
+
+        prompt = f"""You are a productivity coach reviewing a single project during a weekly review.
+
+Project: {context['title']}
+Area: {context['area'] or 'Unassigned'}
+Status: {context['status']}
+Momentum Score: {context['momentum_score']}/1.0
+Days Since Activity: {context['days_stalled']}
+Current Phase: {context['current_phase'] or 'Not specified'}
+
+Purpose: {context['purpose'] or 'Not defined'}
+Vision: {context['vision_statement'] or 'Not defined'}
+
+Pending Tasks ({len(context['pending_tasks'])}):
+{self._format_task_list(context['pending_tasks'])}
+
+Recently Completed:
+{self._format_task_list(context['completed_tasks'])}
+
+Has Next Action: {context['has_next_action']}
+
+Generate a project review insight in this EXACT JSON format (no markdown, no code fences):
+{{
+  "health_summary": "2-3 sentence assessment of this project's health and momentum",
+  "suggested_next_action": "A specific concrete next action if the project lacks one, or null",
+  "questions_to_consider": ["question 1", "question 2"],
+  "momentum_context": "Brief explanation of the momentum score and trend"
+}}
+
+Rules:
+1. health_summary should be honest — flag stalled projects, praise active ones
+2. suggested_next_action should be null if the project already has a good next action
+3. questions_to_consider should prompt the reviewer to think critically (2-3 questions)
+4. Keep responses concise and actionable
+5. Return ONLY valid JSON, no explanations"""
+
+        try:
+            response = self.provider.generate(prompt, max_tokens=500, temperature=0.7)
+            response = response.strip()
+            if response.startswith("```"):
+                response = response.split("\n", 1)[1] if "\n" in response else response
+            if response.endswith("```"):
+                response = response.rsplit("```", 1)[0]
+            response = response.strip()
+
+            parsed = json.loads(response)
+            return {
+                "health_summary": parsed.get("health_summary", ""),
+                "suggested_next_action": parsed.get("suggested_next_action"),
+                "questions_to_consider": parsed.get("questions_to_consider", []),
+                "momentum_context": parsed.get("momentum_context", ""),
+            }
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse AI project insight JSON: {e}")
+            return {
+                "health_summary": "Unable to generate project insight. Review this project manually.",
+                "suggested_next_action": None,
+                "questions_to_consider": ["Is this project still relevant?", "What's the next physical action?"],
+                "momentum_context": f"Current momentum: {context['momentum_score']:.2f}/1.0",
+            }
+        except Exception as e:
+            logger.warning(f"AI project review insight failed: {e}")
+            raise

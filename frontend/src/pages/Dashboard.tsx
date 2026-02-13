@@ -359,64 +359,8 @@ export function Dashboard() {
       )}
       </section>
 
-      {/* Areas Overview Widget */}
-      {areas && areas.length > 0 && (
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Layers className="w-6 h-6 text-primary-600" />
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Areas</h2>
-              <span className="badge badge-gray">{areas.length}</span>
-            </div>
-            <Link to="/areas" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-              Manage Areas →
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {areas.slice(0, 6).map((area) => {
-              const reviewInfo = getReviewStatus(area.last_reviewed_at, area.review_frequency);
-              const isOverdue = reviewInfo.status === 'overdue' || reviewInfo.status === 'never-reviewed';
-              return (
-                <Link
-                  key={area.id}
-                  to={`/areas/${area.id}`}
-                  className="card hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100 line-clamp-1">{area.title}</h3>
-                    {isOverdue ? (
-                      <span className="badge badge-red text-xs shrink-0">Overdue</span>
-                    ) : reviewInfo.status === 'due-soon' ? (
-                      <span className="badge badge-yellow text-xs shrink-0">Due Soon</span>
-                    ) : (
-                      <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                    <span className="capitalize">{area.review_frequency}</span>
-                    {area.active_project_count !== undefined && (
-                      <span className="flex items-center gap-1">
-                        <FolderOpen className="w-3 h-3" />
-                        {area.active_project_count} active
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-          {areas.length > 6 && (
-            <div className="mt-3 text-center">
-              <Link to="/areas" className="text-sm text-primary-600 hover:text-primary-700">
-                View all {areas.length} areas →
-              </Link>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Next Actions Preview */}
-      <section>
+      {/* Next Actions Preview — positioned above Areas */}
+      <section className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Top Next Actions</h2>
           <a href="/next-actions" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
@@ -512,6 +456,62 @@ export function Dashboard() {
         )}
       </section>
 
+      {/* Areas Overview Widget */}
+      {areas && areas.length > 0 && (
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Layers className="w-6 h-6 text-primary-600" />
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Areas</h2>
+              <span className="badge badge-gray">{areas.length}</span>
+            </div>
+            <Link to="/areas" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+              Manage Areas →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {areas.slice(0, 6).map((area) => {
+              const reviewInfo = getReviewStatus(area.last_reviewed_at, area.review_frequency);
+              const isOverdue = reviewInfo.status === 'overdue' || reviewInfo.status === 'never-reviewed';
+              return (
+                <Link
+                  key={area.id}
+                  to={`/areas/${area.id}`}
+                  className="card hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100 line-clamp-1">{area.title}</h3>
+                    {isOverdue ? (
+                      <span className="badge badge-red text-xs shrink-0">Overdue</span>
+                    ) : reviewInfo.status === 'due-soon' ? (
+                      <span className="badge badge-yellow text-xs shrink-0">Due Soon</span>
+                    ) : (
+                      <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="capitalize">{area.review_frequency}</span>
+                    {area.active_project_count !== undefined && (
+                      <span className="flex items-center gap-1">
+                        <FolderOpen className="w-3 h-3" />
+                        {area.active_project_count} active
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+          {areas.length > 6 && (
+            <div className="mt-3 text-center">
+              <Link to="/areas" className="text-sm text-primary-600 hover:text-primary-700">
+                View all {areas.length} areas →
+              </Link>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Edit Task Modal */}
       {selectedTask && (
         <EditTaskModal
@@ -537,24 +537,23 @@ interface StatsCardProps {
 }
 
 function StatsCard({ title, value, color }: StatsCardProps) {
-  const colorClasses = {
-    blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300',
-    yellow: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300',
-    green: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300',
-    red: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300',
+  const borderColors = {
+    blue: 'border-l-blue-500',
+    yellow: 'border-l-yellow-500',
+    green: 'border-l-green-500',
+    red: 'border-l-red-500',
+  };
+  const valueColors = {
+    blue: 'text-blue-700 dark:text-blue-300',
+    yellow: 'text-yellow-700 dark:text-yellow-300',
+    green: 'text-green-700 dark:text-green-300',
+    red: 'text-red-700 dark:text-red-300',
   };
 
   return (
-    <div className="card">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{title}</p>
-          <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
-        </div>
-        <div className={`w-12 h-12 rounded-full ${colorClasses[color]} flex items-center justify-center`}>
-          <span className="text-2xl font-bold">{typeof value === 'number' ? value : value.slice(0, -1)}</span>
-        </div>
-      </div>
+    <div className={`card border-l-4 ${borderColors[color]}`}>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{title}</p>
+      <p className={`text-3xl font-bold ${valueColors[color]}`}>{value}</p>
     </div>
   );
 }

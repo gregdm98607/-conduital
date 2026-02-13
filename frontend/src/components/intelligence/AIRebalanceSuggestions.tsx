@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 
 export function AIRebalanceSuggestions() {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { data, isLoading, refetch } = useRebalanceSuggestions(7, isExpanded);
+  const { data, isLoading, isError, refetch } = useRebalanceSuggestions(7, isExpanded);
   const updateTask = useUpdateTask();
 
   const handleApply = (taskId: number, suggestedZone: string) => {
@@ -53,6 +53,13 @@ export function AIRebalanceSuggestions() {
           <div className="text-sm text-gray-500 flex items-center gap-2 py-3 justify-center mt-2">
             <div className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
             Checking balance...
+          </div>
+        )}
+
+        {isExpanded && isError && (
+          <div className="text-sm text-red-500 dark:text-red-400 flex items-center gap-2 py-3 justify-center mt-2">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Failed to check priority balance.
           </div>
         )}
 

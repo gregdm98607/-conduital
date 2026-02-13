@@ -57,7 +57,8 @@ export function useCompleteWeeklyReview() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (notes?: string) => api.completeWeeklyReview(notes),
+    mutationFn: (params?: { notes?: string; aiSummary?: string }) =>
+      api.completeWeeklyReview(params?.notes, params?.aiSummary),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['intelligence', 'weekly-review-history'] });
       queryClient.invalidateQueries({ queryKey: ['intelligence', 'weekly-review'] });
@@ -99,5 +100,18 @@ export function useEnergyRecommendations(energyLevel: string, limit: number = 5,
     queryKey: ['intelligence', 'energy-recommendations', energyLevel, limit],
     queryFn: ({ signal }) => api.getEnergyRecommendations(energyLevel, limit, signal),
     enabled,
+  });
+}
+
+// ROADMAP-007: AI Weekly Review Co-Pilot
+export function useWeeklyReviewAISummary() {
+  return useMutation({
+    mutationFn: () => api.getWeeklyReviewAISummary(),
+  });
+}
+
+export function useProjectReviewInsight() {
+  return useMutation({
+    mutationFn: (projectId: number) => api.getProjectReviewInsight(projectId),
   });
 }

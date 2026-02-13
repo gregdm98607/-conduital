@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, Clock, Tag, ChevronRight, Battery, BatteryMedium, BatteryLow } from 'lucide-react';
+import { Zap, Clock, Tag, ChevronRight, Battery, BatteryMedium, BatteryLow, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEnergyRecommendations } from '../../hooks/useIntelligence';
 
@@ -13,7 +13,7 @@ export function AIEnergyRecommendations() {
   const [selectedEnergy, setSelectedEnergy] = useState('low');
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { data, isLoading } = useEnergyRecommendations(selectedEnergy, 5, isExpanded);
+  const { data, isLoading, isError } = useEnergyRecommendations(selectedEnergy, 5, isExpanded);
 
   return (
     <div className="mb-8">
@@ -54,6 +54,13 @@ export function AIEnergyRecommendations() {
           <div className="text-sm text-gray-500 flex items-center gap-2 py-3 justify-center">
             <div className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
             Finding tasks...
+          </div>
+        )}
+
+        {isExpanded && isError && (
+          <div className="text-sm text-red-500 dark:text-red-400 flex items-center gap-2 py-3 justify-center">
+            <AlertCircle className="w-3.5 h-3.5" />
+            Failed to load recommendations. Try a different energy level.
           </div>
         )}
 

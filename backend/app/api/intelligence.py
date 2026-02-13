@@ -3,7 +3,7 @@ Intelligence API endpoints - Momentum, stalled projects, AI features
 """
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -83,6 +83,7 @@ class WeeklyReviewCompleteRequest(BaseModel):
     """Request for completing a weekly review (BETA-030)"""
 
     notes: str | None = None
+    ai_summary: str | None = None
 
 
 class WeeklyReviewCompletionItem(BaseModel):
@@ -91,6 +92,7 @@ class WeeklyReviewCompletionItem(BaseModel):
     id: int
     completed_at: str
     notes: str | None = None
+    ai_summary: str | None = None
 
 
 class WeeklyReviewHistoryResponse(BaseModel):
@@ -237,6 +239,38 @@ class MomentumSummaryResponse(BaseModel):
     declining: int  # projects with falling trend
     avg_score: float
     projects: list[MomentumSummaryProject]
+
+
+class ProjectAttentionItem(BaseModel):
+    """A project flagged for attention during weekly review"""
+
+    project_id: int
+    project_title: str
+    momentum_score: float
+    trend: str
+    reason: str
+    suggested_action: str | None = None
+
+
+class WeeklyReviewAISummary(BaseModel):
+    """AI-generated weekly review summary"""
+
+    portfolio_narrative: str
+    wins: list[str]
+    attention_items: list[ProjectAttentionItem]
+    recommendations: list[str]
+    generated_at: str
+
+
+class ProjectReviewInsight(BaseModel):
+    """AI-generated per-project review insight"""
+
+    project_id: int
+    project_title: str
+    health_summary: str
+    suggested_next_action: str | None = None
+    questions_to_consider: list[str]
+    momentum_context: str
 
 
 def _compute_trend(current: float, previous: float | None) -> str:
@@ -631,6 +665,7 @@ def complete_weekly_review(
     completion = WeeklyReviewCompletion(
         completed_at=datetime.now(timezone.utc),
         notes=body.notes if body else None,
+        ai_summary=body.ai_summary if body else None,
     )
     db.add(completion)
     db.commit()
@@ -640,6 +675,7 @@ def complete_weekly_review(
         id=completion.id,
         completed_at=completion.completed_at.isoformat(),
         notes=completion.notes,
+        ai_summary=completion.ai_summary,
     )
 
 
@@ -677,11 +713,155 @@ def get_weekly_review_history(
                 id=c.id,
                 completed_at=c.completed_at.isoformat() if c.completed_at else "",
                 notes=c.notes,
+                ai_summary=c.ai_summary,
             )
             for c in completions
         ],
         last_completed_at=last_completed_at,
         days_since_last_review=days_since,
+    )
+
+
+@router.post("/ai/weekly-review-summary", response_model=WeeklyReviewAISummary)
+def get_weekly_review_ai_summary(db: Session = Depends(get_db)):
+    """
+    Generate AI-powered weekly review summary.
+
+    Analyzes portfolio health, identifies wins, flags projects needing attention,
+    and provides actionable recommendations for the weekly review.
+
+    Requires AI_FEATURES_ENABLED=true and a configured AI provider.
+    """
+    if not settings.AI_FEATURES_ENABLED:
+        raise HTTPException(status_code=400, detail="AI features are not enabled")
+
+    from app.services.ai_service import AIService
+    from app.services.intelligence_service import IntelligenceService
+
+    try:
+        ai_service = AIService()
+    except Exception:
+        raise HTTPException(status_code=400, detail="AI service not configured")
+
+    # Gather review data
+    review_data = IntelligenceService.get_weekly_review_data(db)
+
+    # Gather momentum data for all active projects
+    active_projects = (
+        db.execute(
+            select(Project)
+            .where(Project.status == "active")
+            .options(joinedload(Project.tasks))
+        )
+        .unique()
+        .scalars()
+        .all()
+    )
+
+    now = datetime.now(timezone.utc)
+
+    # Batch query: latest MomentumSnapshot per project (avoids N+1)
+    project_ids = [p.id for p in active_projects]
+    latest_snapshots: dict[int, float | None] = {}
+    if project_ids:
+        latest_snap_subq = (
+            select(
+                MomentumSnapshot.project_id,
+                func.max(MomentumSnapshot.snapshot_at).label("max_at"),
+            )
+            .where(MomentumSnapshot.project_id.in_(project_ids))
+            .group_by(MomentumSnapshot.project_id)
+            .subquery()
+        )
+        snap_rows = db.execute(
+            select(MomentumSnapshot.project_id, MomentumSnapshot.score)
+            .join(
+                latest_snap_subq,
+                (MomentumSnapshot.project_id == latest_snap_subq.c.project_id)
+                & (MomentumSnapshot.snapshot_at == latest_snap_subq.c.max_at),
+            )
+        ).all()
+        for row in snap_rows:
+            latest_snapshots[row[0]] = row[1]
+
+    project_momentum_data = []
+    for p in active_projects:
+        days_since = None
+        if p.last_activity_at:
+            la = p.last_activity_at
+            if la.tzinfo is None:
+                la = la.replace(tzinfo=timezone.utc)
+            days_since = (now - la).days
+
+        prev_score = latest_snapshots.get(p.id)
+
+        project_momentum_data.append({
+            "id": p.id,
+            "title": p.title,
+            "score": p.momentum_score,
+            "trend": _compute_trend(p.momentum_score, prev_score),
+            "days_since_activity": days_since,
+            "is_stalled": bool(p.stalled_since),
+        })
+
+    try:
+        result = ai_service.generate_weekly_review_summary(review_data, project_momentum_data)
+    except Exception as e:
+        logger.error(f"AI weekly review summary failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate AI review summary")
+
+    return WeeklyReviewAISummary(
+        portfolio_narrative=result["portfolio_narrative"],
+        wins=result["wins"],
+        attention_items=[
+            ProjectAttentionItem(**item) for item in result["attention_items"]
+        ],
+        recommendations=result["recommendations"],
+        generated_at=datetime.now(timezone.utc).isoformat(),
+    )
+
+
+@router.post("/ai/review-project/{project_id}", response_model=ProjectReviewInsight)
+def get_project_review_insight(project_id: int, db: Session = Depends(get_db)):
+    """
+    Generate AI-powered insight for a single project during weekly review.
+
+    Provides health summary, suggested next action, and questions to consider.
+
+    Requires AI_FEATURES_ENABLED=true and a configured AI provider.
+    """
+    if not settings.AI_FEATURES_ENABLED:
+        raise HTTPException(status_code=400, detail="AI features are not enabled")
+
+    project = db.execute(
+        select(Project)
+        .where(Project.id == project_id)
+        .options(joinedload(Project.tasks), joinedload(Project.area))
+    ).unique().scalars().first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    from app.services.ai_service import AIService
+
+    try:
+        ai_service = AIService()
+    except Exception:
+        raise HTTPException(status_code=400, detail="AI service not configured")
+
+    try:
+        result = ai_service.generate_project_review_insight(db, project)
+    except Exception as e:
+        logger.error(f"AI project review insight failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate project insight")
+
+    return ProjectReviewInsight(
+        project_id=project.id,
+        project_title=project.title,
+        health_summary=result["health_summary"],
+        suggested_next_action=result["suggested_next_action"],
+        questions_to_consider=result["questions_to_consider"],
+        momentum_context=result["momentum_context"],
     )
 
 
@@ -710,7 +890,11 @@ def analyze_project_with_ai(project_id: int, db: Session = Depends(get_db)):
             detail="Anthropic API key not configured. Set ANTHROPIC_API_KEY in .env",
         )
 
-    project = db.get(Project, project_id)
+    project = db.execute(
+        select(Project)
+        .where(Project.id == project_id)
+        .options(joinedload(Project.tasks), joinedload(Project.area))
+    ).unique().scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
@@ -722,7 +906,7 @@ def analyze_project_with_ai(project_id: int, db: Session = Depends(get_db)):
         return AIAnalysisResponse(**result)
     except Exception as e:
         logger.error(f"AI analysis failed for project {project_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="AI analysis failed. Check server logs for details.")
 
 
 @router.post("/ai/suggest-next-action/{project_id}", response_model=AITaskSuggestion)
@@ -749,7 +933,11 @@ def suggest_next_action_with_ai(project_id: int, db: Session = Depends(get_db)):
             detail="Anthropic API key not configured. Set ANTHROPIC_API_KEY in .env",
         )
 
-    project = db.get(Project, project_id)
+    project = db.execute(
+        select(Project)
+        .where(Project.id == project_id)
+        .options(joinedload(Project.tasks), joinedload(Project.area))
+    ).unique().scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
@@ -762,7 +950,7 @@ def suggest_next_action_with_ai(project_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"AI suggestion failed for project {project_id}: {e}")
         raise HTTPException(
-            status_code=500, detail=f"AI suggestion failed: {str(e)}"
+            status_code=500, detail="AI suggestion failed. Check server logs for details."
         )
 
 
@@ -782,9 +970,14 @@ def proactive_stalled_analysis(
     if not settings.AI_FEATURES_ENABLED:
         raise HTTPException(status_code=400, detail="AI features not enabled")
 
-    # Find stalled + declining projects
+    # Find stalled + declining projects (eager-load tasks+area for AI context)
     active_projects = (
-        db.execute(select(Project).where(Project.status == "active"))
+        db.execute(
+            select(Project)
+            .where(Project.status == "active")
+            .options(joinedload(Project.tasks), joinedload(Project.area))
+        )
+        .unique()
         .scalars()
         .all()
     )
@@ -854,7 +1047,7 @@ def proactive_stalled_analysis(
                     project_title=project.title,
                     momentum_score=project.momentum_score or 0.0,
                     trend=trend,
-                    error=str(e),
+                    error=f"Analysis failed: {type(e).__name__}",
                 )
             )
 
@@ -1065,10 +1258,11 @@ def get_rebalance_suggestions(
     suggestions: list[RebalanceSuggestion] = []
 
     # Tasks with due dates coming up should be promoted to Critical Now
+    today = date.today()
     for _, t in scored:
         if t.due_date:
-            due = _ensure_tz_aware(t.due_date) if isinstance(t.due_date, datetime) else None
-            if due and (due - now).days <= 3:
+            days_until = (t.due_date - today).days
+            if days_until <= 3:
                 suggestions.append(
                     RebalanceSuggestion(
                         task_id=t.id,
@@ -1076,7 +1270,7 @@ def get_rebalance_suggestions(
                         project_title=t.project.title if t.project else "Unknown",
                         current_zone="opportunity_now",
                         suggested_zone="critical_now",
-                        reason=f"Due in {(due - now).days} days",
+                        reason=f"Due in {days_until} day{'s' if days_until != 1 else ''}",
                     )
                 )
                 excess -= 1

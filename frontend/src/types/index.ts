@@ -405,12 +405,40 @@ export interface WeeklyReviewCompletion {
   id: number;
   completed_at: string;
   notes?: string;
+  ai_summary?: string;
 }
 
 export interface WeeklyReviewHistory {
   completions: WeeklyReviewCompletion[];
   last_completed_at: string | null;
   days_since_last_review: number | null;
+}
+
+// ROADMAP-007: AI Weekly Review Co-Pilot
+export interface ProjectAttentionItem {
+  project_id: number;
+  project_title: string;
+  momentum_score: number;
+  trend: 'rising' | 'falling' | 'stable';
+  reason: string;
+  suggested_action?: string;
+}
+
+export interface WeeklyReviewAISummary {
+  portfolio_narrative: string;
+  wins: string[];
+  attention_items: ProjectAttentionItem[];
+  recommendations: string[];
+  generated_at: string;
+}
+
+export interface ProjectReviewInsight {
+  project_id: number;
+  project_title: string;
+  health_summary: string;
+  suggested_next_action?: string;
+  questions_to_consider: string[];
+  momentum_context: string;
 }
 
 // ============================================================================

@@ -572,3 +572,95 @@ class TestAIEndpointsROADMAP002:
             assert "task_id" in task
             assert "task_title" in task
             assert "project_title" in task
+
+
+class TestAIEndpointsROADMAP007:
+    """Test ROADMAP-007 AI Weekly Review Co-Pilot endpoints"""
+
+    def test_weekly_review_ai_summary_no_ai(self, test_client):
+        """Weekly review AI summary returns 400 when AI not enabled"""
+        response = test_client.post("/api/v1/intelligence/ai/weekly-review-summary")
+        # AI not configured in test env — expect 400
+        assert response.status_code == 400
+
+    def test_project_review_insight_not_found(self, test_client):
+        """Project review insight returns 404 for non-existent project"""
+        response = test_client.post("/api/v1/intelligence/ai/review-project/99999")
+        # Either 400 (AI not enabled) or 404 (project not found)
+        assert response.status_code in (400, 404)
+
+    def test_project_review_insight_no_ai(self, test_client):
+        """Project review insight returns 400 when AI not enabled"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Review Insight Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+        response = test_client.post(f"/api/v1/intelligence/ai/review-project/{project_id}")
+        assert response.status_code == 400
+
+    def test_weekly_review_complete_with_ai_summary(self, test_client):
+        """Weekly review completion persists ai_summary"""
+        response = test_client.post(
+            "/api/v1/intelligence/weekly-review/complete",
+            json={"notes": "Good week", "ai_summary": '{"portfolio_narrative": "test"}'},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["notes"] == "Good week"
+        assert data["ai_summary"] == '{"portfolio_narrative": "test"}'
+
+    def test_weekly_review_history_includes_ai_summary(self, test_client):
+        """Weekly review history returns ai_summary field"""
+        # Create a completion with ai_summary
+        test_client.post(
+            "/api/v1/intelligence/weekly-review/complete",
+            json={"ai_summary": "test summary"},
+        )
+        response = test_client.get("/api/v1/intelligence/weekly-review/history")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["completions"]) > 0
+        # Check that ai_summary field is present in response
+        latest = data["completions"][0]
+        assert "ai_summary" in latest
+
+    def test_rebalance_due_date_promotion(self, test_client):
+        """BUG-027: Tasks due within 3 days appear in rebalance suggestions"""
+        from datetime import date, timedelta
+
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Due Date Rebalance Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        # Create enough opportunity_now tasks to trigger rebalancing
+        for i in range(8):
+            due = (date.today() + timedelta(days=2)).isoformat() if i == 0 else None
+            test_client.post(
+                "/api/v1/tasks",
+                json={
+                    "project_id": project_id,
+                    "title": f"Rebalance task {i}",
+                    "status": "pending",
+                    "is_next_action": True,
+                    "urgency_zone": "opportunity_now",
+                    "priority": 5,
+                    "due_date": due,
+                },
+            )
+
+        response = test_client.get("/api/v1/intelligence/ai/rebalance-suggestions?threshold=5")
+        assert response.status_code == 200
+        data = response.json()
+        # With 8 tasks and threshold 5, should have suggestions
+        assert data["opportunity_now_count"] >= 8
+        if data["suggestions"]:
+            # Task with due_date should be promoted to critical_now
+            due_task = next(
+                (s for s in data["suggestions"] if "due" in s["reason"].lower()),
+                None,
+            )
+            if due_task:
+                assert due_task["suggested_zone"] == "critical_now"

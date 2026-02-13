@@ -40,6 +40,9 @@ class WeeklyReviewCompletion(Base):
     # Optional notes about the review
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+    # AI-generated review summary (persisted for history)
+    ai_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
     # Relationships
     user: Mapped[Optional["User"]] = relationship("User", backref="weekly_review_completions")
 

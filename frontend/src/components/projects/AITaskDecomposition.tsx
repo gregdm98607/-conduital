@@ -29,6 +29,7 @@ export function AITaskDecomposition({ projectId, hasBrainstormNotes, hasOrganizi
   const [tasks, setTasks] = useState<DecomposedTask[]>([]);
   const [createdTasks, setCreatedTasks] = useState<Set<number>>(new Set());
   const [isExpanded, setIsExpanded] = useState(false);
+  const [creatingAll, setCreatingAll] = useState(false);
 
   if (!hasBrainstormNotes && !hasOrganizingNotes) return null;
 
@@ -66,12 +67,30 @@ export function AITaskDecomposition({ projectId, hasBrainstormNotes, hasOrganizi
     );
   };
 
-  const handleCreateAll = () => {
-    const uncreated = tasks.filter((_, idx) => !createdTasks.has(idx));
-    uncreated.forEach((task) => {
-      const originalIndex = tasks.indexOf(task);
-      handleCreateTask(task, originalIndex);
-    });
+  const handleCreateAll = async () => {
+    setCreatingAll(true);
+    const uncreated = tasks
+      .map((task, idx) => ({ task, idx }))
+      .filter(({ idx }) => !createdTasks.has(idx));
+    for (const { task, idx } of uncreated) {
+      try {
+        await createTask.mutateAsync({
+          project_id: projectId,
+          title: task.title,
+          estimated_minutes: task.estimated_minutes || undefined,
+          energy_level: task.energy_level || undefined,
+          context: task.context || undefined,
+          status: 'pending',
+          is_next_action: false,
+          priority: 5,
+        });
+        setCreatedTasks((prev) => new Set([...prev, idx]));
+      } catch {
+        toast.error(`Failed to create "${task.title}"`);
+        break;
+      }
+    }
+    setCreatingAll(false);
   };
 
   return (
@@ -110,9 +129,14 @@ export function AITaskDecomposition({ projectId, hasBrainstormNotes, hasOrganizi
             {tasks.length > 1 && createdTasks.size < tasks.length && (
               <button
                 onClick={handleCreateAll}
-                className="text-xs px-2 py-1 rounded bg-violet-600 text-white hover:bg-violet-700 transition-colors flex items-center gap-1"
+                disabled={creatingAll}
+                className="text-xs px-2 py-1 rounded bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 transition-colors flex items-center gap-1"
               >
-                <Plus className="w-3 h-3" /> Create All
+                {creatingAll ? (
+                  <><div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> Creating...</>
+                ) : (
+                  <><Plus className="w-3 h-3" /> Create All</>
+                )}
               </button>
             )}
           </div>

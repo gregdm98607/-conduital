@@ -39,6 +39,8 @@ import type {
   TaskDecompositionResponse,
   RebalanceResponse,
   EnergyRecommendationResponse,
+  WeeklyReviewAISummary,
+  ProjectReviewInsight,
   Goal,
   Vision,
   Context,
@@ -388,10 +390,13 @@ class APIClient {
     return response.data;
   }
 
-  async completeWeeklyReview(notes?: string): Promise<WeeklyReviewCompletion> {
+  async completeWeeklyReview(notes?: string, aiSummary?: string): Promise<WeeklyReviewCompletion> {
+    const body: { notes?: string; ai_summary?: string } = {};
+    if (notes) body.notes = notes;
+    if (aiSummary) body.ai_summary = aiSummary;
     const response = await this.client.post<WeeklyReviewCompletion>(
       '/intelligence/weekly-review/complete',
-      notes ? { notes } : undefined,
+      Object.keys(body).length > 0 ? body : undefined,
     );
     return response.data;
   }
@@ -408,30 +413,34 @@ class APIClient {
   // AI Features
   // ============================================================================
 
-  async analyzeProject(projectId: number): Promise<AIAnalysis> {
-    const response = await this.client.post<AIAnalysis>(`/intelligence/ai/analyze/${projectId}`);
+  async analyzeProject(projectId: number, signal?: AbortSignal): Promise<AIAnalysis> {
+    const response = await this.client.post<AIAnalysis>(`/intelligence/ai/analyze/${projectId}`, null, { signal });
     return response.data;
   }
 
-  async suggestNextAction(projectId: number): Promise<AITaskSuggestion> {
+  async suggestNextAction(projectId: number, signal?: AbortSignal): Promise<AITaskSuggestion> {
     const response = await this.client.post<AITaskSuggestion>(
-      `/intelligence/ai/suggest-next-action/${projectId}`
+      `/intelligence/ai/suggest-next-action/${projectId}`,
+      null,
+      { signal }
     );
     return response.data;
   }
 
-  async getProactiveAnalysis(limit: number = 5): Promise<ProactiveAnalysisResponse> {
+  async getProactiveAnalysis(limit: number = 5, signal?: AbortSignal): Promise<ProactiveAnalysisResponse> {
     const response = await this.client.post<ProactiveAnalysisResponse>(
       '/intelligence/ai/proactive-analysis',
       null,
-      { params: { limit } }
+      { params: { limit }, signal }
     );
     return response.data;
   }
 
-  async decomposeTasksFromNotes(projectId: number): Promise<TaskDecompositionResponse> {
+  async decomposeTasksFromNotes(projectId: number, signal?: AbortSignal): Promise<TaskDecompositionResponse> {
     const response = await this.client.post<TaskDecompositionResponse>(
-      `/intelligence/ai/decompose-tasks/${projectId}`
+      `/intelligence/ai/decompose-tasks/${projectId}`,
+      null,
+      { signal }
     );
     return response.data;
   }
@@ -448,6 +457,24 @@ class APIClient {
     const response = await this.client.get<EnergyRecommendationResponse>(
       '/intelligence/ai/energy-recommendations',
       { params: { energy_level: energyLevel, limit }, signal }
+    );
+    return response.data;
+  }
+
+  async getWeeklyReviewAISummary(signal?: AbortSignal): Promise<WeeklyReviewAISummary> {
+    const response = await this.client.post<WeeklyReviewAISummary>(
+      '/intelligence/ai/weekly-review-summary',
+      null,
+      { signal }
+    );
+    return response.data;
+  }
+
+  async getProjectReviewInsight(projectId: number, signal?: AbortSignal): Promise<ProjectReviewInsight> {
+    const response = await this.client.post<ProjectReviewInsight>(
+      `/intelligence/ai/review-project/${projectId}`,
+      null,
+      { signal }
     );
     return response.data;
   }

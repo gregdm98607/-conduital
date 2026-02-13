@@ -31,13 +31,24 @@ export function AIProjectInsights({ projectId, isActive }: AIProjectInsightsProp
     localStorage.setItem('projectDetail.aiInsightsExpanded', JSON.stringify(next));
   };
 
+  const getAIErrorMessage = (err: unknown, fallback: string): string => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const status = (err as any)?.response?.status;
+    if (status === 400 || status === 403) {
+      return 'AI features not configured. Add your Anthropic API key in Settings.';
+    }
+    if (status === 500) {
+      return 'AI service encountered an error. Please try again later.';
+    }
+    return fallback;
+  };
+
   const handleAnalyze = () => {
     setAnalysisError(null);
     analyzeProject.mutate(undefined, {
       onSuccess: (data) => setAnalysis(data),
       onError: (err) => {
-        const msg = err instanceof Error ? err.message : 'AI analysis unavailable';
-        setAnalysisError(msg.includes('400') || msg.includes('403') ? 'AI features not configured. Add your Anthropic API key in Settings.' : msg);
+        setAnalysisError(getAIErrorMessage(err, 'AI analysis unavailable'));
       },
     });
   };
@@ -47,8 +58,7 @@ export function AIProjectInsights({ projectId, isActive }: AIProjectInsightsProp
     suggestNextAction.mutate(undefined, {
       onSuccess: (data) => setSuggestion(data),
       onError: (err) => {
-        const msg = err instanceof Error ? err.message : 'AI suggestion unavailable';
-        setSuggestionError(msg.includes('400') || msg.includes('403') ? 'AI features not configured. Add your Anthropic API key in Settings.' : msg);
+        setSuggestionError(getAIErrorMessage(err, 'AI suggestion unavailable'));
       },
     });
   };

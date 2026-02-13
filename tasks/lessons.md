@@ -613,6 +613,132 @@ For SQLAlchemy self-referential relationships:
 
 ---
 
+## 2026-02-12: Session 2 — ROADMAP-002 AI Features Integration
+
+### What Went Well
+1. **4 full-stack features in one session** — Each feature (proactive analysis, task decomposition, rebalancing, energy recs) implemented end-to-end (Pydantic models + endpoint + types + API method + hook + component + integration)
+2. **Test-driven bug discovery** — The energy recommendations test caught the wrong task creation endpoint (`/projects/{id}/tasks` vs `/tasks`) before any manual testing
+3. **Pattern reuse** — All 4 components followed established violet-theme, expandable-section, mutation-hook patterns from Session 1
+
+### Lessons Learned
+
+#### 1. Task Creation Endpoint Is POST /api/v1/tasks, Not /projects/{id}/tasks
+**Issue:** Test for energy recommendations created a task via `POST /api/v1/projects/{project_id}/tasks`, which returned 404. The task was never created, so the energy endpoint found 0 tasks.
+**Fix:** Changed to `POST /api/v1/tasks` with `project_id` in the request body.
+**Rule:** In Conduital, task creation uses a flat endpoint (`POST /tasks`) with `project_id` in the body — NOT a nested resource path. Always check the router prefix before writing tests.
+
+#### 2. String.replace() Only Replaces First Match
+**Issue:** `task.context.replace('_', ' ')` only replaces the first underscore. A context like `"deep_work_mode"` displays as `"deep work_mode"`.
+**Fix:** Use `.replace(/_/g, ' ')` (regex) or `.replaceAll('_', ' ')`.
+**Rule:** JavaScript `String.replace(string, string)` only replaces the first occurrence. For replace-all behavior, use regex with global flag or `.replaceAll()`.
+
+#### 3. handleCreateAll Needs Sequential Mutation Calls
+**Issue:** `handleCreateAll` in AITaskDecomposition fires N `createTask.mutate()` calls in a tight synchronous loop. TanStack Query mutations are not queued — this sends N parallel POST requests. Also uses `tasks.indexOf(task)` for index lookup, which fails for duplicate task objects.
+**Fix:** Use `mutateAsync` with sequential `await` or `Promise.allSettled`.
+**Rule:** When calling mutations in a loop, use `mutateAsync` + `await` for sequential execution or `Promise.allSettled` for controlled parallelism. Never fire N `.mutate()` calls synchronously — they race.
+
+#### 4. isinstance(date, datetime) Is Always False
+**Issue:** In the rebalance endpoint, `isinstance(t.due_date, datetime)` is always False because `due_date` is a `date` object, not a `datetime` object. Python's `datetime` is a subclass of `date`, but `date` is NOT a subclass of `datetime`. This makes the due-date promotion to critical_now dead code.
+**Fix:** Check `isinstance(t.due_date, date)` and compare using date arithmetic instead of datetime arithmetic.
+**Rule:** In Python, `isinstance(date_obj, datetime)` is False even though `isinstance(datetime_obj, date)` is True. When checking date columns, use `isinstance(x, date)` if you want to match both. For type-specific behavior, check `datetime` first (narrower type).
+
+#### 5. Frontend Components Must Handle Query Error States
+**Issue:** AIEnergyRecommendations and AIRebalanceSuggestions destructure `{ data, isLoading }` but ignore `isError/error`. When the API fails, users see nothing — no error, no retry option.
+**Rule:** Every `useQuery` destructuring should include `isError` at minimum. If the query can fail, the component must render an error state. Pattern: `if (isError) return <ErrorBanner retry={refetch} />`.
+
+#### 6. Premature Cache Invalidation Wastes Network Requests
+**Issue:** `useDecomposeTasksFromNotes` invalidates `['projects']` query cache on success, but decomposition doesn't create tasks — it only returns suggestions. The actual task creation happens later in the component.
+**Fix:** Remove `onSuccess` invalidation from the decompose hook. The `useCreateTask` hook already invalidates properly when tasks are actually created.
+**Rule:** Only invalidate query caches when the underlying data actually changes. A read/compute operation (like AI decomposition) should not invalidate the entity cache.
+
+### Technical Debt Identified
+- [ ] BUG-027: Rebalance endpoint `due_date` type check — `isinstance(t.due_date, datetime)` always False for date columns; critical_now promotion is dead code
+- [ ] DEBT-093: `String.replace('_', ' ')` only replaces first underscore in AITaskDecomposition.tsx and AIEnergyRecommendations.tsx (2 locations)
+- [ ] DEBT-094: `handleCreateAll` in AITaskDecomposition fires N parallel mutations without throttling + uses `indexOf` for index lookup
+- [ ] DEBT-095: AIEnergyRecommendations and AIRebalanceSuggestions missing error state handling (no isError destructure)
+- [ ] DEBT-096: `useDecomposeTasksFromNotes` hook invalidates `['projects']` cache prematurely (decomposition doesn't modify data)
+- [ ] DEBT-097: AIProactiveInsights stores data in both mutation result AND separate useState (split source of truth)
+- [ ] DEBT-098: `getProactiveAnalysis` and `decomposeTasksFromNotes` API methods lack AbortSignal support (POST mutations to slow AI endpoints)
+- [ ] DEBT-099: AIEnergyRecommendations missing violet border (inconsistent with other AI components)
+- [ ] DEBT-100: AIRebalanceSuggestions expand/collapse button missing `aria-expanded` and `aria-controls`
+- [ ] DEBT-101: AITaskDecomposition "Create this task" Plus button missing `aria-label`
+- [ ] DEBT-102: Proactive analysis and decompose endpoints missing upfront ANTHROPIC_API_KEY check (inconsistent with other AI endpoints; falls back to try/except)
+- [ ] DEBT-103: Proactive analysis per-project error handler leaks raw exception strings to client
+- [ ] DEBT-104: Task decomposition AI response parsing is fragile (pipe-delimited text); no error indication when zero tasks are parsed
+- [ ] DEBT-105: Dashboard AI grid uses `mb-0` (layout inconsistency — all other sections use `mb-8`)
+- [ ] DEBT-106: Rebalance and Energy endpoints don't use AI but live under `/ai/` URL path (misleading)
+
+### Test Coverage Gaps (not blocking, but noted)
+- No test for successful task decomposition with mocked AI response
+- No test for rebalance with actual overflow conditions (tasks in opportunity_now exceeding threshold)
+- No test for proactive analysis "AI not configured" graceful degradation path
+- No test for deferred task exclusion in energy recommendations
+- No test for per-project AI failure handling in proactive analysis
+
+### Potential Backlog Items
+1. **BACKLOG-130 (candidate):** Rebalance threshold should be user-configurable (currently hardcoded to 7)
+2. **BACKLOG-131 (candidate):** Proactive analysis needs timeout/progress indication — can take 30+ seconds with N sequential AI calls
+
+---
+
+## 2026-02-12: Session 4 — Warmup Fixes + ROADMAP-007 AI Weekly Review Co-Pilot
+
+### What Went Well
+1. **Clean warmup-to-feature pipeline** — 4 fixes verified before ROADMAP-007 started, no regressions introduced
+2. **JSON-structured AI prompts** — More reliable than line-by-line text parsing used in earlier AI methods; markdown fence stripping handles inconsistent AI response formatting
+3. **Comprehensive testing** — 6 new tests including regression test for BUG-027 fix; 232/232 all passing
+
+### Lessons Learned
+
+#### 1. JSON-Structured AI Prompts Are More Reliable Than Line-by-Line Parsing
+**Issue:** Earlier AI endpoints (proactive analysis, task decomposition) used text-based parsing with pipe delimiters and line-by-line scanning. This is fragile when the AI adds extra commentary or changes formatting.
+**Fix:** ROADMAP-007 endpoints request JSON output with explicit field names, parse with `json.loads()`, and strip markdown code fences (```` ```json ... ``` ````). Fallback to a generic response on `json.JSONDecodeError`.
+**Rule:** For AI service methods that need structured data, always request JSON output and parse it. Include markdown fence stripping (`response.strip().strip('`').strip('json')`) since models often wrap JSON in code fences. Always provide a graceful fallback for parse failures.
+
+#### 2. TS6133 When Changing Mutation Hook Signatures
+**Issue:** Updated `useCompleteWeeklyReview` from `mutationFn: () => api.completeWeeklyReview()` to `mutationFn: (params?) => api.completeWeeklyReview(params?.notes, params?.aiSummary)`. Then added `aiSummary` state to WeeklyReviewPage but initially had no code that read it, triggering TS6133 "declared but never read".
+**Fix:** Wired up the `useCompleteWeeklyReview` hook with a "Complete Weekly Review" button that passes `aiSummary`.
+**Rule:** When adding state that's meant for later use (like storing AI output for persistence), immediately wire it to its consumer in the same step. Don't leave state dangling — TypeScript will flag it as unused.
+
+#### 3. Alembic Migration Chain Must Reference Correct Previous Revision
+**Issue:** Migration 014 depends on 013 (`down_revision = "013_add_review_frequency"`). If the chain is broken (wrong revision ID), alembic upgrade will fail with "Can't locate revision".
+**Rule:** Always verify `down_revision` matches the actual `revision` string of the previous migration, not just the filename. Check with `alembic history` if unsure.
+
+#### 4. Reuse Existing Service Helpers in New Endpoints
+**Issue:** The new `generate_project_review_insight` needed project context (tasks, area, momentum). Rather than writing new queries, it reused `_build_project_context()` from the existing AI service.
+**Rule:** Before writing new data-gathering code for AI endpoints, check what helpers already exist in `ai_service.py` and `intelligence_service.py`. Reuse `_build_project_context()`, `get_weekly_review_data()`, `_compute_trend()`, etc.
+
+#### 5. N+1 Queries Sneak In During AI Endpoint Data Gathering
+**Issue:** The weekly review summary endpoint loops over each active project and queries `MomentumSnapshot` individually — classic N+1. With 50 projects, that's 50 separate DB queries just for momentum data.
+**Fix:** Use a single query with `IN()` filter for all project IDs, then match results in Python.
+**Rule:** When building data for AI prompts that span multiple entities, always batch-query. The pattern `for project in projects: db.query(Snapshot).filter(project_id=project.id)` is always wrong — use `db.query(Snapshot).filter(Snapshot.project_id.in_(project_ids))` and group in Python.
+
+#### 6. Mutation Hooks Need onError Callbacks for User-Triggered Actions
+**Issue:** `completeReview.mutate()` fires on button click but has no `onError` callback. Unlike queries (which auto-show error state via `isError`), mutations silently fail unless you wire up error handling. The user clicks "Complete" and nothing happens — no success, no error.
+**Fix:** Add `onError` callback with toast notification, or use `mutateAsync` with try/catch.
+**Rule:** Any mutation triggered by an explicit user action (button click) MUST have either an `onError` callback or be wrapped in `mutateAsync` + try/catch. Pattern: `mutate(data, { onError: (err) => toast.error(...) })`. Queries handle errors automatically; mutations do not.
+
+### Technical Debt Resolved
+- [x] BUG-027: Rebalance due_date type check → FIXED (date arithmetic)
+- [x] DEBT-094: handleCreateAll parallel mutations → FIXED (async/await loop)
+- [x] DEBT-095: Missing error state in 2 AI components → FIXED (AlertCircle UI)
+- [x] DEBT-103: Proactive analysis leaks raw exceptions → FIXED (sanitized message)
+
+### Technical Debt Identified
+- [ ] DEBT-107: New AI API methods (`getWeeklyReviewAISummary`, `getProjectReviewInsight`) missing `signal?: AbortSignal` — inconsistent with other API methods (`api.ts:875-881`)
+- [ ] DEBT-108: `AIReviewSummary` loading spinner missing `aria-label` / `role="status"` for screen readers (`AIReviewSummary.tsx:48`)
+- [ ] DEBT-109: `projectInsight.mutate()` can fire multiple times for same project — no deduplication or cancellation (`WeeklyReviewPage.tsx:95`)
+- [ ] DEBT-110: `completeReview.mutate()` has no `onError` callback — user won't know if review completion fails (`WeeklyReviewPage.tsx:365`)
+- [ ] DEBT-111: N+1 query in `get_weekly_review_ai_summary` — loops per-project for MomentumSnapshot instead of single batch query (`intelligence.py:922-940`)
+- [ ] DEBT-112: JSON fence stripping in AI service uses naive string ops — embedded triple-backticks in narrative could break parsing (`ai_service.py:482-502`)
+- [ ] DEBT-113: `getWeekKey()` ISO week calculation doesn't match ISO 8601 Thursday rule — may assign wrong week number (`WeeklyReviewPage.tsx:27-30`)
+- [ ] DEBT-114: `AIReviewSummary` renders `attention_items` without null check — partial API response could crash component (`AIReviewSummary.tsx:104-107`)
+
+### Potential Backlog Items
+1. **BACKLOG-142 (candidate):** localStorage keys should be namespaced by user/session for multi-user scenarios (`weeklyReviewChecklist` key would conflict)
+
+---
+
 ## Template for Future Sessions
 
 ```markdown

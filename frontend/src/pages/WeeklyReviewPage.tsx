@@ -6,21 +6,27 @@ import {
   FolderKanban, Layers, CheckSquare
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useWeeklyReview } from '../hooks/useIntelligence';
+import { useWeeklyReview, useProjectReviewInsight, useCompleteWeeklyReview } from '../hooks/useIntelligence';
 import { useCreateUnstuckTask } from '../hooks/useProjects';
 import { useAreas, useMarkAreaReviewed } from '../hooks/useAreas';
 import { useProjects } from '../hooks/useProjects';
 import { Loading } from '../components/common/Loading';
 import { Error } from '../components/common/Error';
+import { AIReviewSummary } from '../components/intelligence/AIReviewSummary';
 import { formatDate, getReviewStatus } from '../utils/date';
-import type { Area } from '../types';
+import type { Area, WeeklyReviewAISummary, ProjectReviewInsight } from '../types';
 
-// Get the ISO week key for localStorage (YYYY-WXX format)
+// Get the ISO 8601 week key for localStorage (YYYY-WXX format)
+// ISO 8601: Week 1 contains the first Thursday of the year; weeks start on Monday.
 function getWeekKey(): string {
   const now = new Date();
-  const jan1 = new Date(now.getFullYear(), 0, 1);
-  const weekNum = Math.ceil(((now.getTime() - jan1.getTime()) / 86400000 + jan1.getDay() + 1) / 7);
-  return `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+  // Copy date and set to nearest Thursday (current date + 4 - day number, with Sunday as 7)
+  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const dayNum = d.getUTCDay() || 7; // Make Sunday = 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum); // Set to Thursday of this week
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
 }
 
 const CHECKLIST_STORAGE_KEY = 'weeklyReviewChecklist';
@@ -57,8 +63,13 @@ export function WeeklyReviewPage() {
   const { data: projectsData, isLoading: projectsLoading } = useProjects({});
   const createUnstuck = useCreateUnstuckTask();
   const markReviewed = useMarkAreaReviewed();
+  const completeReview = useCompleteWeeklyReview();
   const [checklistState, setChecklistState] = useState<ChecklistState>(loadChecklist);
   const [checklistExpanded, setChecklistExpanded] = useState(true);
+  const [aiSummary, setAiSummary] = useState<WeeklyReviewAISummary | null>(null);
+  const projectInsight = useProjectReviewInsight();
+  const [expandedInsights, setExpandedInsights] = useState<Record<number, ProjectReviewInsight>>({});
+  const [pendingInsightIds, setPendingInsightIds] = useState<Set<number>>(new Set());
 
   const toggleStep = useCallback((stepId: string) => {
     setChecklistState(prev => {
@@ -96,6 +107,21 @@ export function WeeklyReviewPage() {
       (p) => !p.area_id && p.status !== 'completed' && p.status !== 'archived'
     );
   }, [projectsData]);
+
+  const handleGetInsight = (projectId: number) => {
+    if (pendingInsightIds.has(projectId)) return; // Dedup: skip if already fetching
+    setPendingInsightIds((prev) => new Set(prev).add(projectId));
+    projectInsight.mutate(projectId, {
+      onSuccess: (data) => {
+        setExpandedInsights((prev) => ({ ...prev, [projectId]: data }));
+        setPendingInsightIds((prev) => { const next = new Set(prev); next.delete(projectId); return next; });
+      },
+      onError: () => {
+        toast.error('Failed to generate project insight');
+        setPendingInsightIds((prev) => { const next = new Set(prev); next.delete(projectId); return next; });
+      },
+    });
+  };
 
   const handleMarkAreaReviewed = (areaId: number, areaTitle: string) => {
     markReviewed.mutate(areaId, {
@@ -197,6 +223,9 @@ export function WeeklyReviewPage() {
         </p>
       </header>
 
+      {/* AI Review Co-Pilot */}
+      <AIReviewSummary onSummaryGenerated={(summary) => setAiSummary(summary)} />
+
       {/* Review Checklist */}
       <section className="mb-8">
         <div
@@ -280,6 +309,34 @@ export function WeeklyReviewPage() {
                 </div>
               );
             })}
+
+            {/* Complete Weekly Review button */}
+            {completedSteps === totalSteps && !completeReview.isSuccess && (
+              <div className="mt-4 text-center">
+                <button
+                  onClick={() => {
+                    completeReview.mutate(
+                      { aiSummary: aiSummary ? JSON.stringify(aiSummary) : undefined },
+                      {
+                        onSuccess: () => toast.success('Weekly review completed!'),
+                        onError: () => toast.error('Failed to save review completion'),
+                      }
+                    );
+                  }}
+                  disabled={completeReview.isPending}
+                  className="btn btn-primary px-6 py-2.5 flex items-center gap-2 mx-auto"
+                >
+                  <CalendarCheck className="w-4 h-4" />
+                  {completeReview.isPending ? 'Saving...' : 'Complete Weekly Review'}
+                </button>
+              </div>
+            )}
+            {completeReview.isSuccess && (
+              <div className="mt-4 text-center text-green-600 dark:text-green-400 font-medium flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                Review completed and recorded!
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -485,37 +542,73 @@ export function WeeklyReviewPage() {
         <section className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Projects Needing Review</h2>
           <div className="space-y-3">
-            {review.projects_needing_review_details.map((project) => (
-              <div key={project.id} className="card hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg">{project.title}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {project.days_since_activity} days since last activity
-                    </p>
+            {review.projects_needing_review_details.map((project) => {
+              const insight = expandedInsights[project.id];
+              return (
+                <div key={project.id} className="card hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg">{project.title}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        {project.days_since_activity} days since last activity
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      {!insight && (
+                        <button
+                          onClick={() => handleGetInsight(project.id)}
+                          disabled={pendingInsightIds.has(project.id)}
+                          className="btn btn-sm flex items-center gap-1.5 bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900/60"
+                          title="Get AI insight"
+                        >
+                          <Sparkles className={`w-3 h-3 ${pendingInsightIds.has(project.id) ? 'animate-pulse' : ''}`} />
+                          {pendingInsightIds.has(project.id) ? 'Loading...' : 'Insight'}
+                        </button>
+                      )}
+                      <Link
+                        to={`/projects/${project.id}`}
+                        className="btn btn-sm btn-secondary"
+                      >
+                        Review
+                      </Link>
+                      <button
+                        onClick={() => createUnstuck.mutate({
+                          projectId: project.id,
+                          useAI: true
+                        })}
+                        disabled={createUnstuck.isPending}
+                        className="btn btn-sm btn-primary flex items-center gap-2"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        Unstuck Task
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Link
-                      to={`/projects/${project.id}`}
-                      className="btn btn-sm btn-secondary"
-                    >
-                      Review
-                    </Link>
-                    <button
-                      onClick={() => createUnstuck.mutate({
-                        projectId: project.id,
-                        useAI: true
-                      })}
-                      disabled={createUnstuck.isPending}
-                      className="btn btn-sm btn-primary flex items-center gap-2"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      Unstuck Task
-                    </button>
-                  </div>
+
+                  {/* Per-project AI Insight */}
+                  {insight && (
+                    <div className="mt-3 p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200 dark:border-violet-800/50">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{insight.health_summary}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{insight.momentum_context}</p>
+                      {insight.suggested_next_action && (
+                        <p className="text-xs text-violet-700 dark:text-violet-300 mb-2">
+                          <span className="font-medium">Suggested:</span> {insight.suggested_next_action}
+                        </p>
+                      )}
+                      {insight.questions_to_consider.length > 0 && (
+                        <ul className="space-y-0.5">
+                          {insight.questions_to_consider.map((q, i) => (
+                            <li key={i} className="text-xs text-gray-500 dark:text-gray-400 italic">
+                              {q}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}

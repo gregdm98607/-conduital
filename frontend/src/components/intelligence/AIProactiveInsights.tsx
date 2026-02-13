@@ -53,9 +53,10 @@ export function AIProactiveInsights() {
         {proactiveAnalysis.isError && (
           <div className="text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5 py-2">
             <AlertCircle className="w-4 h-4" />
-            {proactiveAnalysis.error instanceof Error && proactiveAnalysis.error.message.includes('400')
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {(proactiveAnalysis.error as any)?.response?.status === 400
               ? 'AI not configured — set up your API key in Settings'
-              : 'Analysis unavailable'}
+              : 'Analysis unavailable — please try again later'}
           </div>
         )}
 
