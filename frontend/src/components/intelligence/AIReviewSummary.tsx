@@ -45,8 +45,8 @@ export function AIReviewSummary({ onSummaryGenerated }: AIReviewSummaryProps) {
 
       {/* Loading state */}
       {summary.isPending && (
-        <div className="text-sm text-violet-500 flex items-center gap-2 py-4 justify-center">
-          <div className="w-3.5 h-3.5 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+        <div role="status" aria-label="Analyzing portfolio" className="text-sm text-violet-500 flex items-center gap-2 py-4 justify-center">
+          <div className="w-3.5 h-3.5 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" aria-hidden="true" />
           Analyzing your portfolio...
         </div>
       )}

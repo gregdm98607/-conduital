@@ -10,8 +10,10 @@ Fixed test infrastructure (DEBT-024):
 Consolidated (DEBT-070): Uses shared in_memory_engine from conftest.py
 """
 
+import json
+
 import pytest
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, MagicMock
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 
@@ -664,3 +666,399 @@ class TestAIEndpointsROADMAP007:
             )
             if due_task:
                 assert due_task["suggested_zone"] == "critical_now"
+
+
+class TestSession6NonAIEndpoints:
+    """Test non-AI intelligence endpoints — dashboard stats, momentum, health, weekly review."""
+
+    def test_dashboard_stats_empty(self, test_client):
+        """Dashboard stats with no projects returns zeros"""
+        response = test_client.get("/api/v1/intelligence/dashboard-stats")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["active_project_count"] == 0
+        assert data["pending_task_count"] == 0
+        assert data["avg_momentum"] == 0.0
+        assert data["orphan_project_count"] == 0
+
+    def test_dashboard_stats_with_data(self, test_client):
+        """Dashboard stats counts active projects, pending tasks, orphans"""
+        # Create area + project with area
+        test_client.post("/api/v1/areas", json={"title": "Work", "standard_of_excellence": "Good"})
+        areas = test_client.get("/api/v1/areas").json()
+        area_id = areas[0]["id"] if areas else None
+
+        test_client.post(
+            "/api/v1/projects",
+            json={"title": "With Area", "status": "active", "priority": 3, "area_id": area_id},
+        )
+        # Orphan project (no area)
+        proj2 = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Orphan", "status": "active", "priority": 5},
+        )
+        project_id = proj2.json()["id"]
+        # Completed project — should not count
+        test_client.post(
+            "/api/v1/projects",
+            json={"title": "Done", "status": "completed", "priority": 1},
+        )
+        # Add a pending task
+        test_client.post(
+            "/api/v1/tasks",
+            json={"project_id": project_id, "title": "Pending", "status": "pending", "priority": 3},
+        )
+
+        response = test_client.get("/api/v1/intelligence/dashboard-stats")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["active_project_count"] == 2
+        assert data["pending_task_count"] >= 1
+        assert data["orphan_project_count"] >= 1
+
+    def test_momentum_update(self, test_client):
+        """Momentum update endpoint recalculates all project scores"""
+        test_client.post(
+            "/api/v1/projects",
+            json={"title": "Momentum Test", "status": "active", "priority": 3},
+        )
+        response = test_client.post("/api/v1/intelligence/momentum/update")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert "updated" in data["stats"]
+
+    def test_calculate_project_momentum(self, test_client):
+        """Single project momentum calculation returns a float"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Calc Momentum", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+        response = test_client.get(f"/api/v1/intelligence/momentum/{project_id}")
+        assert response.status_code == 200
+        score = response.json()
+        assert isinstance(score, (int, float))
+        assert 0.0 <= score <= 1.0
+
+    def test_calculate_momentum_not_found(self, test_client):
+        """Momentum calculation for non-existent project returns 404"""
+        response = test_client.get("/api/v1/intelligence/momentum/99999")
+        assert response.status_code == 404
+
+    def test_momentum_breakdown(self, test_client):
+        """Momentum breakdown returns factor details"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Breakdown Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+        response = test_client.get(f"/api/v1/intelligence/momentum-breakdown/{project_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["project_id"] == project_id
+        assert "total_score" in data
+        assert "factors" in data
+        assert isinstance(data["factors"], list)
+        assert len(data["factors"]) > 0
+        factor = data["factors"][0]
+        assert "name" in factor
+        assert "weight" in factor
+        assert "raw_score" in factor
+        assert "weighted_score" in factor
+
+    def test_project_health_summary(self, test_client):
+        """Health endpoint returns comprehensive project health"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Health Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+        response = test_client.get(f"/api/v1/intelligence/health/{project_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["project_id"] == project_id
+        assert "health_status" in data
+        assert "momentum_score" in data
+        assert "tasks" in data
+        assert "recommendations" in data
+        assert isinstance(data["recommendations"], list)
+
+    def test_project_health_not_found(self, test_client):
+        """Health endpoint for non-existent project returns 404"""
+        response = test_client.get("/api/v1/intelligence/health/99999")
+        assert response.status_code == 404
+
+    def test_weekly_review_data(self, test_client):
+        """Weekly review data endpoint returns review structure"""
+        response = test_client.get("/api/v1/intelligence/weekly-review")
+        assert response.status_code == 200
+        data = response.json()
+        assert "review_date" in data
+        assert "active_projects_count" in data
+        assert "tasks_completed_this_week" in data
+        assert "projects_needing_review_details" in data
+
+    def test_stalled_projects_empty(self, test_client):
+        """Stalled projects returns empty list when none stalled"""
+        response = test_client.get("/api/v1/intelligence/stalled")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) == 0
+
+    def test_stalled_projects_includes_at_risk(self, test_client):
+        """Stalled projects with include_at_risk returns at-risk projects"""
+        response = test_client.get("/api/v1/intelligence/stalled?include_at_risk=true")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+
+
+class TestSession6AIWithMock:
+    """Test AI endpoints with mocked AI provider — happy path tests."""
+
+    def _enable_ai_and_mock_provider(self):
+        """Return context managers to enable AI and mock the provider."""
+        mock_provider = MagicMock()
+        mock_provider.generate.return_value = "Mock AI response"
+        mock_provider.test_connection.return_value = {"success": True, "message": "OK", "model": "mock"}
+
+        return (
+            patch("app.core.config.settings.AI_FEATURES_ENABLED", True),
+            patch("app.core.config.settings.ANTHROPIC_API_KEY", "test-key-123"),
+            patch("app.services.ai_service.create_provider", return_value=mock_provider),
+            mock_provider,
+        )
+
+    def test_ai_analyze_project_happy_path(self, test_client):
+        """AI analyze endpoint returns analysis when AI is mocked"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "AI Analyze Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        p1, p2, p3, mock_provider = self._enable_ai_and_mock_provider()
+        mock_provider.generate.return_value = (
+            "Analysis: This project is healthy with steady momentum.\n\n"
+            "Recommendations:\n"
+            "1. Continue daily progress on key tasks\n"
+            "2. Schedule a review meeting this week"
+        )
+
+        with p1, p2, p3:
+            response = test_client.post(f"/api/v1/intelligence/ai/analyze/{project_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert "analysis" in data
+        assert "recommendations" in data
+        assert isinstance(data["recommendations"], list)
+
+    def test_ai_analyze_project_not_found(self, test_client):
+        """AI analyze for non-existent project returns 404"""
+        p1, p2, p3, _ = self._enable_ai_and_mock_provider()
+        with p1, p2, p3:
+            response = test_client.post("/api/v1/intelligence/ai/analyze/99999")
+        assert response.status_code == 404
+
+    def test_ai_suggest_next_action_happy_path(self, test_client):
+        """AI suggest-next-action returns a suggestion when AI is mocked"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Suggest Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        p1, p2, p3, mock_provider = self._enable_ai_and_mock_provider()
+        mock_provider.generate.return_value = "Draft the project proposal outline"
+
+        with p1, p2, p3:
+            response = test_client.post(f"/api/v1/intelligence/ai/suggest-next-action/{project_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["ai_generated"] is True
+        assert len(data["suggestion"]) > 0
+
+    def test_ai_suggest_next_action_not_found(self, test_client):
+        """AI suggest for non-existent project returns 404"""
+        p1, p2, p3, _ = self._enable_ai_and_mock_provider()
+        with p1, p2, p3:
+            response = test_client.post("/api/v1/intelligence/ai/suggest-next-action/99999")
+        assert response.status_code == 404
+
+    def test_ai_weekly_review_summary_happy_path(self, test_client):
+        """AI weekly review summary returns portfolio narrative when AI is mocked"""
+        # Create a project so there's data to analyze
+        test_client.post(
+            "/api/v1/projects",
+            json={"title": "Review Summary Test", "status": "active", "priority": 3},
+        )
+
+        p1, p2, p3, mock_provider = self._enable_ai_and_mock_provider()
+        mock_provider.generate.return_value = json.dumps({
+            "portfolio_narrative": "Your portfolio is healthy with steady progress.",
+            "wins": ["Completed 5 tasks this week"],
+            "attention_items": [],
+            "recommendations": ["Focus on stalled projects", "Clear inbox items"],
+        })
+
+        with p1, p2, p3:
+            response = test_client.post("/api/v1/intelligence/ai/weekly-review-summary")
+        assert response.status_code == 200
+        data = response.json()
+        assert "portfolio_narrative" in data
+        assert "wins" in data
+        assert "attention_items" in data
+        assert "recommendations" in data
+        assert "generated_at" in data
+
+    def test_ai_project_review_insight_happy_path(self, test_client):
+        """AI project review insight returns health summary when AI is mocked"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Insight Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        p1, p2, p3, mock_provider = self._enable_ai_and_mock_provider()
+        mock_provider.generate.return_value = json.dumps({
+            "health_summary": "Project is on track with good momentum.",
+            "suggested_next_action": "Review pending code changes",
+            "questions_to_consider": ["Is the deadline realistic?", "Any blockers?"],
+            "momentum_context": "Momentum is rising at 0.75",
+        })
+
+        with p1, p2, p3:
+            response = test_client.post(f"/api/v1/intelligence/ai/review-project/{project_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["project_id"] == project_id
+        assert "health_summary" in data
+        assert "questions_to_consider" in data
+        assert isinstance(data["questions_to_consider"], list)
+        assert "momentum_context" in data
+
+    def test_ai_decompose_tasks_with_notes(self, test_client):
+        """AI task decomposition works when project has brainstorm notes"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Decompose Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        # Add brainstorm notes to the project
+        test_client.put(
+            f"/api/v1/projects/{project_id}",
+            json={"brainstorm_notes": "Need to research competitors, write proposal, create mockups"},
+        )
+
+        p1, p2, p3, mock_provider = self._enable_ai_and_mock_provider()
+        mock_provider.generate.return_value = (
+            "TASK: Research top 3 competitors | 60 | high | research\n"
+            "TASK: Draft proposal outline | 30 | medium | deep_work\n"
+            "TASK: Create initial mockup wireframes | 120 | high | creative"
+        )
+
+        with p1, p2, p3:
+            response = test_client.post(f"/api/v1/intelligence/ai/decompose-tasks/{project_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["project_id"] == project_id
+        assert data["source"] == "brainstorm_notes"
+        assert len(data["tasks"]) == 3
+        task = data["tasks"][0]
+        assert "title" in task
+        assert task["estimated_minutes"] == 60
+        assert task["energy_level"] == "high"
+
+    def test_proactive_analysis_error_sanitization(self, test_client):
+        """BUG-028/029 regression: proactive analysis errors show type, not raw message"""
+        from app.models.project import Project
+        from datetime import datetime
+        from app.core.database import get_db
+        from app.main import app
+
+        # Create a stalled project (use naive datetime — SQLite strips tz)
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Error Sanitize Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+        db_gen = app.dependency_overrides[get_db]()
+        db = next(db_gen)
+        p = db.get(Project, project_id)
+        p.stalled_since = datetime.utcnow()
+        p.momentum_score = 0.1
+        db.commit()
+
+        p1, p2, p3, mock_provider = self._enable_ai_and_mock_provider()
+        mock_provider.generate.side_effect = RuntimeError("Sensitive API error: key=abc123")
+
+        with p1, p2, p3:
+            response = test_client.post("/api/v1/intelligence/ai/proactive-analysis")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["projects_analyzed"] >= 1
+        insight = data["insights"][0]
+        # Error should contain "Analysis failed:" — sanitized
+        assert "error" in insight
+        assert "Analysis failed:" in insight["error"]
+        # Raw sensitive data must NOT appear in error field
+        assert "abc123" not in insight["error"]
+
+    def test_unstuck_task_no_ai_configured(self, test_client):
+        """Unstuck task returns 400 when AI enabled but no API key"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Unstuck Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        with patch("app.core.config.settings.AI_FEATURES_ENABLED", True), \
+             patch("app.core.config.settings.ANTHROPIC_API_KEY", ""):
+            response = test_client.post(f"/api/v1/intelligence/unstuck/{project_id}")
+        assert response.status_code == 400
+
+    def test_strip_json_fences_with_language_tag(self, test_client):
+        """DEBT-112: _strip_json_fences handles ```json fences"""
+        from app.services.ai_service import AIService
+
+        raw = '```json\n{"key": "value"}\n```'
+        assert AIService._strip_json_fences(raw) == '{"key": "value"}'
+
+    def test_strip_json_fences_without_language(self, test_client):
+        """DEBT-112: _strip_json_fences handles bare ``` fences"""
+        from app.services.ai_service import AIService
+
+        raw = '```\n{"key": "value"}\n```'
+        assert AIService._strip_json_fences(raw) == '{"key": "value"}'
+
+    def test_strip_json_fences_no_fences(self, test_client):
+        """DEBT-112: _strip_json_fences passes through bare JSON"""
+        from app.services.ai_service import AIService
+
+        raw = '{"key": "value"}'
+        assert AIService._strip_json_fences(raw) == '{"key": "value"}'
+
+    def test_strip_json_fences_with_whitespace(self, test_client):
+        """DEBT-112: _strip_json_fences handles extra whitespace"""
+        from app.services.ai_service import AIService
+
+        raw = '  ```JSON\n{"key": "value"}\n```  '
+        assert AIService._strip_json_fences(raw) == '{"key": "value"}'
+
+    def test_unstuck_task_without_ai(self, test_client):
+        """Unstuck task with use_ai=false creates a fallback task"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Unstuck Fallback", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        response = test_client.post(f"/api/v1/intelligence/unstuck/{project_id}?use_ai=false")
+        assert response.status_code == 200
+        data = response.json()
+        assert "title" in data
+        assert data["status"] == "pending"
+        assert data["is_next_action"] is True

@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { CheckCircle, Play, Filter, Calendar, ChevronDown, ChevronRight, AlertTriangle, Clock, Hourglass, LayoutGrid, Layers, CalendarClock } from 'lucide-react';
+import { Play, Filter, Calendar, ChevronDown, ChevronRight, AlertTriangle, Clock, Hourglass, LayoutGrid, Layers, CalendarClock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNextActions } from '../hooks/useNextActions';
 import { useCompleteTask, useStartTask, useUpdateTask } from '../hooks/useTasks';
@@ -8,6 +8,7 @@ import { NextActionSkeleton } from '../components/common/Skeleton';
 import { SearchInput } from '../components/common/SearchInput';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { DeferPopover } from '../components/tasks/DeferPopover';
+import { CompleteTaskButton } from '../components/tasks/CompleteTaskButton';
 import { getDueDateInfo } from '../utils/date';
 import type { Task, UrgencyZone, NextAction } from '../types';
 
@@ -88,7 +89,7 @@ export function NextActions() {
   const [energy, setEnergy] = useState('');
   const [timeAvailable, setTimeAvailable] = useState<number | undefined>();
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    const saved = localStorage.getItem('nextActionsViewMode');
+    const saved = localStorage.getItem('pt-nextActionsViewMode');
     return (saved as ViewMode) || 'zones';
   });
 
@@ -99,10 +100,10 @@ export function NextActions() {
   // Collapsible zone state - persisted in localStorage
   const [collapsedZones, setCollapsedZones] = useState<Record<string, boolean>>(() => {
     try {
-      const saved = localStorage.getItem('nextActionsCollapsedZones');
+      const saved = localStorage.getItem('pt-nextActionsCollapsedZones');
       return saved ? JSON.parse(saved) : {};
     } catch {
-      localStorage.removeItem('nextActionsCollapsedZones');
+      localStorage.removeItem('pt-nextActionsCollapsedZones');
       return {};
     }
   });
@@ -110,14 +111,14 @@ export function NextActions() {
   const toggleZoneCollapsed = useCallback((zone: string) => {
     setCollapsedZones(prev => {
       const next = { ...prev, [zone]: !prev[zone] };
-      localStorage.setItem('nextActionsCollapsedZones', JSON.stringify(next));
+      localStorage.setItem('pt-nextActionsCollapsedZones', JSON.stringify(next));
       return next;
     });
   }, []);
 
   const handleViewModeChange = (mode: ViewMode) => {
     setViewMode(mode);
-    localStorage.setItem('nextActionsViewMode', mode);
+    localStorage.setItem('pt-nextActionsViewMode', mode);
   };
 
   const handleOpenTask = (task: Task) => {
@@ -423,14 +424,11 @@ export function NextActions() {
                                   </select>
                                   <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" />
                                 </div>
-                                <button
-                                  onClick={() => completeTask.mutate(action.task.id)}
+                                <CompleteTaskButton
+                                  taskId={action.task.id}
+                                  onComplete={(id) => completeTask.mutate(id)}
                                   disabled={completeTask.isPending || action.task.status === 'completed'}
-                                  className="btn btn-sm btn-primary flex items-center gap-1 py-1 px-2"
-                                  title="Complete task"
-                                >
-                                  <CheckCircle className="w-3 h-3" />
-                                </button>
+                                />
                                 <DeferPopover
                                   compact
                                   onDefer={(date) => handleDeferTask(action.task.id, date)}
@@ -550,14 +548,11 @@ export function NextActions() {
                     >
                       <Play className="w-3 h-3" />
                     </button>
-                    <button
-                      onClick={() => completeTask.mutate(action.task.id)}
+                    <CompleteTaskButton
+                      taskId={action.task.id}
+                      onComplete={(id) => completeTask.mutate(id)}
                       disabled={completeTask.isPending || action.task.status === 'completed'}
-                      className="btn btn-sm btn-primary flex items-center gap-1"
-                      title="Complete task"
-                    >
-                      <CheckCircle className="w-3 h-3" />
-                    </button>
+                    />
                     <DeferPopover
                       compact
                       onDefer={(date) => handleDeferTask(action.task.id, date)}

@@ -14,7 +14,7 @@ import { Area } from '@/types';
 
 type ViewMode = 'grid' | 'list';
 
-const VIEW_MODE_STORAGE_KEY = 'areasViewMode';
+const VIEW_MODE_STORAGE_KEY = 'pt-areasViewMode';
 
 type SortOption =
   | 'frequency_urgency'

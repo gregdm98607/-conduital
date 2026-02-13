@@ -12,7 +12,7 @@ interface AIProjectInsightsProps {
 export function AIProjectInsights({ projectId, isActive }: AIProjectInsightsProps) {
   const [isExpanded, setIsExpanded] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('projectDetail.aiInsightsExpanded') || 'false');
+      return JSON.parse(localStorage.getItem('pt-projectDetail.aiInsightsExpanded') || 'false');
     } catch {
       return false;
     }
@@ -28,7 +28,7 @@ export function AIProjectInsights({ projectId, isActive }: AIProjectInsightsProp
   const handleToggle = () => {
     const next = !isExpanded;
     setIsExpanded(next);
-    localStorage.setItem('projectDetail.aiInsightsExpanded', JSON.stringify(next));
+    localStorage.setItem('pt-projectDetail.aiInsightsExpanded', JSON.stringify(next));
   };
 
   const getAIErrorMessage = (err: unknown, fallback: string): string => {

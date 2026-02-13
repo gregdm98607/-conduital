@@ -12,7 +12,7 @@ import { Project } from '../types';
 
 type ViewMode = 'grid' | 'list';
 
-const VIEW_MODE_STORAGE_KEY = 'projectsViewMode';
+const VIEW_MODE_STORAGE_KEY = 'pt-projectsViewMode';
 
 type SortOption =
   | 'title_asc'

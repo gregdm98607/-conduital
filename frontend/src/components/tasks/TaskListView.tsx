@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { Calendar, Flag, Zap, Clock, ChevronDown, CheckCircle } from 'lucide-react';
+import { Calendar, Flag, Zap, Clock, ChevronDown } from 'lucide-react';
 import { Task } from '../../types';
 import { getDueDateInfo } from '../../utils/date';
+import { CompleteTaskButton } from './CompleteTaskButton';
 
 interface TaskListViewProps {
   tasks: Task[];
@@ -218,15 +219,14 @@ export function TaskListView({ tasks, onStatusChange, onComplete, onEdit, isUpda
 
                   {/* Actions */}
                   <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => onComplete?.(task.id)}
-                      disabled={isUpdating || task.status === 'completed'}
-                      className="btn btn-sm btn-primary flex items-center gap-1"
-                      title="Mark Complete"
-                    >
-                      <CheckCircle className="w-3 h-3" />
-                      Done
-                    </button>
+                    {onComplete && (
+                      <CompleteTaskButton
+                        taskId={task.id}
+                        onComplete={onComplete}
+                        disabled={isUpdating || task.status === 'completed'}
+                        size="md"
+                      />
+                    )}
                   </td>
                 </tr>
               );

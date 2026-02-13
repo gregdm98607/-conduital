@@ -11,7 +11,7 @@ import { Goal, GoalStatus, GoalTimeframe } from '@/types';
 
 type ViewMode = 'grid' | 'list';
 
-const VIEW_MODE_STORAGE_KEY = 'goalsViewMode';
+const VIEW_MODE_STORAGE_KEY = 'pt-goalsViewMode';
 
 type SortOption = 'title_asc' | 'title_desc' | 'target_date' | 'created_desc' | 'created_asc';
 

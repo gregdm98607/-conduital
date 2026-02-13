@@ -8,6 +8,7 @@ Supports:
 """
 
 import logging
+import re
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Optional
@@ -330,6 +331,20 @@ Example good tasks:
 Task:"""
         return prompt
 
+    @staticmethod
+    def _strip_json_fences(text: str) -> str:
+        """Strip markdown code fences from AI responses robustly.
+
+        Handles: ```json ... ```, ``` ... ```, and bare JSON.
+        Uses regex to match opening/closing fences including language tags.
+        """
+        text = text.strip()
+        # Match opening fence: ``` optionally followed by a language tag (json, JSON, etc.)
+        text = re.sub(r'^```\w*\s*\n?', '', text)
+        # Match closing fence at end
+        text = re.sub(r'\n?```\s*$', '', text)
+        return text.strip()
+
     def _format_activity_list(self, activities: list[dict]) -> str:
         """Format activity list for prompt"""
         if not activities:
@@ -491,13 +506,7 @@ Rules:
 
         try:
             response = self.provider.generate(prompt, max_tokens=1000, temperature=0.7)
-            # Strip markdown code fences if present
-            response = response.strip()
-            if response.startswith("```"):
-                response = response.split("\n", 1)[1] if "\n" in response else response
-            if response.endswith("```"):
-                response = response.rsplit("```", 1)[0]
-            response = response.strip()
+            response = self._strip_json_fences(response)
 
             parsed = json.loads(response)
             return {
@@ -563,12 +572,7 @@ Rules:
 
         try:
             response = self.provider.generate(prompt, max_tokens=500, temperature=0.7)
-            response = response.strip()
-            if response.startswith("```"):
-                response = response.split("\n", 1)[1] if "\n" in response else response
-            if response.endswith("```"):
-                response = response.rsplit("```", 1)[0]
-            response = response.strip()
+            response = self._strip_json_fences(response)
 
             parsed = json.loads(response)
             return {

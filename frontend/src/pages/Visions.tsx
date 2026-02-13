@@ -10,7 +10,7 @@ import { Vision, VisionTimeframe } from '@/types';
 
 type ViewMode = 'grid' | 'list';
 
-const VIEW_MODE_STORAGE_KEY = 'visionsViewMode';
+const VIEW_MODE_STORAGE_KEY = 'pt-visionsViewMode';
 
 type SortOption = 'title_asc' | 'title_desc' | 'created_desc' | 'created_asc';
 

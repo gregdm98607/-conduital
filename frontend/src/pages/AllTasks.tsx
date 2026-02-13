@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Filter, SlidersHorizontal, ArrowUpDown, LayoutGrid, List, Eye, EyeOff, Calendar, CheckCircle, ChevronDown, Edit2, Flag, Zap, Clock, Archive } from 'lucide-react';
+import { Filter, SlidersHorizontal, ArrowUpDown, LayoutGrid, List, Eye, EyeOff, Calendar, ChevronDown, Edit2, Flag, Zap, Clock, Archive } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTasks, useCompleteTask, useUpdateTask } from '../hooks/useTasks';
 import { useProjects } from '../hooks/useProjects';
@@ -9,13 +9,14 @@ import { NextActionSkeleton, TableRowSkeleton } from '../components/common/Skele
 import { SearchInput } from '../components/common/SearchInput';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { TaskListView } from '../components/tasks/TaskListView';
+import { CompleteTaskButton } from '../components/tasks/CompleteTaskButton';
 import { getDueDateInfo } from '../utils/date';
 import type { Task } from '../types';
 
 type ViewMode = 'grid' | 'list';
 type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'waiting' | 'cancelled';
 
-const VIEW_MODE_STORAGE_KEY = 'allTasksViewMode';
+const VIEW_MODE_STORAGE_KEY = 'pt-allTasksViewMode';
 
 type SortOption =
   | 'priority_desc'
@@ -606,14 +607,12 @@ function TaskCard({ task, onStatusChange, onComplete, onEdit, isUpdating }: Task
             <Edit2 className="w-3 h-3" />
             Edit
           </button>
-          <button
-            onClick={() => onComplete(task.id)}
+          <CompleteTaskButton
+            taskId={task.id}
+            onComplete={onComplete}
             disabled={isUpdating || task.status === 'completed'}
-            className="btn btn-sm btn-primary flex items-center gap-2 whitespace-nowrap"
-          >
-            <CheckCircle className="w-3 h-3" />
-            Complete
-          </button>
+            size="md"
+          />
         </div>
       </div>
     </div>

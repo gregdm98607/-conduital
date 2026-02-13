@@ -29,7 +29,7 @@ function getWeekKey(): string {
   return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
 }
 
-const CHECKLIST_STORAGE_KEY = 'weeklyReviewChecklist';
+const CHECKLIST_STORAGE_KEY = 'pt-weeklyReviewChecklist';
 
 interface ChecklistState {
   [stepId: string]: boolean;

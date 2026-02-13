@@ -128,7 +128,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-022 | Area folder pattern reuses project pattern | `auto_discovery_service.py` | Open |
 | DEBT-023 | Memory migration down_revision | `006_add_memory_layer_tables.py` | Open |
 | DEBT-041 | `create_unstuck_task` commits inside potentially larger transaction | `intelligence_service.py:494` | Open |
-| DEBT-112 | JSON fence stripping in AI service uses naive string ops — fragile | `ai_service.py:482-502` | Open |
+| DEBT-112 | JSON fence stripping in AI service uses naive string ops — fragile | `ai_service.py:482-502` | **Done** (Session 6) |
 
 ### Low Priority (Address when touched)
 
@@ -144,7 +144,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-075 | Momentum PUT endpoint mutates singleton `settings` object in-memory | `settings.py:282-292` | Documented |
 | DEBT-078 | Test run requires explicit venv python | `backend/venv` | Open |
 | DEBT-081 | No app icon (.ico) — installer and exe use default icons | Need `assets/conduital.ico` | Open |
-| DEBT-108 | `AIReviewSummary` loading spinner missing `aria-label` / `role="status"` | `AIReviewSummary.tsx:48` | Open |
+| DEBT-108 | `AIReviewSummary` loading spinner missing `aria-label` / `role="status"` | `AIReviewSummary.tsx:48` | **Done** (Session 6) |
 
 ---
 
@@ -233,7 +233,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-121 | Area Prefix Mapping UX Redesign | Clarify auto-discovery, progressive disclosure |
 | BACKLOG-128 | Badge Configuration & Today's Focus Layout | Standardize badge pattern, accent-bar style |
 | BACKLOG-130 | Momentum Pulse Ring | Animated ring around momentum score on ProjectDetail |
-| BACKLOG-131 | Task Completion Celebration | Checkmark animation with green ripple |
+| BACKLOG-131 | Task Completion Celebration | **Done** (Session 6) — CompleteTaskButton with ripple animation |
 | BACKLOG-132 | Streak Counter on Dashboard | X-day streak badge with flame icon |
 | BACKLOG-133 | Smooth Card Reorder Transitions | FLIP / View Transitions API for card sorting |
 | BACKLOG-134 | Momentum Delta Toast | "+0.05 momentum" toast after task completion |
@@ -243,7 +243,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-138 | Stalled Project Shake | Subtle CSS shake on stalled project cards |
 | BACKLOG-139 | Daily Momentum Heatmap | GitHub-style 90-day heatmap on Dashboard |
 | BACKLOG-141 | List View Column Header Sorting | Sort-by-column with ascending/descending toggle |
-| BACKLOG-142 | localStorage Key Namespacing | User/session prefix to prevent conflicts |
+| BACKLOG-142 | localStorage Key Namespacing | **Done** (Session 6) — all keys use `pt-` prefix |
 
 ---
 
@@ -279,7 +279,7 @@ For each release, verify:
 | Open backlog items | ~70 |
 | Open tech debt | ~18 |
 | Open documentation | 7 |
-| Completed items (archived) | 170+ |
+| Completed items (archived) | 175+ |
 
 *Last updated: 2026-02-12*
 *Full history: `backlog-archive-2026-02-12.md`*

@@ -10,7 +10,7 @@ import { Context, ContextType } from '@/types';
 
 type ViewMode = 'grid' | 'list';
 
-const VIEW_MODE_STORAGE_KEY = 'contextsViewMode';
+const VIEW_MODE_STORAGE_KEY = 'pt-contextsViewMode';
 
 type SortOption = 'name_asc' | 'name_desc' | 'type' | 'created_desc';
 

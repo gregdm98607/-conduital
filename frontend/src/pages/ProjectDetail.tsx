@@ -38,9 +38,9 @@ export function ProjectDetail() {
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<number>>(new Set());
   const [npmExpanded, setNpmExpanded] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('projectDetail.npmExpanded') || 'false');
+      return JSON.parse(localStorage.getItem('pt-projectDetail.npmExpanded') || 'false');
     } catch {
-      localStorage.removeItem('projectDetail.npmExpanded');
+      localStorage.removeItem('pt-projectDetail.npmExpanded');
       return false;
     }
   });
@@ -330,7 +330,7 @@ export function ProjectDetail() {
               onClick={() => {
                 const next = !npmExpanded;
                 setNpmExpanded(next);
-                localStorage.setItem('projectDetail.npmExpanded', JSON.stringify(next));
+                localStorage.setItem('pt-projectDetail.npmExpanded', JSON.stringify(next));
               }}
               className="w-full flex items-center gap-2 p-4 text-left bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30"
             >

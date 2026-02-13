@@ -26,14 +26,14 @@ function applyTheme(theme: Theme) {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const stored = localStorage.getItem('theme') as Theme | null;
+    const stored = localStorage.getItem('pt-theme') as Theme | null;
     return stored && ['light', 'dark', 'system'].includes(stored) ? stored : 'system';
   });
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => applyTheme(theme));
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
+    localStorage.setItem('pt-theme', newTheme);
   };
 
   useEffect(() => {
