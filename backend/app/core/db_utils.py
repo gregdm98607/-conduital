@@ -13,6 +13,19 @@ from app.models.activity_log import ActivityLog
 T = TypeVar("T")
 
 
+def ensure_tz_aware(dt: datetime | None) -> datetime | None:
+    """Ensure datetime is timezone-aware (assume UTC if naive).
+
+    SQLite strips timezone info from DateTime columns. Use this helper
+    before any datetime arithmetic involving model fields.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 def log_activity(
     db: Session,
     entity_type: str,

@@ -17,7 +17,8 @@ from app.core.database import get_db
 from app.models.momentum_snapshot import MomentumSnapshot
 from app.models.project import Project
 from app.schemas.task import Task as TaskSchema
-from app.services.intelligence_service import IntelligenceService, _ensure_tz_aware
+from app.core.db_utils import ensure_tz_aware
+from app.services.intelligence_service import IntelligenceService
 
 router = APIRouter()
 
@@ -537,9 +538,6 @@ def get_stalled_projects(
     Stalled: no activity for 14+ days (stalled_since set).
     At-risk: 7-13 days inactive (not yet stalled but needs attention).
     """
-    from datetime import datetime, timezone
-    from app.services.intelligence_service import _ensure_tz_aware
-
     now = datetime.now(timezone.utc)
     stalled = IntelligenceService.detect_stalled_projects(db)
     stalled_ids = {p.id for p in stalled}
@@ -550,9 +548,9 @@ def get_stalled_projects(
             "title": p.title,
             "momentum_score": p.momentum_score,
             "stalled_since": p.stalled_since.isoformat() if p.stalled_since else None,
-            "days_stalled": (now - p.stalled_since).days if p.stalled_since else None,
+            "days_stalled": (now - ensure_tz_aware(p.stalled_since)).days if p.stalled_since else None,
             "days_since_activity": (
-                (now - p.last_activity_at).days if p.last_activity_at else None
+                (now - ensure_tz_aware(p.last_activity_at)).days if p.last_activity_at else None
             ),
             "is_stalled": True,
         }
@@ -573,7 +571,7 @@ def get_stalled_projects(
             if p.id in stalled_ids:
                 continue
             if p.last_activity_at:
-                days_since = (now - _ensure_tz_aware(p.last_activity_at)).days
+                days_since = (now - ensure_tz_aware(p.last_activity_at)).days
                 if days_since > threshold:
                     results.append({
                         "id": p.id,
@@ -1237,7 +1235,7 @@ def get_rebalance_suggestions(
     for t in opportunity_tasks:
         score = 0.0
         # Older tasks should be demoted first
-        created = _ensure_tz_aware(t.created_at) if t.created_at else None
+        created = ensure_tz_aware(t.created_at) if t.created_at else None
         if created:
             age_days = (now - created).total_seconds() / 86400
             score += min(age_days / 30, 1.0) * 0.4  # Older → more demotable
@@ -1286,7 +1284,7 @@ def get_rebalance_suggestions(
             if excess <= 0:
                 break
             reason_parts = []
-            created = _ensure_tz_aware(t.created_at) if t.created_at else None
+            created = ensure_tz_aware(t.created_at) if t.created_at else None
             if created:
                 age = (now - created).days
                 if age > 7:

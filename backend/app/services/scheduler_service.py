@@ -9,8 +9,10 @@ Handles scheduled background tasks like:
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
+
+from app.core.db_utils import ensure_tz_aware
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -60,7 +62,7 @@ async def momentum_recalculation_job():
         # Detect stalled projects
         stalled_projects = IntelligenceService.detect_stalled_projects(db)
         newly_stalled = [p for p in stalled_projects if p.stalled_since and
-                        (datetime.utcnow() - p.stalled_since).days <= 1]
+                        (datetime.now(timezone.utc) - ensure_tz_aware(p.stalled_since)).days <= 1]
 
         logger.info(
             f"Momentum recalculation complete: "

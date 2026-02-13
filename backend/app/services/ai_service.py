@@ -13,6 +13,8 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Optional
 
+from app.core.db_utils import ensure_tz_aware
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -258,7 +260,7 @@ class AIService:
 
         days_stalled = 0
         if project.stalled_since:
-            days_stalled = (datetime.now(timezone.utc) - project.stalled_since).days
+            days_stalled = (datetime.now(timezone.utc) - ensure_tz_aware(project.stalled_since)).days
 
         return {
             "title": project.title,

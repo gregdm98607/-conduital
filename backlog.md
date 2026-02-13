@@ -129,6 +129,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-023 | Memory migration down_revision | `006_add_memory_layer_tables.py` | Open |
 | DEBT-041 | `create_unstuck_task` commits inside potentially larger transaction | `intelligence_service.py:494` | Open |
 | DEBT-112 | JSON fence stripping in AI service uses naive string ops — fragile | `ai_service.py:482-502` | **Done** (Session 6) |
+| DEBT-115 | TZ-naive datetime arithmetic — `datetime.now(tz) - project.stalled_since` crashes when SQLite returns naive dt | `ai_service.py:261`, `project_service.py:317` | **HIGH** — latent bug |
 
 ### Low Priority (Address when touched)
 
@@ -244,6 +245,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-139 | Daily Momentum Heatmap | GitHub-style 90-day heatmap on Dashboard |
 | BACKLOG-141 | List View Column Header Sorting | Sort-by-column with ascending/descending toggle |
 | BACKLOG-142 | localStorage Key Namespacing | **Done** (Session 6) — all keys use `pt-` prefix |
+| BACKLOG-143 | CompleteTaskButton accessibility (aria-label, focus-visible ring, aria-disabled) | XS — a11y gap in new component |
 
 ---
 

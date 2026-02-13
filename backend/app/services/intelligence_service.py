@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session, joinedload
 logger = logging.getLogger(__name__)
 
 from app.core.config import settings
-from app.core.db_utils import ensure_unique_file_marker, log_activity, update_project_activity
+from app.core.db_utils import ensure_tz_aware, ensure_unique_file_marker, log_activity, update_project_activity
 from app.models.activity_log import ActivityLog
 from app.models.area import Area
 from app.models.inbox import InboxItem
@@ -23,13 +23,8 @@ from app.models.project import Project
 from app.models.task import Task
 
 
-def _ensure_tz_aware(dt: datetime | None) -> datetime | None:
-    """Ensure datetime is timezone-aware (assume UTC if naive)"""
-    if dt is None:
-        return None
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
-    return dt
+# Local alias for backward compat with all call sites
+_ensure_tz_aware = ensure_tz_aware
 
 
 # =============================================================================

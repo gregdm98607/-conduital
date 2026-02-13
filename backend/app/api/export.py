@@ -28,6 +28,7 @@ from app.models.area import Area
 from app.models.goal import Goal
 from app.models.vision import Vision
 from app.schemas.export import ExportData, ExportPreview
+from app.core.db_utils import ensure_tz_aware
 from app.services.export_service import ExportService
 
 logger = logging.getLogger(__name__)
@@ -304,7 +305,7 @@ def export_ai_context(
             if stalled:
                 lines.append("## Stalled Projects (Need Attention)")
                 for p in stalled:
-                    days = (now - p.stalled_since).days if p.stalled_since else 0
+                    days = (now - ensure_tz_aware(p.stalled_since)).days if p.stalled_since else 0
                     total = len(p.tasks or [])
                     done = len([t for t in (p.tasks or []) if t.status == "completed"])
                     next_actions = len([t for t in (p.tasks or []) if t.is_next_action and t.status != "completed"])

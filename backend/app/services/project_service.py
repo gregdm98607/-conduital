@@ -8,7 +8,7 @@ from typing import Optional
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.db_utils import log_activity, update_project_activity
+from app.core.db_utils import ensure_tz_aware, log_activity, update_project_activity
 from app.models.area import Area
 from app.models.project import Project
 from app.models.task import Task
@@ -314,7 +314,7 @@ class ProjectService:
         # Calculate days since activity
         days_since_activity = None
         if project.last_activity_at:
-            delta = datetime.now(timezone.utc) - project.last_activity_at
+            delta = datetime.now(timezone.utc) - ensure_tz_aware(project.last_activity_at)
             days_since_activity = delta.days
 
         # Determine health status

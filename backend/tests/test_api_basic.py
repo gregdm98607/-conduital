@@ -488,19 +488,25 @@ class TestAIEndpointsROADMAP002:
 
     def test_decompose_tasks_no_notes(self, test_client):
         """Task decomposition returns 400 when project has no notes"""
+        from unittest.mock import patch
+
         proj = test_client.post(
             "/api/v1/projects",
             json={"title": "No Notes", "status": "active", "priority": 3},
         )
         project_id = proj.json()["id"]
 
-        response = test_client.post(f"/api/v1/intelligence/ai/decompose-tasks/{project_id}")
+        with patch("app.core.config.settings.AI_FEATURES_ENABLED", True):
+            response = test_client.post(f"/api/v1/intelligence/ai/decompose-tasks/{project_id}")
         assert response.status_code == 400
         assert "no brainstorm" in response.json()["detail"].lower()
 
     def test_decompose_tasks_not_found(self, test_client):
         """Task decomposition returns 404 for non-existent project"""
-        response = test_client.post("/api/v1/intelligence/ai/decompose-tasks/99999")
+        from unittest.mock import patch
+
+        with patch("app.core.config.settings.AI_FEATURES_ENABLED", True):
+            response = test_client.post("/api/v1/intelligence/ai/decompose-tasks/99999")
         assert response.status_code == 404
 
     def test_rebalance_suggestions_empty(self, test_client):
@@ -974,12 +980,13 @@ class TestSession6AIWithMock:
 
     def test_proactive_analysis_error_sanitization(self, test_client):
         """BUG-028/029 regression: proactive analysis errors show type, not raw message"""
+        from unittest.mock import patch
         from app.models.project import Project
         from datetime import datetime
         from app.core.database import get_db
         from app.main import app
 
-        # Create a stalled project (use naive datetime — SQLite strips tz)
+        # Create a stalled project
         proj = test_client.post(
             "/api/v1/projects",
             json={"title": "Error Sanitize Test", "status": "active", "priority": 3},
@@ -993,9 +1000,12 @@ class TestSession6AIWithMock:
         db.commit()
 
         p1, p2, p3, mock_provider = self._enable_ai_and_mock_provider()
-        mock_provider.generate.side_effect = RuntimeError("Sensitive API error: key=abc123")
-
-        with p1, p2, p3:
+        # Mock analyze_project_health to raise — simulates provider error
+        # that escapes internal try/except (e.g. during context building)
+        with p1, p2, p3, patch(
+            "app.services.ai_service.AIService.analyze_project_health",
+            side_effect=RuntimeError("Sensitive API error: key=abc123"),
+        ):
             response = test_client.post("/api/v1/intelligence/ai/proactive-analysis")
         assert response.status_code == 200
         data = response.json()
@@ -1062,3 +1072,126 @@ class TestSession6AIWithMock:
         assert "title" in data
         assert data["status"] == "pending"
         assert data["is_next_action"] is True
+
+
+class TestDEBT115TzNaiveDatetime:
+    """DEBT-115 regression: SQLite strips tz info — datetime arithmetic must not crash."""
+
+    def test_ensure_tz_aware_naive(self):
+        """ensure_tz_aware converts naive datetime to UTC-aware"""
+        from datetime import datetime, timezone
+        from app.core.db_utils import ensure_tz_aware
+
+        naive = datetime(2025, 6, 15, 12, 0, 0)
+        assert naive.tzinfo is None
+        aware = ensure_tz_aware(naive)
+        assert aware.tzinfo == timezone.utc
+        assert aware.year == 2025
+
+    def test_ensure_tz_aware_already_aware(self):
+        """ensure_tz_aware returns aware datetimes unchanged"""
+        from datetime import datetime, timezone
+        from app.core.db_utils import ensure_tz_aware
+
+        aware = datetime(2025, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
+        result = ensure_tz_aware(aware)
+        assert result is aware  # Same object
+
+    def test_ensure_tz_aware_none(self):
+        """ensure_tz_aware returns None for None input"""
+        from app.core.db_utils import ensure_tz_aware
+        assert ensure_tz_aware(None) is None
+
+    def test_project_health_with_naive_stalled_since(self, test_client):
+        """Project health endpoint doesn't crash when stalled_since is naive (simulating SQLite)"""
+        from datetime import datetime
+        from app.core.database import get_db
+        from app.main import app
+        from app.models.project import Project
+
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "TZ Naive Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        # Set naive datetime — simulates what SQLite returns
+        db_gen = app.dependency_overrides[get_db]()
+        db = next(db_gen)
+        p = db.get(Project, project_id)
+        p.stalled_since = datetime(2025, 1, 1, 12, 0, 0)  # naive, no tzinfo
+        p.momentum_score = 0.2
+        db.commit()
+
+        response = test_client.get(f"/api/v1/projects/{project_id}/health")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["health_status"] == "stalled"
+
+    def test_stalled_projects_endpoint_with_naive_datetimes(self, test_client):
+        """Stalled projects list doesn't crash with naive stalled_since and last_activity_at"""
+        from datetime import datetime
+        from app.core.database import get_db
+        from app.main import app
+        from app.models.project import Project
+
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "TZ Stalled Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        db_gen = app.dependency_overrides[get_db]()
+        db = next(db_gen)
+        p = db.get(Project, project_id)
+        p.stalled_since = datetime(2025, 1, 1, 12, 0, 0)  # naive
+        p.last_activity_at = datetime(2024, 12, 15, 8, 0, 0)  # naive
+        p.momentum_score = 0.1
+        db.commit()
+
+        response = test_client.get("/api/v1/intelligence/stalled")
+        assert response.status_code == 200
+        data = response.json()
+        # Should have our project in the stalled list without crashing
+        stalled_ids = [p["id"] for p in data]
+        assert project_id in stalled_ids
+
+    def test_ai_context_build_with_naive_stalled_since(self, test_client):
+        """AI service _build_project_context doesn't crash on naive stalled_since"""
+        from datetime import datetime
+        from app.core.database import get_db
+        from app.main import app
+        from app.models.project import Project
+        from sqlalchemy.orm import joinedload, Session
+        from sqlalchemy import select
+
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "AI Context TZ Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        db_gen = app.dependency_overrides[get_db]()
+        db = next(db_gen)
+        p = db.execute(
+            select(Project)
+            .where(Project.id == project_id)
+            .options(joinedload(Project.tasks), joinedload(Project.area))
+        ).unique().scalar_one()
+        p.stalled_since = datetime(2025, 1, 1)  # naive
+        db.commit()
+
+        from app.services.ai_service import AIService
+        # _build_project_context is called by AI methods — test directly
+        # Use a fresh session for the eager-loaded project
+        p_fresh = db.execute(
+            select(Project)
+            .where(Project.id == project_id)
+            .options(joinedload(Project.tasks), joinedload(Project.area))
+        ).unique().scalar_one()
+
+        # This should NOT raise TypeError
+        service = AIService.__new__(AIService)
+        context = service._build_project_context(db, p_fresh)
+        assert "days_stalled" in context
+        assert context["days_stalled"] >= 0
