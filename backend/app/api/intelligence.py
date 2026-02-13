@@ -301,7 +301,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
 
     # Get active projects stats in one query
     active_projects = db.execute(
-        select(Project).where(Project.status == "active")
+        select(Project).where(Project.status == "active", Project.deleted_at.is_(None))
     ).scalars().all()
 
     active_count = len(active_projects)
@@ -319,6 +319,8 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         .where(
             Project.status == "active",
             Task.status.in_(["pending", "in_progress"]),
+            Task.deleted_at.is_(None),
+            Project.deleted_at.is_(None),
         )
     ).scalar() or 0
 
@@ -343,7 +345,7 @@ def get_momentum_history(
     the current score, previous score, computed trend, and daily snapshots.
     """
     project = db.get(Project, project_id)
-    if not project:
+    if not project or project.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Project not found")
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
@@ -390,7 +392,7 @@ def get_momentum_summary(db: Session = Depends(get_db)):
     momentum score, and per-project details with trend indicators.
     """
     active_projects = (
-        db.execute(select(Project).where(Project.status == "active"))
+        db.execute(select(Project).where(Project.status == "active", Project.deleted_at.is_(None)))
         .scalars()
         .all()
     )
@@ -472,7 +474,7 @@ def calculate_project_momentum(project_id: int, db: Session = Depends(get_db)):
     - Activity frequency (10% weight)
     """
     project = db.get(Project, project_id)
-    if not project:
+    if not project or project.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Project not found")
 
     score = IntelligenceService.calculate_momentum_score(db, project)
@@ -491,7 +493,7 @@ def get_momentum_breakdown(project_id: int, db: Session = Depends(get_db)):
     - Activity Frequency (10%): Actions logged in last 14 days
     """
     project = db.get(Project, project_id)
-    if not project:
+    if not project or project.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Project not found")
 
     breakdown = IntelligenceService.get_momentum_breakdown(db, project)
@@ -517,7 +519,7 @@ def get_project_health(project_id: int, db: Session = Depends(get_db)):
     # Eagerly load tasks to avoid N+1 in health summary
     project = db.execute(
         select(Project)
-        .where(Project.id == project_id)
+        .where(Project.id == project_id, Project.deleted_at.is_(None))
         .options(joinedload(Project.tasks))
     ).unique().scalar_one_or_none()
     if not project:
@@ -563,6 +565,7 @@ def get_stalled_projects(
             select(Project).where(
                 Project.status == "active",
                 Project.stalled_since.is_(None),
+                Project.deleted_at.is_(None),
             )
         ).scalars().all()
 
@@ -608,7 +611,7 @@ def create_unstuck_task(
     - Set to "low" energy level
     """
     project = db.get(Project, project_id)
-    if not project:
+    if not project or project.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Project not found")
 
     # Check if AI is enabled
@@ -748,7 +751,7 @@ def get_weekly_review_ai_summary(db: Session = Depends(get_db)):
     active_projects = (
         db.execute(
             select(Project)
-            .where(Project.status == "active")
+            .where(Project.status == "active", Project.deleted_at.is_(None))
             .options(joinedload(Project.tasks))
         )
         .unique()
@@ -833,7 +836,7 @@ def get_project_review_insight(project_id: int, db: Session = Depends(get_db)):
 
     project = db.execute(
         select(Project)
-        .where(Project.id == project_id)
+        .where(Project.id == project_id, Project.deleted_at.is_(None))
         .options(joinedload(Project.tasks), joinedload(Project.area))
     ).unique().scalars().first()
 
@@ -890,7 +893,7 @@ def analyze_project_with_ai(project_id: int, db: Session = Depends(get_db)):
 
     project = db.execute(
         select(Project)
-        .where(Project.id == project_id)
+        .where(Project.id == project_id, Project.deleted_at.is_(None))
         .options(joinedload(Project.tasks), joinedload(Project.area))
     ).unique().scalars().first()
     if not project:
@@ -933,7 +936,7 @@ def suggest_next_action_with_ai(project_id: int, db: Session = Depends(get_db)):
 
     project = db.execute(
         select(Project)
-        .where(Project.id == project_id)
+        .where(Project.id == project_id, Project.deleted_at.is_(None))
         .options(joinedload(Project.tasks), joinedload(Project.area))
     ).unique().scalars().first()
     if not project:
@@ -972,7 +975,7 @@ def proactive_stalled_analysis(
     active_projects = (
         db.execute(
             select(Project)
-            .where(Project.status == "active")
+            .where(Project.status == "active", Project.deleted_at.is_(None))
             .options(joinedload(Project.tasks), joinedload(Project.area))
         )
         .unique()
@@ -1071,7 +1074,7 @@ def decompose_brainstorm_to_tasks(
         raise HTTPException(status_code=400, detail="AI features not enabled")
 
     project = db.get(Project, project_id)
-    if not project:
+    if not project or project.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Project not found")
 
     notes = (project.brainstorm_notes or "").strip()
@@ -1105,7 +1108,7 @@ def decompose_brainstorm_to_tasks(
     existing_tasks = (
         db.execute(
             select(TaskModel)
-            .where(TaskModel.project_id == project_id, TaskModel.status != "cancelled")
+            .where(TaskModel.project_id == project_id, TaskModel.status != "cancelled", TaskModel.deleted_at.is_(None))
             .limit(20)
         )
         .scalars()
@@ -1213,6 +1216,8 @@ def get_rebalance_suggestions(
                 TaskModel.status == "pending",
                 TaskModel.is_next_action.is_(True),
                 TaskModel.urgency_zone == "opportunity_now",
+                TaskModel.deleted_at.is_(None),
+                Project.deleted_at.is_(None),
             )
             .options(joinedload(TaskModel.project))
         )
@@ -1344,6 +1349,8 @@ def get_energy_recommendations(
             Project.status == "active",
             TaskModel.status == "pending",
             TaskModel.is_next_action.is_(True),
+            TaskModel.deleted_at.is_(None),
+            Project.deleted_at.is_(None),
         )
         .options(joinedload(TaskModel.project))
     )

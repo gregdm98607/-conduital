@@ -186,7 +186,7 @@ class ProjectService:
             Updated project or None
         """
         project = db.get(Project, project_id)
-        if not project:
+        if not project or project.deleted_at is not None:
             return None
 
         # Track changes for activity log
@@ -267,7 +267,7 @@ class ProjectService:
             Updated project or None
         """
         project = db.get(Project, project_id)
-        if not project:
+        if not project or project.deleted_at is not None:
             return None
 
         old_status = project.status

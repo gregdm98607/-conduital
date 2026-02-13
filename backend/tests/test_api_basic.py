@@ -1342,3 +1342,132 @@ class TestSoftDelete:
             assert project.title == "Still In DB"
         finally:
             db.close()
+
+    def test_update_soft_deleted_project_returns_404(self, test_client):
+        """Updating a soft-deleted project should return 404"""
+        create = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Update Ghost", "status": "active", "priority": 5},
+        )
+        project_id = create.json()["id"]
+
+        test_client.delete(f"/api/v1/projects/{project_id}")
+
+        resp = test_client.put(
+            f"/api/v1/projects/{project_id}",
+            json={"title": "Should Fail"},
+        )
+        assert resp.status_code == 404
+
+    def test_complete_soft_deleted_task_returns_404(self, test_client):
+        """Completing a soft-deleted task should return 404"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Task Ghost Proj", "status": "active", "priority": 5},
+        )
+        project_id = proj.json()["id"]
+
+        task = test_client.post(
+            "/api/v1/tasks",
+            json={"title": "Ghost Task", "project_id": project_id, "status": "pending"},
+        )
+        task_id = task.json()["id"]
+
+        test_client.delete(f"/api/v1/tasks/{task_id}")
+
+        resp = test_client.post(f"/api/v1/tasks/{task_id}/complete")
+        assert resp.status_code == 404
+
+    def test_soft_deleted_project_excluded_from_dashboard_stats(self, test_client):
+        """Soft-deleted projects should not count in dashboard stats"""
+        # Create and delete a project
+        create = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Dashboard Ghost", "status": "active", "priority": 5},
+        )
+        project_id = create.json()["id"]
+
+        # Get stats before delete
+        before = test_client.get("/api/v1/intelligence/dashboard-stats")
+        before_count = before.json()["active_project_count"]
+
+        test_client.delete(f"/api/v1/projects/{project_id}")
+
+        # Get stats after delete
+        after = test_client.get("/api/v1/intelligence/dashboard-stats")
+        after_count = after.json()["active_project_count"]
+
+        assert after_count == before_count - 1
+
+    def test_soft_deleted_area_excluded_from_list(self, test_client):
+        """Soft-deleted areas should not appear in area list"""
+        create = test_client.post(
+            "/api/v1/areas",
+            json={"title": "Ghost Area"},
+        )
+        area_id = create.json()["id"]
+
+        test_client.delete(f"/api/v1/areas/{area_id}")
+
+        resp = test_client.get("/api/v1/areas")
+        titles = [a["title"] for a in resp.json()]
+        assert "Ghost Area" not in titles
+
+    def test_update_soft_deleted_area_returns_404(self, test_client):
+        """Updating a soft-deleted area should return 404"""
+        create = test_client.post(
+            "/api/v1/areas",
+            json={"title": "Area Ghost"},
+        )
+        area_id = create.json()["id"]
+
+        test_client.delete(f"/api/v1/areas/{area_id}")
+
+        resp = test_client.put(
+            f"/api/v1/areas/{area_id}",
+            json={"title": "Should Fail"},
+        )
+        assert resp.status_code == 404
+
+    def test_mark_reviewed_soft_deleted_area_returns_404(self, test_client):
+        """Marking a soft-deleted area as reviewed should return 404"""
+        create = test_client.post(
+            "/api/v1/areas",
+            json={"title": "Review Ghost"},
+        )
+        area_id = create.json()["id"]
+
+        test_client.delete(f"/api/v1/areas/{area_id}")
+
+        resp = test_client.post(f"/api/v1/areas/{area_id}/mark-reviewed")
+        assert resp.status_code == 404
+
+    def test_soft_deleted_project_excluded_from_momentum_summary(self, test_client):
+        """Soft-deleted projects should not appear in momentum summary"""
+        create = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Momentum Ghost", "status": "active", "priority": 5},
+        )
+        project_id = create.json()["id"]
+
+        test_client.delete(f"/api/v1/projects/{project_id}")
+
+        resp = test_client.get("/api/v1/intelligence/dashboard/momentum-summary")
+        assert resp.status_code == 200
+        project_ids = [p["id"] for p in resp.json()["projects"]]
+        assert project_id not in project_ids
+
+    def test_change_status_soft_deleted_project_returns_404(self, test_client):
+        """Changing status of a soft-deleted project should return 404"""
+        create = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Status Ghost", "status": "active", "priority": 5},
+        )
+        project_id = create.json()["id"]
+
+        test_client.delete(f"/api/v1/projects/{project_id}")
+
+        resp = test_client.patch(
+            f"/api/v1/projects/{project_id}/status?status=completed",
+        )
+        assert resp.status_code == 404

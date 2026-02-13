@@ -10,6 +10,7 @@ import { Modal } from '../components/common/Modal';
 import { CreateProjectModal } from '../components/projects/CreateProjectModal';
 import { AreaCardSkeleton, TableRowSkeleton } from '@/components/common/Skeleton';
 import { SearchInput } from '@/components/common/SearchInput';
+import { EmptyState } from '@/components/common/EmptyState';
 import { Area } from '@/types';
 
 type ViewMode = 'grid' | 'list';
@@ -406,36 +407,35 @@ export function Areas() {
           />
         )
       ) : allAreas.length === 0 ? (
-        <div className="card text-center py-12">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No areas found</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Create your first area to organize your projects by responsibility
-          </p>
-          <button
-            onClick={handleCreate}
-            className="btn btn-primary inline-flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Create Your First Area
-          </button>
-        </div>
+        <EmptyState
+          variant="areas"
+          title="No areas yet"
+          description="Create your first area to organize projects by responsibility."
+          action={
+            <button onClick={handleCreate} className="btn btn-primary inline-flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Create Your First Area
+            </button>
+          }
+        />
       ) : (
-        <div className="card text-center py-12">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No areas match your filters</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Try adjusting your search or filter criteria
-          </p>
-          <button
-            onClick={() => {
-              setSearchQuery('');
-              setReviewFrequencyFilter('all');
-              setSortBy('frequency_urgency');
-            }}
-            className="btn btn-secondary"
-          >
-            Clear Filters
-          </button>
-        </div>
+        <EmptyState
+          variant="search"
+          title="No areas match your filters"
+          description="Try adjusting your search or filter criteria."
+          action={
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setReviewFrequencyFilter('all');
+                setSortBy('frequency_urgency');
+              }}
+              className="btn btn-secondary"
+            >
+              Clear Filters
+            </button>
+          }
+        />
       )}
 
       {/* Create/Edit Area Modal */}

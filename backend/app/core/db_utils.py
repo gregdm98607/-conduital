@@ -81,7 +81,7 @@ def update_project_activity(db: Session, project_id: int, source: str = "user") 
     from app.models.project import Project
 
     project = db.get(Project, project_id)
-    if project:
+    if project and project.deleted_at is None:
         project.last_activity_at = datetime.now(timezone.utc)
         # Clear stalled status if activity occurs
         if project.stalled_since:

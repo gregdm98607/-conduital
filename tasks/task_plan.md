@@ -1,51 +1,55 @@
-# v1.1.0 Session 8: Backlog Hygiene + Quick Wins + Soft Delete
+# v1.1.0 Session 9: Soft Delete Coverage + Frontend Polish + Release Prep
 
-## Context
-- 263 backend tests, 0 TS errors, clean Vite build
-- Last commit: `c6c5e07` (Session 7)
-- Branch: master, pushed to `gregdm98607/-conduital`
-- CI pipeline green
+## Goal
+Complete soft delete coverage across entire backend, add frontend polish, prep for v1.1.0-beta tag.
 
-## Phase 1: Backlog Housekeeping (No Code)
+## Phase 1: Soft Delete Coverage (Backend) — `in_progress`
+### 1A: Fix `select()` gaps (~36 locations)
+Files to fix:
+- [ ] `app/services/intelligence_service.py` (9 gaps)
+- [ ] `app/services/next_actions_service.py` (6 gaps)
+- [ ] `app/services/export_service.py` (2 gaps)
+- [ ] `app/services/ai_service.py` (2 gaps)
+- [ ] `app/api/intelligence.py` (10 gaps)
+- [ ] `app/api/export.py` (5 gaps)
+- [ ] `app/api/areas.py` (get_area by ID)
 
-Session 7 completed DEBT-115, DIST-041, DIST-042 but didn't mark them Done.
+### 1B: Fix `db.get()` gaps (~24 locations)
+Files to fix:
+- [ ] `app/api/areas.py` (update, delete, mark_reviewed, archive, unarchive)
+- [ ] `app/services/project_service.py` (update, revert)
+- [ ] `app/services/task_service.py` (update, complete, revert)
+- [ ] `app/api/intelligence.py` (6 db.get calls)
+- [ ] `app/api/projects.py` (mark_reviewed)
+- [ ] `app/api/inbox.py` (5 db.get calls)
+- [ ] `app/core/db_utils.py` (log_activity)
+- [ ] `app/sync/sync_engine.py` (2 db.get calls)
 
-1. Mark DEBT-115 → **Done** (Session 7) in backlog.md
-2. Mark DIST-041 → **Done** (Session 7) in backlog.md
-3. Mark DIST-042 → **Done** (Session 7) — CI tests+checks live, installer-on-tag still TODO
-4. Update `backlog.md` Stats section (263 tests)
-5. Update `progress.md` with Session 7 log entry
-6. Update `tasks/lessons.md` with two new lessons from Session 7
+### 1C: Tests for new coverage
+- [ ] Test: updating soft-deleted project → 404
+- [ ] Test: completing soft-deleted task → 404
+- [ ] Test: intelligence queries exclude soft-deleted records
+- [ ] Test: export excludes soft-deleted records
 
-## Phase 2: Quick Wins
+## Phase 2: Frontend Polish (Pick 2-3 XS items) — `pending`
+Candidates:
+- BACKLOG-135: Empty State Illustrations (SVG + copy)
+- BACKLOG-136: Keyboard Shortcut Overlay (? key)
+- BACKLOG-134: Momentum Delta Toast
 
-### BACKLOG-143: CompleteTaskButton Accessibility (XS)
-- Add `aria-label="Complete task"`, `focus-visible` ring, `aria-disabled` attribute
-- Frontend only, no backend changes
+## Phase 3: Release Prep — `pending`
+- [ ] Update version strings to v1.1.0-beta
+- [ ] Review backlog R1.1 section completeness
+- [ ] Tag v1.1.0-beta if criteria met
 
-### DEBT-007: Soft Delete Foundation (S)
-- Add `deleted_at` nullable DateTime column to Project, Task, Area models
-- Alembic migration (017)
-- Implement `soft_delete()` in db_utils.py (replace NotImplementedError)
-- Update delete endpoints to set `deleted_at` instead of hard delete
-- Add `.where(Model.deleted_at.is_(None))` to all list queries
-- Tests for soft delete behavior
+## Phase 4: Verification + Wrap — `pending`
+- [ ] Backend tests pass (target: ~280+)
+- [ ] Frontend TS check: 0 errors
+- [ ] Frontend build: clean
+- [ ] Update backlog.md, progress.md, lessons.md
+- [ ] Commit + push, CI green
 
-## Phase 3: CI Enhancement
-- Add `--cov` flag to pytest for coverage reporting (informational)
-- Verify CI triggers already include main + master
-
-## Phase 4: Verification + Wrap
-1. Run all 3 verification checks
-2. Update backlog.md, progress.md, lessons.md
-3. Commit with clear message
-4. Push to GitHub, verify CI green
-
-## Acceptance Criteria
-- [ ] DEBT-115, DIST-041, DIST-042 marked Done in backlog
-- [ ] Session 7 + 8 log entries in progress.md
-- [ ] CompleteTaskButton has aria-label, focus-visible, aria-disabled
-- [ ] Soft delete works for Project, Task, Area
-- [ ] All tests pass (263+ total)
-- [ ] 0 TypeScript errors, clean Vite build
-- [ ] Committed and pushed
+## Errors Encountered
+| Error | Attempt | Resolution |
+|-------|---------|------------|
+| (none yet) | | |

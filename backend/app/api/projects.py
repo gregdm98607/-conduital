@@ -149,7 +149,7 @@ def mark_project_reviewed(
     Mark a project as reviewed, updating last_reviewed_at timestamp
     """
     project = db.get(ProjectModel, project_id)
-    if not project:
+    if not project or project.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Project not found")
 
     project.last_reviewed_at = datetime.now(timezone.utc)

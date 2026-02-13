@@ -8,6 +8,7 @@ import { ProjectListView } from '../components/projects/ProjectListView';
 import { CreateProjectModal } from '../components/projects/CreateProjectModal';
 import { ProjectCardSkeleton, TableRowSkeleton } from '@/components/common/Skeleton';
 import { SearchInput } from '@/components/common/SearchInput';
+import { EmptyState } from '@/components/common/EmptyState';
 import { Project } from '../types';
 
 type ViewMode = 'grid' | 'list';
@@ -395,32 +396,34 @@ export function Projects() {
           <ProjectListView projects={filteredProjects} />
         )
       ) : allProjects.length === 0 ? (
-        <div className="card text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400 text-lg">No {status} projects found</p>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="btn btn-primary mt-4"
-          >
-            Create Your First Project
-          </button>
-        </div>
+        <EmptyState
+          variant="projects"
+          title={`No ${status || ''} projects yet`}
+          description="Create a project to start tracking your work and building momentum."
+          action={
+            <button onClick={() => setIsCreateModalOpen(true)} className="btn btn-primary">
+              Create Your First Project
+            </button>
+          }
+        />
       ) : (
-        <div className="card text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">No projects match your filters</p>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">
-            Try adjusting your search or filter criteria
-          </p>
-          <button
-            onClick={() => {
-              setSearchQuery('');
-              setPriorityFilter('');
-              setSortBy('priority_desc');
-            }}
-            className="btn btn-secondary"
-          >
-            Clear Filters
-          </button>
-        </div>
+        <EmptyState
+          variant="search"
+          title="No projects match your filters"
+          description="Try adjusting your search or filter criteria."
+          action={
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setPriorityFilter('');
+                setSortBy('priority_desc');
+              }}
+              className="btn btn-secondary"
+            >
+              Clear Filters
+            </button>
+          }
+        />
       )}
 
       {/* Create Project Modal */}

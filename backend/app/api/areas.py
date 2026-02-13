@@ -88,14 +88,14 @@ def get_area(area_id: int, db: Session = Depends(get_db)):
     from sqlalchemy.orm import joinedload
 
     area = db.execute(
-        select(AreaModel).where(AreaModel.id == area_id).options(joinedload(AreaModel.projects))
+        select(AreaModel).where(AreaModel.id == area_id, AreaModel.deleted_at.is_(None)).options(joinedload(AreaModel.projects))
     ).unique().scalar_one_or_none()
 
     if not area:
         raise HTTPException(status_code=404, detail="Area not found")
 
-    # Compute project counts
-    projects = area.projects or []
+    # Compute project counts (exclude soft-deleted projects)
+    projects = [p for p in (area.projects or []) if p.deleted_at is None]
     active_count = sum(1 for p in projects if p.status == "active")
     stalled_count = sum(1 for p in projects if p.stalled_since is not None)
     completed_count = sum(1 for p in projects if p.status == "completed")
@@ -135,7 +135,7 @@ def create_area(area: AreaCreate, db: Session = Depends(get_db)):
 def update_area(area_id: int, area: AreaUpdate, db: Session = Depends(get_db)):
     """Update an area"""
     existing_area = db.get(AreaModel, area_id)
-    if not existing_area:
+    if not existing_area or existing_area.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Area not found")
 
     update_dict = area.model_dump(exclude_unset=True)
@@ -151,7 +151,7 @@ def update_area(area_id: int, area: AreaUpdate, db: Session = Depends(get_db)):
 def delete_area(area_id: int, db: Session = Depends(get_db)):
     """Delete an area"""
     area = db.get(AreaModel, area_id)
-    if not area:
+    if not area or area.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Area not found")
 
     soft_delete(db, area)
@@ -163,7 +163,7 @@ def delete_area(area_id: int, db: Session = Depends(get_db)):
 def mark_area_reviewed(area_id: int, db: Session = Depends(get_db)):
     """Mark an area as reviewed, updating last_reviewed_at timestamp"""
     area = db.get(AreaModel, area_id)
-    if not area:
+    if not area or area.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Area not found")
 
     area.last_reviewed_at = datetime.now(timezone.utc)
@@ -179,7 +179,7 @@ def get_area_health(area_id: int, db: Session = Depends(get_db)):
     from sqlalchemy.orm import joinedload
 
     area = db.execute(
-        select(AreaModel).where(AreaModel.id == area_id).options(joinedload(AreaModel.projects))
+        select(AreaModel).where(AreaModel.id == area_id, AreaModel.deleted_at.is_(None)).options(joinedload(AreaModel.projects))
     ).unique().scalar_one_or_none()
 
     if not area:
@@ -205,7 +205,7 @@ def archive_area(
     from sqlalchemy import select, func
 
     area = db.get(AreaModel, area_id)
-    if not area:
+    if not area or area.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Area not found")
 
     if area.is_archived:
@@ -216,6 +216,7 @@ def archive_area(
         select(func.count(ProjectModel.id)).where(
             ProjectModel.area_id == area_id,
             ProjectModel.status == "active",
+            ProjectModel.deleted_at.is_(None),
         )
     ).scalar_one()
 
@@ -231,6 +232,7 @@ def archive_area(
             select(ProjectModel).where(
                 ProjectModel.area_id == area_id,
                 ProjectModel.status == "active",
+                ProjectModel.deleted_at.is_(None),
             )
         ).scalars().all()
         for project in active_projects:
@@ -248,7 +250,7 @@ def archive_area(
 def unarchive_area(area_id: int, db: Session = Depends(get_db)):
     """Unarchive an area"""
     area = db.get(AreaModel, area_id)
-    if not area:
+    if not area or area.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Area not found")
 
     if not area.is_archived:

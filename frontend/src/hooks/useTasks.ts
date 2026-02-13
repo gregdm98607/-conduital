@@ -3,8 +3,18 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { api } from '@/services/api';
 import type { Task, TaskFilters } from '@/types';
+
+/** Rotating encouraging messages for task completion (BACKLOG-134) */
+const COMPLETION_MESSAGES = [
+  'Task completed! Momentum rising.',
+  'Done! Keep the streak going.',
+  'Checked off! You\'re on a roll.',
+  'Completed! Every task counts.',
+  'Nice work! Moving forward.',
+];
 
 export function useTasks(filters?: TaskFilters) {
   return useQuery({
@@ -72,6 +82,11 @@ export function useCompleteTask() {
       queryClient.invalidateQueries({ queryKey: ['tasks', id] });
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       queryClient.invalidateQueries({ queryKey: ['next-actions'] });
+      queryClient.invalidateQueries({ queryKey: ['momentum'] });
+
+      // BACKLOG-134: Momentum-themed completion toast
+      const msg = COMPLETION_MESSAGES[Math.floor(Math.random() * COMPLETION_MESSAGES.length)];
+      toast.success(msg, { id: 'task-complete' });
     },
   });
 }

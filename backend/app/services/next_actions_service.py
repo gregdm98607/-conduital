@@ -56,6 +56,8 @@ class NextActionsService:
                 Task.status.in_(["pending", "in_progress"]),
                 Project.status == "active",
                 (Task.defer_until.is_(None)) | (Task.defer_until <= today),
+                Task.deleted_at.is_(None),
+                Project.deleted_at.is_(None),
             )
         )
 
@@ -128,6 +130,8 @@ class NextActionsService:
                 Task.status.in_(["pending", "in_progress"]),
                 Task.context.is_not(None),
                 Project.status == "active",
+                Task.deleted_at.is_(None),
+                Project.deleted_at.is_(None),
             )
             .options(joinedload(Task.project))
         )
@@ -168,6 +172,7 @@ class NextActionsService:
         query = select(Project).where(
             Project.status == "active",
             Project.stalled_since.is_not(None),
+            Project.deleted_at.is_(None),
         )
 
         count = len(list(db.execute(query).scalars().all()))
@@ -196,6 +201,8 @@ class NextActionsService:
                 Task.estimated_minutes.is_not(None),
                 Task.estimated_minutes <= 15,
                 Project.status == "active",
+                Task.deleted_at.is_(None),
+                Project.deleted_at.is_(None),
             )
             .options(joinedload(Task.project))
             .order_by(Task.estimated_minutes, Task.priority)
@@ -211,6 +218,8 @@ class NextActionsService:
                 Task.due_date == date.today(),
                 Task.status.in_(["pending", "in_progress"]),
                 Project.status == "active",
+                Task.deleted_at.is_(None),
+                Project.deleted_at.is_(None),
             )
             .options(joinedload(Task.project))
             .order_by(Task.priority)
@@ -223,7 +232,7 @@ class NextActionsService:
         # Get project momentum summary
         momentum_query = (
             select(Project)
-            .where(Project.status == "active")
+            .where(Project.status == "active", Project.deleted_at.is_(None))
             .order_by(Project.momentum_score.desc())
             .limit(10)
         )

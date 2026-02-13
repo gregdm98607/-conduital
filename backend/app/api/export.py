@@ -188,7 +188,7 @@ def export_ai_context(
             project = db.execute(
                 select(Project)
                 .options(joinedload(Project.tasks))
-                .where(Project.id == project_id)
+                .where(Project.id == project_id, Project.deleted_at.is_(None))
             ).unique().scalar_one_or_none()
 
             if not project:
@@ -206,7 +206,7 @@ def export_ai_context(
             area = db.execute(
                 select(Area)
                 .options(joinedload(Area.projects).joinedload(Project.tasks))
-                .where(Area.id == area_id)
+                .where(Area.id == area_id, Area.deleted_at.is_(None))
             ).unique().scalar_one_or_none()
 
             if not area:
@@ -231,7 +231,7 @@ def export_ai_context(
             all_active = db.execute(
                 select(Project)
                 .options(joinedload(Project.tasks))
-                .where(Project.status == "active")
+                .where(Project.status == "active", Project.deleted_at.is_(None))
             ).unique().scalars().all()
 
             active_count = len(all_active)
@@ -271,7 +271,7 @@ def export_ai_context(
             areas = db.execute(
                 select(Area)
                 .options(joinedload(Area.projects).joinedload(Project.tasks))
-                .where(Area.is_archived.is_(False))
+                .where(Area.is_archived.is_(False), Area.deleted_at.is_(None))
                 .order_by(Area.title)
             ).unique().scalars().all()
 
@@ -286,7 +286,7 @@ def export_ai_context(
             orphan_projects = db.execute(
                 select(Project)
                 .options(joinedload(Project.tasks))
-                .where(Project.status == "active", Project.area_id.is_(None))
+                .where(Project.status == "active", Project.area_id.is_(None), Project.deleted_at.is_(None))
                 .order_by(Project.title)
             ).unique().scalars().all()
 

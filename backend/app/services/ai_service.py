@@ -234,7 +234,7 @@ class AIService:
         pending_tasks = (
             db.execute(
                 select(Task)
-                .where(Task.project_id == project.id, Task.status == "pending")
+                .where(Task.project_id == project.id, Task.status == "pending", Task.deleted_at.is_(None))
                 .limit(10)
             )
             .scalars()
@@ -244,7 +244,7 @@ class AIService:
         completed_tasks = (
             db.execute(
                 select(Task)
-                .where(Task.project_id == project.id, Task.status == "completed")
+                .where(Task.project_id == project.id, Task.status == "completed", Task.deleted_at.is_(None))
                 .order_by(Task.completed_at.desc())
                 .limit(5)
             )

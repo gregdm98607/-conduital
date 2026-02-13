@@ -46,6 +46,7 @@ def _calc_graduated_next_action(db: Session, project_id: int, now: datetime) -> 
             Task.project_id == project_id,
             Task.is_next_action.is_(True),
             Task.status == "pending",
+            Task.deleted_at.is_(None),
         )
         .order_by(Task.created_at.desc())
         .limit(1)
@@ -82,6 +83,7 @@ def _calc_sliding_completion(db: Session, project_id: int, now: datetime) -> flo
         select(Task).where(
             Task.project_id == project_id,
             Task.created_at >= window_start,
+            Task.deleted_at.is_(None),
         )
     ).scalars().all()
 
@@ -123,6 +125,7 @@ def _calc_sliding_completion_detail(db: Session, project_id: int, now: datetime)
         select(Task).where(
             Task.project_id == project_id,
             Task.created_at >= window_start,
+            Task.deleted_at.is_(None),
         )
     ).scalars().all()
 
@@ -323,7 +326,7 @@ class IntelligenceService:
         now = datetime.now(timezone.utc)
 
         projects = db.execute(
-            select(Project).where(Project.status == "active")
+            select(Project).where(Project.status == "active", Project.deleted_at.is_(None))
         ).scalars().all()
 
         if not projects:
@@ -337,6 +340,7 @@ class IntelligenceService:
             select(Task).where(
                 Task.project_id.in_(project_ids),
                 Task.created_at >= window_date,
+                Task.deleted_at.is_(None),
             )
         ).scalars().all()
 
@@ -350,6 +354,7 @@ class IntelligenceService:
                 Task.project_id.in_(project_ids),
                 Task.is_next_action.is_(True),
                 Task.status == "pending",
+                Task.deleted_at.is_(None),
             )
         ).scalars().all()
 
@@ -466,7 +471,7 @@ class IntelligenceService:
         now = datetime.now(timezone.utc)
 
         projects = db.execute(
-            select(Project).where(Project.status == "active")
+            select(Project).where(Project.status == "active", Project.deleted_at.is_(None))
         ).scalars().all()
 
         count = 0
@@ -508,6 +513,7 @@ class IntelligenceService:
             select(Project).where(
                 Project.status == "active",
                 Project.stalled_since.is_not(None),
+                Project.deleted_at.is_(None),
             )
         ).scalars().all()
 
@@ -544,6 +550,7 @@ class IntelligenceService:
             .where(
                 Task.project_id == project.id,
                 Task.status == "pending",
+                Task.deleted_at.is_(None),
             )
             .limit(3)
         ).scalars().all()
@@ -893,7 +900,7 @@ class IntelligenceService:
         """
         areas = db.execute(
             select(Area)
-            .where(Area.is_archived.is_(False))
+            .where(Area.is_archived.is_(False), Area.deleted_at.is_(None))
             .options(joinedload(Area.projects))
         ).unique().scalars().all()
 
@@ -919,7 +926,7 @@ class IntelligenceService:
         # Active projects (eagerly load tasks to avoid N+1)
         active_projects = db.execute(
             select(Project)
-            .where(Project.status == "active")
+            .where(Project.status == "active", Project.deleted_at.is_(None))
             .options(joinedload(Project.tasks))
         ).unique().scalars().all()
 
@@ -938,6 +945,7 @@ class IntelligenceService:
             .where(
                 Task.status == "completed",
                 Task.completed_at >= week_ago,
+                Task.deleted_at.is_(None),
             )
         ).scalar_one()
 
@@ -956,7 +964,7 @@ class IntelligenceService:
         # Someday/Maybe count
         someday_maybe_count = db.execute(
             select(func.count(Project.id))
-            .where(Project.status == "someday_maybe")
+            .where(Project.status == "someday_maybe", Project.deleted_at.is_(None))
         ).scalar_one()
 
         return {

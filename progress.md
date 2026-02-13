@@ -1,5 +1,27 @@
 # Progress Log
 
+## Session: 2026-02-13 — v1.1.0 Session 9: Soft Delete Coverage + Frontend Polish + Release Prep
+
+### Phase 1: Soft Delete Coverage Gaps (DEBT-116)
+- Audited entire backend: found 62 missing `deleted_at` filters
+- Phase 1A: Fixed 36 `select()` query gaps across 7 files (intelligence_service, next_actions_service, export_service, ai_service, api/areas, api/intelligence, api/export)
+- Phase 1B: Fixed 24 `db.get()` gaps across 8 files (api/areas, api/projects, api/intelligence, services/project_service, services/task_service, core/db_utils)
+- Phase 1C: Added 8 new regression tests (279 total, all passing)
+
+### Phase 2: Frontend Polish
+- **BACKLOG-134**: Momentum Delta Toast — rotating encouraging messages in `useCompleteTask` hook, removed duplicate toast from AllTasks
+- **BACKLOG-135**: Empty State Illustrations — `EmptyState` component with 5 SVG variants (projects, tasks, areas, search, generic), integrated into Projects, AllTasks, Areas pages
+
+### Phase 3: Release Prep
+- Bumped version to `1.1.0-beta` in `pyproject.toml` and `package.json`
+- Updated backlog: DEBT-116, BACKLOG-134, BACKLOG-135 marked Done
+
+### Test Results
+- Backend: 279 tests passing (was 271)
+- Frontend: 0 TS errors, clean Vite build
+
+---
+
 ## Session: 2026-02-11 — v1.1.0 Session 2: AI Features Integration (ROADMAP-002)
 
 ### Completed Items

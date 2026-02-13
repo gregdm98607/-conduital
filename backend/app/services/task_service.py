@@ -282,7 +282,7 @@ class TaskService:
             Updated task or None
         """
         task = db.get(Task, task_id)
-        if not task:
+        if not task or task.deleted_at is not None:
             return None
 
         # Track changes
@@ -375,7 +375,7 @@ class TaskService:
             Updated task or None
         """
         task = db.get(Task, task_id)
-        if not task:
+        if not task or task.deleted_at is not None:
             return None
 
         task.status = "completed"
@@ -416,7 +416,7 @@ class TaskService:
             Updated task or None
         """
         task = db.get(Task, task_id)
-        if not task:
+        if not task or task.deleted_at is not None:
             return None
 
         task.status = "in_progress"

@@ -183,7 +183,7 @@ class ExportService:
     @classmethod
     def _export_areas(cls, db: Session) -> list[dict[str, Any]]:
         """Export all areas"""
-        query = select(Area).order_by(Area.title)
+        query = select(Area).where(Area.deleted_at.is_(None)).order_by(Area.title)
         areas = db.execute(query).scalars().all()
 
         return [
@@ -264,6 +264,7 @@ class ExportService:
         """Export all projects with their tasks nested"""
         query = (
             select(Project)
+            .where(Project.deleted_at.is_(None))
             .options(joinedload(Project.tasks))
             .order_by(Project.title)
         )

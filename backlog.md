@@ -123,6 +123,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | ID | Description | Location | Status |
 |----|-------------|----------|--------|
 | DEBT-007 | Soft delete not implemented | `db_utils.py:99-106` | **Done** (Session 8) |
+| DEBT-116 | Soft delete coverage gaps — missing `deleted_at` filters in 62 queries | 12 backend files | **Done** (Session 9) |
 | DEBT-010 | Outdated dependencies | `pyproject.toml`, `package.json` | Open |
 | DEBT-021 | Area discovery direct DB session | `auto_discovery_service.py` | Open |
 | DEBT-022 | Area folder pattern reuses project pattern | `auto_discovery_service.py` | Open |
@@ -237,8 +238,8 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-131 | Task Completion Celebration | **Done** (Session 6) — CompleteTaskButton with ripple animation |
 | BACKLOG-132 | Streak Counter on Dashboard | X-day streak badge with flame icon |
 | BACKLOG-133 | Smooth Card Reorder Transitions | FLIP / View Transitions API for card sorting |
-| BACKLOG-134 | Momentum Delta Toast | "+0.05 momentum" toast after task completion |
-| BACKLOG-135 | Empty State Illustrations | SVG illustrations + encouraging copy |
+| BACKLOG-134 | Momentum Delta Toast | **Done** (Session 9) — Rotating encouraging momentum messages in useCompleteTask hook |
+| BACKLOG-135 | Empty State Illustrations | **Done** (Session 9) — EmptyState component with SVG illustrations for projects/tasks/areas/search |
 | BACKLOG-136 | Keyboard Shortcut Overlay | Press `?` for shortcut cheat-sheet |
 | BACKLOG-137 | Momentum Color Glow on Sidebar | Active nav item glow matching avg momentum |
 | BACKLOG-138 | Stalled Project Shake | Subtle CSS shake on stalled project cards |

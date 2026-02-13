@@ -8,6 +8,7 @@ import { Error } from '../components/common/Error';
 import { NextActionSkeleton, TableRowSkeleton } from '../components/common/Skeleton';
 import { SearchInput } from '../components/common/SearchInput';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
+import { EmptyState } from '@/components/common/EmptyState';
 import { TaskListView } from '../components/tasks/TaskListView';
 import { CompleteTaskButton } from '../components/tasks/CompleteTaskButton';
 import { getDueDateInfo } from '../utils/date';
@@ -133,14 +134,7 @@ export function AllTasks() {
   };
 
   const handleComplete = (taskId: number) => {
-    completeTask.mutate(taskId, {
-      onSuccess: () => {
-        toast.success('Task completed!');
-      },
-      onError: () => {
-        toast.error('Failed to complete task', { id: 'task-complete-error' });
-      },
-    });
+    completeTask.mutate(taskId);
   };
 
   // Client-side filtering and sorting
@@ -454,28 +448,32 @@ export function AllTasks() {
           </div>
         )
       ) : allTasks.length === 0 ? (
-        <div className="card text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">No tasks found</p>
-          <p className="text-gray-400 dark:text-gray-500 text-sm">Tasks will appear here once you add them to projects</p>
-        </div>
+        <EmptyState
+          variant="tasks"
+          title="No tasks yet"
+          description="Tasks will appear here once you add them to projects. Start by creating a project!"
+        />
       ) : (
-        <div className="card text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">No tasks match your filters</p>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">Try adjusting your search or filter criteria</p>
-          <button
-            onClick={() => {
-              setSearchQuery('');
-              setStatus('');
-              setContext('');
-              setEnergy('');
-              setProjectFilter('');
-              setNextActionOnly(false);
-            }}
-            className="btn btn-secondary"
-          >
-            Clear Filters
-          </button>
-        </div>
+        <EmptyState
+          variant="search"
+          title="No tasks match your filters"
+          description="Try adjusting your search or filter criteria."
+          action={
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setStatus('');
+                setContext('');
+                setEnergy('');
+                setProjectFilter('');
+                setNextActionOnly(false);
+              }}
+              className="btn btn-secondary"
+            >
+              Clear Filters
+            </button>
+          }
+        />
       )}
 
       {/* Edit Task Modal */}
