@@ -28,8 +28,8 @@ class AreaDiscoveryService:
     def __init__(self, db: Session):
         self.db = db
         self.sync_engine = SyncEngine(db)
-        # Use same pattern as projects: xx.xx Area_Name
-        self.area_pattern = re.compile(settings.PROJECT_FOLDER_PATTERN)
+        # Numbered folder pattern: xx.xx Area_Name
+        self.area_pattern = re.compile(settings.AREA_FOLDER_PATTERN)
 
     def discover_all_areas(self) -> dict:
         """

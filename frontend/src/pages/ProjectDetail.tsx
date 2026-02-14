@@ -6,6 +6,7 @@ import { useArea } from '../hooks/useAreas';
 import { useUpdateTask, useDeleteTask } from '../hooks/useTasks';
 import { Error } from '../components/common/Error';
 import { MomentumBar } from '../components/projects/MomentumBar';
+import { MomentumPulseRing } from '../components/projects/MomentumPulseRing';
 import { MomentumBreakdown } from '../components/projects/MomentumBreakdown';
 import { AIProjectInsights } from '../components/projects/AIProjectInsights';
 import { AITaskDecomposition } from '../components/projects/AITaskDecomposition';
@@ -383,7 +384,12 @@ export function ProjectDetail() {
           isActive={project.status === 'active'}
         />
 
-        <MomentumBar score={project.momentum_score} />
+        <div className="flex items-center gap-6">
+          <MomentumPulseRing score={project.momentum_score} size="md" />
+          <div className="flex-1">
+            <MomentumBar score={project.momentum_score} />
+          </div>
+        </div>
         <MomentumBreakdown projectId={project.id} />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 text-sm">

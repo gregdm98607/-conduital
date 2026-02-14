@@ -124,11 +124,11 @@ This backlog is organized by commercial release milestones. Each release builds 
 |----|-------------|----------|--------|
 | DEBT-007 | Soft delete not implemented | `db_utils.py:99-106` | **Done** (Session 8) |
 | DEBT-116 | Soft delete coverage gaps — missing `deleted_at` filters in 62 queries | 12 backend files | **Done** (Session 9) |
-| DEBT-010 | Outdated dependencies | `pyproject.toml`, `package.json` | Open |
-| DEBT-021 | Area discovery direct DB session | `auto_discovery_service.py` | Open |
-| DEBT-022 | Area folder pattern reuses project pattern | `auto_discovery_service.py` | Open |
-| DEBT-023 | Memory migration down_revision | `006_add_memory_layer_tables.py` | Open |
-| DEBT-041 | `create_unstuck_task` commits inside potentially larger transaction | `intelligence_service.py:494` | Open |
+| DEBT-010 | Outdated dependencies | `pyproject.toml`, `package.json` | **Done** (Session 10) |
+| DEBT-021 | Area discovery direct DB session | `auto_discovery_service.py` | **Done** (Session 10) |
+| DEBT-022 | Area folder pattern reuses project pattern | `auto_discovery_service.py` | **Done** (Session 10) |
+| DEBT-023 | Memory migration down_revision | `006_add_memory_layer_tables.py` | **Done** (Session 10 — verified valid) |
+| DEBT-041 | `create_unstuck_task` commits inside potentially larger transaction | `intelligence_service.py` | **Done** (Session 10) |
 | DEBT-112 | JSON fence stripping in AI service uses naive string ops — fragile | `ai_service.py:482-502` | **Done** (Session 6) |
 | DEBT-115 | TZ-naive datetime arithmetic — `datetime.now(tz) - project.stalled_since` crashes when SQLite returns naive dt | `ai_service.py:261`, `project_service.py:317` | **Done** (Session 7) |
 
@@ -234,13 +234,13 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-118 | Clean Windows VM testing (Win10 + Win11) | Test on VMs with no Python/Node.js |
 | BACKLOG-121 | Area Prefix Mapping UX Redesign | Clarify auto-discovery, progressive disclosure |
 | BACKLOG-128 | Badge Configuration & Today's Focus Layout | Standardize badge pattern, accent-bar style |
-| BACKLOG-130 | Momentum Pulse Ring | Animated ring around momentum score on ProjectDetail |
+| BACKLOG-130 | Momentum Pulse Ring | **Done** (Session 10) — Animated ring on ProjectDetail with color-coded pulse |
 | BACKLOG-131 | Task Completion Celebration | **Done** (Session 6) — CompleteTaskButton with ripple animation |
-| BACKLOG-132 | Streak Counter on Dashboard | X-day streak badge with flame icon |
+| BACKLOG-132 | Streak Counter on Dashboard | **Done** (Session 10) — Flame icon + day count in dashboard stats |
 | BACKLOG-133 | Smooth Card Reorder Transitions | FLIP / View Transitions API for card sorting |
 | BACKLOG-134 | Momentum Delta Toast | **Done** (Session 9) — Rotating encouraging momentum messages in useCompleteTask hook |
 | BACKLOG-135 | Empty State Illustrations | **Done** (Session 9) — EmptyState component with SVG illustrations for projects/tasks/areas/search |
-| BACKLOG-136 | Keyboard Shortcut Overlay | Press `?` for shortcut cheat-sheet |
+| BACKLOG-136 | Keyboard Shortcut Overlay | **Done** (Session 10) — Press `?` for overlay, `g+key` chord navigation |
 | BACKLOG-137 | Momentum Color Glow on Sidebar | Active nav item glow matching avg momentum |
 | BACKLOG-138 | Stalled Project Shake | Subtle CSS shake on stalled project cards |
 | BACKLOG-139 | Daily Momentum Heatmap | GitHub-style 90-day heatmap on Dashboard |
@@ -282,8 +282,8 @@ For each release, verify:
 | Open backlog items | ~66 |
 | Open tech debt | ~15 |
 | Open documentation | 7 |
-| Completed items (archived) | 183+ |
-| Backend tests | 271 |
+| Completed items (archived) | 191+ |
+| Backend tests | 280 |
 
-*Last updated: 2026-02-12 (Session 8)*
+*Last updated: 2026-02-13 (Session 10)*
 *Full history: `backlog-archive-2026-02-12.md`*

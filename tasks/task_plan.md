@@ -1,55 +1,44 @@
-# v1.1.0 Session 9: Soft Delete Coverage + Frontend Polish + Release Prep
+# v1.1.0 Session 10: Tech Debt Cleanup + Frontend Polish
 
 ## Goal
-Complete soft delete coverage across entire backend, add frontend polish, prep for v1.1.0-beta tag.
+Clear remaining medium-priority tech debt, then add 2-3 high-value UX polish items. Maintain 279+ tests, 0 TS errors, clean build.
 
-## Phase 1: Soft Delete Coverage (Backend) — `in_progress`
-### 1A: Fix `select()` gaps (~36 locations)
-Files to fix:
-- [ ] `app/services/intelligence_service.py` (9 gaps)
-- [ ] `app/services/next_actions_service.py` (6 gaps)
-- [ ] `app/services/export_service.py` (2 gaps)
-- [ ] `app/services/ai_service.py` (2 gaps)
-- [ ] `app/api/intelligence.py` (10 gaps)
-- [ ] `app/api/export.py` (5 gaps)
-- [ ] `app/api/areas.py` (get_area by ID)
+## Phase 1: Dependency Audit (DEBT-010) — `complete`
+- [x] Backend: 12 packages updated (alembic, authlib, coverage, cryptography, greenlet, librt, pathspec, platformdirs, python-engineio, python-socketio, typer, click)
+- [x] Frontend: 20 packages updated (patch/minor within constraints)
+- [x] 279 tests passing, 0 TS errors, clean build
 
-### 1B: Fix `db.get()` gaps (~24 locations)
-Files to fix:
-- [ ] `app/api/areas.py` (update, delete, mark_reviewed, archive, unarchive)
-- [ ] `app/services/project_service.py` (update, revert)
-- [ ] `app/services/task_service.py` (update, complete, revert)
-- [ ] `app/api/intelligence.py` (6 db.get calls)
-- [ ] `app/api/projects.py` (mark_reviewed)
-- [ ] `app/api/inbox.py` (5 db.get calls)
-- [ ] `app/core/db_utils.py` (log_activity)
-- [ ] `app/sync/sync_engine.py` (2 db.get calls)
+## Phase 2: DEBT-041 — `create_unstuck_task` commit scope — `complete`
+- [x] Removed `db.commit()` from service method, added to API endpoint caller
+- [x] All 7 unstuck tests pass, 279 total passing
 
-### 1C: Tests for new coverage
-- [ ] Test: updating soft-deleted project → 404
-- [ ] Test: completing soft-deleted task → 404
-- [ ] Test: intelligence queries exclude soft-deleted records
-- [ ] Test: export excludes soft-deleted records
+## Phase 3: DEBT-023 — Alembic migration chain audit — `complete`
+- [x] Verified chain is valid: 015 <- 014 <- ... <- cb7b35ad5824 <- None
+- [x] `006_memory_layer <- d4e5f6g7h8i9` correctly references urgency zone migration
+- [x] No fix needed — chain is intact
 
-## Phase 2: Frontend Polish (Pick 2-3 XS items) — `pending`
-Candidates:
-- BACKLOG-135: Empty State Illustrations (SVG + copy)
-- BACKLOG-136: Keyboard Shortcut Overlay (? key)
-- BACKLOG-134: Momentum Delta Toast
+## Phase 4: DEBT-021/022 — Area discovery service cleanup — `complete`
+- [x] Added `AREA_FOLDER_PATTERN` config setting (separate from `PROJECT_FOLDER_PATTERN`)
+- [x] Updated `AreaDiscoveryService` to use `AREA_FOLDER_PATTERN`
+- [x] Added area methods to `AutoDiscoveryService` (discover_area_folder, handle_area_renamed, handle_area_moved)
+- [x] Simplified area callbacks to use `AutoDiscoveryService` instead of raw `SessionLocal()`
+- [x] 279 tests passing
 
-## Phase 3: Release Prep — `pending`
-- [ ] Update version strings to v1.1.0-beta
-- [ ] Review backlog R1.1 section completeness
-- [ ] Tag v1.1.0-beta if criteria met
+## Phase 5: Frontend Polish — `complete`
+- [x] BACKLOG-136: Keyboard Shortcut Overlay — `?` key toggles, `g+key` chord navigation
+- [x] BACKLOG-130: Momentum Pulse Ring — animated ring on ProjectDetail with score-colored pulse
+- [x] BACKLOG-132: Streak Counter — backend calculates consecutive completion days, flame icon on Dashboard
+- [x] 1 new backend test (280 total), 0 TS errors, clean Vite build
 
-## Phase 4: Verification + Wrap — `pending`
-- [ ] Backend tests pass (target: ~280+)
-- [ ] Frontend TS check: 0 errors
-- [ ] Frontend build: clean
-- [ ] Update backlog.md, progress.md, lessons.md
-- [ ] Commit + push, CI green
+## Phase 6: Verification + Wrap — `complete`
+- [x] Backend tests: 280 passing (1 new)
+- [x] TypeScript: 0 errors
+- [x] Vite production build: clean
+- [x] backlog.md updated (5 DEBT + 3 BACKLOG marked Done)
+- [x] MEMORY.md updated with session progress + test count
+- [x] Commit + push
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |-------|---------|------------|
-| (none yet) | | |
+| Streak test failed — PUT /tasks/{id} doesn't set completed_at | 1 | Changed test to use POST /tasks/{id}/complete |

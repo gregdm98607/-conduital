@@ -201,6 +201,7 @@ class DashboardStatsResponse(BaseModel):
     pending_task_count: int
     avg_momentum: float
     orphan_project_count: int
+    completion_streak_days: int
 
 
 class MomentumSnapshotItem(BaseModel):
@@ -324,11 +325,39 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         )
     ).scalar() or 0
 
+    # Calculate completion streak: consecutive days with at least 1 completed task
+    from datetime import datetime, timezone, timedelta
+
+    today = datetime.now(timezone.utc).date()
+    streak = 0
+    for days_ago in range(0, 90):  # Check up to 90 days back
+        check_date = today - timedelta(days=days_ago)
+        day_start = datetime(check_date.year, check_date.month, check_date.day, tzinfo=timezone.utc)
+        day_end = day_start + timedelta(days=1)
+
+        completed_count = db.execute(
+            select(func.count(Task.id)).where(
+                Task.status == "completed",
+                Task.completed_at >= day_start,
+                Task.completed_at < day_end,
+                Task.deleted_at.is_(None),
+            )
+        ).scalar() or 0
+
+        if completed_count > 0:
+            streak += 1
+        else:
+            # If today has no completions, skip it (streak still counts from yesterday)
+            if days_ago == 0:
+                continue
+            break
+
     return DashboardStatsResponse(
         active_project_count=active_count,
         pending_task_count=pending_count,
         avg_momentum=avg_momentum,
         orphan_project_count=orphan_count,
+        completion_streak_days=streak,
     )
 
 
@@ -629,6 +658,7 @@ def create_unstuck_task(
 
     try:
         task = IntelligenceService.create_unstuck_task(db, project, use_ai=use_ai)
+        db.commit()
         return TaskSchema.model_validate(task)
     except Exception as e:
         logger.error(f"Unstuck task creation failed for project {project_id}: {e}")

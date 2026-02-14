@@ -686,6 +686,7 @@ class TestSession6NonAIEndpoints:
         assert data["pending_task_count"] == 0
         assert data["avg_momentum"] == 0.0
         assert data["orphan_project_count"] == 0
+        assert data["completion_streak_days"] == 0
 
     def test_dashboard_stats_with_data(self, test_client):
         """Dashboard stats counts active projects, pending tasks, orphans"""
@@ -721,6 +722,27 @@ class TestSession6NonAIEndpoints:
         assert data["active_project_count"] == 2
         assert data["pending_task_count"] >= 1
         assert data["orphan_project_count"] >= 1
+
+    def test_dashboard_stats_streak(self, test_client):
+        """Dashboard stats streak counts consecutive days with completed tasks"""
+        # Create project + task, then complete via /complete endpoint (sets completed_at)
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Streak Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+        task = test_client.post(
+            "/api/v1/tasks",
+            json={"project_id": project_id, "title": "Do thing", "status": "pending", "priority": 3},
+        )
+        task_id = task.json()["id"]
+        complete_resp = test_client.post(f"/api/v1/tasks/{task_id}/complete")
+        assert complete_resp.status_code == 200
+
+        response = test_client.get("/api/v1/intelligence/dashboard-stats")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["completion_streak_days"] >= 1
 
     def test_momentum_update(self, test_client):
         """Momentum update endpoint recalculates all project scores"""

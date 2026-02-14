@@ -174,8 +174,9 @@ class Settings(BaseSettings):
         "10": "Personal Development",
         "20": "Research"
     }
-    # Pattern for project folders: xx.xx Project_Name
+    # Pattern for numbered folders: xx.xx Name (used for both projects and areas)
     PROJECT_FOLDER_PATTERN: str = r"^(\d{2})\.(\d{2})\s+(.+)$"
+    AREA_FOLDER_PATTERN: str = r"^(\d{2})\.(\d{2})\s+(.+)$"
 
     # Auto-Discovery (Phase 2)
     AUTO_DISCOVERY_ENABLED: bool = False  # Enable automatic discovery on folder changes

@@ -637,7 +637,7 @@ class IntelligenceService:
             source="system",
         )
 
-        db.commit()
+        # Note: caller is responsible for db.commit()
         return task
 
     @staticmethod

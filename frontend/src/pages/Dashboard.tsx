@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { RefreshCw, Edit2, Calendar, ChevronDown, Star, Clock, AlertCircle, Layers, FolderOpen, CheckCircle, FileText, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { RefreshCw, Edit2, Calendar, ChevronDown, Star, Clock, AlertCircle, Layers, FolderOpen, CheckCircle, FileText, TrendingUp, TrendingDown, Minus, Flame } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNextActions } from '../hooks/useNextActions';
 import { useStalledProjects, useUpdateMomentum } from '../hooks/useProjects';
@@ -81,6 +81,7 @@ export function Dashboard() {
   const pendingTaskCount = dashboardStats?.pending_task_count ?? 0;
   const avgMomentum = dashboardStats?.avg_momentum ?? 0;
   const orphanProjectCount = dashboardStats?.orphan_project_count ?? 0;
+  const streakDays = dashboardStats?.completion_streak_days ?? 0;
 
   // Review frequency intelligence
   const reviewReminders = useMemo(() => {
@@ -145,9 +146,10 @@ export function Dashboard() {
       </header>
 
       {/* Stats Grid */}
-      <div className={`grid grid-cols-1 ${orphanProjectCount > 0 ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-6 mb-8`}>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         {isLoading ? (
           <>
+            <StatsSkeleton />
             <StatsSkeleton />
             <StatsSkeleton />
             <StatsSkeleton />
@@ -169,7 +171,9 @@ export function Dashboard() {
               value={`${(avgMomentum * 100).toFixed(0)}%`}
               color="green"
             />
-            {orphanProjectCount > 0 && (
+            {streakDays > 0 ? (
+              <StreakCard days={streakDays} />
+            ) : orphanProjectCount > 0 ? (
               <Link to="/projects" className="block">
                 <StatsCard
                   title="Orphan Projects"
@@ -177,6 +181,12 @@ export function Dashboard() {
                   color="red"
                 />
               </Link>
+            ) : (
+              <StatsCard
+                title="Streak"
+                value="—"
+                color="yellow"
+              />
             )}
           </>
         )}
@@ -554,6 +564,21 @@ function StatsCard({ title, value, color }: StatsCardProps) {
     <div className={`card border-l-4 ${borderColors[color]}`}>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{title}</p>
       <p className={`text-3xl font-bold ${valueColors[color]}`}>{value}</p>
+    </div>
+  );
+}
+
+function StreakCard({ days }: { days: number }) {
+  return (
+    <div className="card border-l-4 border-l-orange-500">
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Streak</p>
+      <div className="flex items-center gap-2">
+        <Flame className="w-7 h-7 text-orange-500" />
+        <span className="text-3xl font-bold text-orange-700 dark:text-orange-300">{days}</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400 self-end pb-0.5">
+          {days === 1 ? 'day' : 'days'}
+        </span>
+      </div>
     </div>
   );
 }

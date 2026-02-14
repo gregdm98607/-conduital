@@ -20,6 +20,7 @@ import {
   Tag,
 } from 'lucide-react';
 import { UserMenu } from '@/components/auth/UserMenu';
+import { KeyboardShortcutOverlay } from '@/components/common/KeyboardShortcutOverlay';
 
 interface NavItem {
   name: string;
@@ -219,6 +220,9 @@ export function Layout() {
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
+
+      {/* Keyboard Shortcut Overlay */}
+      <KeyboardShortcutOverlay />
     </div>
   );
 }

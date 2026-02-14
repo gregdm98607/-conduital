@@ -332,6 +332,7 @@ class APIClient {
     pending_task_count: number;
     avg_momentum: number;
     orphan_project_count: number;
+    completion_streak_days: number;
   }> {
     const response = await this.client.get('/intelligence/dashboard-stats', { signal });
     return response.data;
