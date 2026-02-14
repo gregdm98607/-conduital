@@ -225,7 +225,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-090 | Data Import from JSON Backup | Complement to export feature |
 | BACKLOG-093 | Quick Capture Success Animation | Visual flash/animation feedback |
 | BACKLOG-095 | Collapsible Sections Pattern Extension | Weekly Review + ProjectDetail task sections |
-| BACKLOG-099 | Archive Area Confirmation Dialog | Warn when area has active projects |
+| BACKLOG-099 | Archive Area Confirmation Dialog | **Done** (Session 1) — Already implemented with Modal + force archive |
 | BACKLOG-104 | Area Health Score Drill-Down + Improvements | Backend ready, frontend needed |
 | BACKLOG-110 | Auto-Discovery as Optional Setting | Toggle on/off independently in Settings |
 | BACKLOG-113 | Website Redesign & Product Launch Content | conduital.com marketing workstream |
@@ -241,9 +241,9 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-134 | Momentum Delta Toast | **Done** (Session 9) — Rotating encouraging momentum messages in useCompleteTask hook |
 | BACKLOG-135 | Empty State Illustrations | **Done** (Session 9) — EmptyState component with SVG illustrations for projects/tasks/areas/search |
 | BACKLOG-136 | Keyboard Shortcut Overlay | **Done** (Session 10) — Press `?` for overlay, `g+key` chord navigation |
-| BACKLOG-137 | Momentum Color Glow on Sidebar | Active nav item glow matching avg momentum |
-| BACKLOG-138 | Stalled Project Shake | Subtle CSS shake on stalled project cards |
-| BACKLOG-139 | Daily Momentum Heatmap | GitHub-style 90-day heatmap on Dashboard |
+| BACKLOG-137 | Momentum Color Glow on Sidebar | **Done** (Session 11) — Active nav item glow matching avg momentum |
+| BACKLOG-138 | Stalled Project Shake | **Done** (Session 11) — CSS shake animation on stalled project cards |
+| BACKLOG-139 | Daily Momentum Heatmap | **Done** (Session 11) — GitHub-style 90-day heatmap on Dashboard |
 | BACKLOG-141 | List View Column Header Sorting | Sort-by-column with ascending/descending toggle |
 | BACKLOG-142 | localStorage Key Namespacing | **Done** (Session 6) — all keys use `pt-` prefix |
 | BACKLOG-143 | CompleteTaskButton accessibility (aria-label, focus-visible ring, aria-disabled) | **Done** (Session 8) |
@@ -279,11 +279,11 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~66 |
-| Open tech debt | ~15 |
+| Open backlog items | ~62 |
+| Open tech debt | ~8 |
 | Open documentation | 7 |
-| Completed items (archived) | 191+ |
-| Backend tests | 280 |
+| Completed items (archived) | 200+ |
+| Backend tests | 284 |
 
-*Last updated: 2026-02-13 (Session 10)*
+*Last updated: 2026-02-14 (Session 11)*
 *Full history: `backlog-archive-2026-02-12.md`*

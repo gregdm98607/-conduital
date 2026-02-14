@@ -243,6 +243,21 @@ class MomentumSummaryResponse(BaseModel):
     projects: list[MomentumSummaryProject]
 
 
+class MomentumHeatmapDay(BaseModel):
+    """Single day in the momentum heatmap"""
+
+    date: str  # YYYY-MM-DD
+    avg_momentum: float  # 0.0-1.0 average across projects
+    completions: int  # tasks completed that day
+
+
+class MomentumHeatmapResponse(BaseModel):
+    """Response for the daily momentum heatmap (BACKLOG-139)"""
+
+    days: int
+    data: list[MomentumHeatmapDay]
+
+
 class ProjectAttentionItem(BaseModel):
     """A project flagged for attention during weekly review"""
 
@@ -465,6 +480,89 @@ def get_momentum_summary(db: Session = Depends(get_db)):
         avg_score=avg_score,
         projects=project_summaries,
     )
+
+
+@router.get("/momentum-heatmap", response_model=MomentumHeatmapResponse)
+def get_momentum_heatmap(
+    days: int = Query(90, ge=7, le=365, description="Number of days to show"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get daily momentum heatmap data (BACKLOG-139).
+
+    Returns an array of daily data points with:
+    - avg_momentum: average momentum score across all active projects that day
+    - completions: count of tasks completed that day
+    """
+    from collections import defaultdict
+    from app.models.task import Task as TaskModel
+
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=days)
+
+    # Get active project IDs (for filtering snapshots to non-deleted projects)
+    active_project_ids = [
+        row[0]
+        for row in db.execute(
+            select(Project.id).where(
+                Project.status == "active", Project.deleted_at.is_(None)
+            )
+        ).all()
+    ]
+
+    # 1) Momentum snapshots grouped by date
+    daily_scores: dict[str, list[float]] = defaultdict(list)
+    if active_project_ids:
+        snapshots = (
+            db.execute(
+                select(MomentumSnapshot)
+                .where(
+                    MomentumSnapshot.project_id.in_(active_project_ids),
+                    MomentumSnapshot.snapshot_at >= cutoff,
+                )
+                .order_by(MomentumSnapshot.snapshot_at)
+            )
+            .scalars()
+            .all()
+        )
+        for snap in snapshots:
+            dt = ensure_tz_aware(snap.snapshot_at)
+            date_str = dt.date().isoformat()
+            daily_scores[date_str].append(snap.score)
+
+    # 2) Task completions grouped by date
+    daily_completions: dict[str, int] = defaultdict(int)
+    completion_rows = db.execute(
+        select(TaskModel.completed_at)
+        .where(
+            TaskModel.completed_at.is_not(None),
+            TaskModel.completed_at >= cutoff,
+            TaskModel.deleted_at.is_(None),
+        )
+    ).all()
+    for (completed_at,) in completion_rows:
+        dt = ensure_tz_aware(completed_at)
+        date_str = dt.date().isoformat()
+        daily_completions[date_str] += 1
+
+    # 3) Build response — fill all days in range (sparse → dense)
+    all_dates: set[str] = set()
+    for d in range(days):
+        all_dates.add((now - timedelta(days=d)).date().isoformat())
+
+    data = []
+    for date_str in sorted(all_dates):
+        scores = daily_scores.get(date_str, [])
+        avg = sum(scores) / len(scores) if scores else 0.0
+        data.append(
+            MomentumHeatmapDay(
+                date=date_str,
+                avg_momentum=round(avg, 3),
+                completions=daily_completions.get(date_str, 0),
+            )
+        )
+
+    return MomentumHeatmapResponse(days=days, data=data)
 
 
 @router.post("/momentum/update", response_model=MomentumUpdateResponse)

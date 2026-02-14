@@ -1,5 +1,69 @@
 # Progress Log
 
+## Session: 2026-02-14 — v1.1.0 Session 11: Backlog Hygiene + Momentum Heatmap + Visual Polish
+
+### Phase 1a: Lessons.md Reconciliation
+- Verified and marked 17 DEBT items as Done in tasks/lessons.md
+- Items: DEBT-044-048, 050, 066, 094-095, 103, 107-114 (fixed in Sessions 4-6 but never checked off)
+
+### Phase 1b: XS/S Debt Sweep (7 items fixed, 2 already done)
+- **DEBT-093**: `.replace('_', ' ')` → `.replace(/_/g, ' ')` in AITaskDecomposition + AIEnergyRecommendations (replaceAll unavailable with current TS target)
+- **DEBT-096**: Removed premature `onSuccess` cache invalidation from `useDecomposeTasksFromNotes`
+- **DEBT-097**: Consolidated `AIProactiveInsights` to use mutation data directly, removed separate useState
+- **DEBT-099**: Added violet border to `AIEnergyRecommendations` card (matches AI theme)
+- **DEBT-100**: Added `aria-expanded`/`aria-controls` to `AIRebalanceSuggestions` expand button
+- **DEBT-101**: Added `aria-label` to `AITaskDecomposition` Plus button
+- **DEBT-105**: Changed Dashboard AI grid spacing from `mb-0` to `mb-8`
+- DEBT-059, DEBT-073: Already fixed — skipped
+
+### Phase 2: BACKLOG-139 Daily Momentum Heatmap
+**Backend:**
+- Added `MomentumHeatmapDay` and `MomentumHeatmapResponse` Pydantic schemas
+- Created `GET /intelligence/momentum-heatmap?days=90` endpoint
+  - Queries MomentumSnapshot grouped by date for daily avg scores
+  - Queries Task.completed_at for daily completion counts
+  - Dense-fills all days in range (no gaps)
+  - Soft-delete aware, uses `ensure_tz_aware()`
+- 4 new tests: empty, with data, default 90 days, invalid days
+- **284 tests passing** (280 + 4 new)
+
+**Frontend:**
+- Added types, API method, `useMomentumHeatmap` hook
+- Created `MomentumHeatmap.tsx` — GitHub-style 13-week × 7-day grid
+  - Emerald color scale (5 levels), tooltip on hover, month/day labels, legend
+  - Loading skeleton, responsive with overflow-x-auto
+- Integrated on Dashboard between stats cards and stalled alerts
+
+### Phase 3: Visual Polish
+- **BACKLOG-137**: Momentum Color Glow on Sidebar — active nav item gets dynamic `box-shadow` with `inset 3px 0` left accent + subtle glow using `getMomentumColor()` from portfolio avg momentum via `useMomentumSummary`
+- **BACKLOG-138**: Stalled Project Shake — `@keyframes stalled-shake` CSS animation (2-3px horizontal, runs once on mount with 0.3s delay) applied to ProjectCard when `project.stalled_since` is set
+- **BACKLOG-099**: Already fully implemented (Areas.tsx lines 458-496) — skipped
+
+### Verification
+- Backend: **284 tests passing** (280 + 4 new)
+- Frontend: **0 TypeScript errors**
+- Vite build: **Clean** (701KB, chunk size warning pre-existing)
+
+### Files Modified
+- `tasks/lessons.md` — reconciled 17 DEBT items
+- `frontend/src/components/projects/AITaskDecomposition.tsx` — DEBT-093, DEBT-101
+- `frontend/src/components/intelligence/AIEnergyRecommendations.tsx` — DEBT-093, DEBT-099
+- `frontend/src/hooks/useIntelligence.ts` — DEBT-096, heatmap hook
+- `frontend/src/components/intelligence/AIProactiveInsights.tsx` — DEBT-097
+- `frontend/src/components/intelligence/AIRebalanceSuggestions.tsx` — DEBT-100
+- `frontend/src/pages/Dashboard.tsx` — DEBT-105, heatmap integration
+- `backend/app/api/intelligence.py` — heatmap endpoint + schemas
+- `backend/tests/test_api_basic.py` — 4 heatmap tests
+- `frontend/src/types/index.ts` — heatmap types
+- `frontend/src/services/api.ts` — heatmap API method
+- `frontend/src/components/intelligence/MomentumHeatmap.tsx` — NEW
+- `frontend/src/components/layout/Layout.tsx` — momentum glow on sidebar
+- `frontend/src/utils/momentum.ts` — (read only, used for glow)
+- `frontend/src/components/projects/ProjectCard.tsx` — stalled shake class
+- `frontend/src/index.css` — stalled-shake keyframes
+
+---
+
 ## Session: 2026-02-13 — v1.1.0 Session 9: Soft Delete Coverage + Frontend Polish + Release Prep
 
 ### Phase 1: Soft Delete Coverage Gaps (DEBT-116)

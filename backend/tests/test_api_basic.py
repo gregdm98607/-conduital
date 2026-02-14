@@ -442,6 +442,75 @@ class TestMomentumHistoryEndpoints:
         assert data["previous_momentum_score"] is None
 
 
+class TestMomentumHeatmap:
+    """Test momentum heatmap endpoint (BACKLOG-139)"""
+
+    def test_heatmap_empty(self, test_client):
+        """Heatmap returns all days with zero values when no data"""
+        response = test_client.get("/api/v1/intelligence/momentum-heatmap", params={"days": 7})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["days"] == 7
+        assert len(data["data"]) == 7
+        # All days should have zero momentum and zero completions
+        for day in data["data"]:
+            assert day["avg_momentum"] == 0.0
+            assert day["completions"] == 0
+            assert "date" in day
+
+    def test_heatmap_with_snapshots_and_completions(self, test_client):
+        """Heatmap includes momentum scores and task completions"""
+        from datetime import datetime, timedelta, timezone
+        from sqlalchemy.orm import Session
+        from app.models.momentum_snapshot import MomentumSnapshot
+        from app.models.task import Task
+
+        # Create a project
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Heatmap Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        # Create a task and complete it
+        task = test_client.post(
+            "/api/v1/tasks",
+            json={"title": "Heatmap Task", "project_id": project_id, "status": "pending", "priority": 3},
+        )
+        task_id = task.json()["id"]
+        test_client.post(f"/api/v1/tasks/{task_id}/complete")
+
+        # Inject a momentum snapshot for today via the DB override
+        # Use the update endpoint which creates snapshots
+        test_client.post("/api/v1/intelligence/momentum/update")
+
+        response = test_client.get("/api/v1/intelligence/momentum-heatmap", params={"days": 7})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["days"] == 7
+        assert len(data["data"]) == 7
+
+        today = datetime.now(timezone.utc).date().isoformat()
+        today_entry = next((d for d in data["data"] if d["date"] == today), None)
+        assert today_entry is not None
+        assert today_entry["completions"] >= 1  # At least 1 task completed today
+
+    def test_heatmap_default_90_days(self, test_client):
+        """Heatmap defaults to 90 days"""
+        response = test_client.get("/api/v1/intelligence/momentum-heatmap")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["days"] == 90
+        assert len(data["data"]) == 90
+
+    def test_heatmap_invalid_days(self, test_client):
+        """Heatmap rejects invalid days param"""
+        response = test_client.get(
+            "/api/v1/intelligence/momentum-heatmap", params={"days": 0}
+        )
+        assert response.status_code == 422
+
+
 class TestAIEndpointsROADMAP002:
     """Test ROADMAP-002 AI feature endpoints"""
 

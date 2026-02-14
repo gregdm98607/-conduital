@@ -218,6 +218,17 @@ export interface MomentumSummary {
   projects: MomentumSummaryProject[];
 }
 
+export interface MomentumHeatmapDay {
+  date: string;
+  avg_momentum: number;
+  completions: number;
+}
+
+export interface MomentumHeatmapResponse {
+  days: number;
+  data: MomentumHeatmapDay[];
+}
+
 export interface DailyDashboard {
   top_3_priorities: Task[];
   quick_wins: Task[];

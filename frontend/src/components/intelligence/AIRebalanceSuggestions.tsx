@@ -30,7 +30,10 @@ export function AIRebalanceSuggestions() {
     <div className="mb-8">
       <div className={`card ${hasOverflow ? 'border border-amber-200 dark:border-amber-800' : ''}`}>
         <button
+          type="button"
           onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+          aria-controls="rebalance-content"
           className="flex items-center justify-between w-full"
         >
           <div className="flex items-center gap-2">
@@ -49,6 +52,7 @@ export function AIRebalanceSuggestions() {
           )}
         </button>
 
+        <div id="rebalance-content">
         {isExpanded && isLoading && (
           <div className="text-sm text-gray-500 flex items-center gap-2 py-3 justify-center mt-2">
             <div className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
@@ -106,6 +110,7 @@ export function AIRebalanceSuggestions() {
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

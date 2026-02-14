@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { api } from '@/services/api';
+import { useMomentumSummary } from '@/hooks/useIntelligence';
+import { getMomentumColor } from '@/utils/momentum';
 import {
   Home,
   Inbox,
@@ -81,6 +83,8 @@ export function Layout() {
   const location = useLocation();
   const [enabledModules, setEnabledModules] = useState<string[] | null>(null);
   const [appVersion, setAppVersion] = useState<string | null>(null);
+  const { data: momentumSummary } = useMomentumSummary();
+  const momentumGlowColor = momentumSummary ? getMomentumColor(momentumSummary.avg_score) : null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -174,10 +178,13 @@ export function Layout() {
                       className={`
                         group flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150
                         ${active
-                          ? 'bg-primary-500/15 text-primary-400 font-medium shadow-sm shadow-primary-500/5'
+                          ? 'bg-primary-500/15 text-primary-400 font-medium'
                           : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
                         }
                       `}
+                      style={active && momentumGlowColor ? {
+                        boxShadow: `inset 3px 0 0 ${momentumGlowColor}, 0 0 8px ${momentumGlowColor}20`,
+                      } : undefined}
                     >
                       <Icon
                         className={`w-[18px] h-[18px] transition-colors ${

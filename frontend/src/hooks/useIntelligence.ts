@@ -66,6 +66,14 @@ export function useCompleteWeeklyReview() {
   });
 }
 
+// BACKLOG-139: Momentum heatmap for dashboard
+export function useMomentumHeatmap(days: number = 90) {
+  return useQuery({
+    queryKey: ['intelligence', 'momentum-heatmap', days],
+    queryFn: ({ signal }) => api.getMomentumHeatmap(days, signal),
+  });
+}
+
 // ROADMAP-002: Proactive stalled project analysis
 export function useProactiveAnalysis() {
   return useMutation({
@@ -75,13 +83,8 @@ export function useProactiveAnalysis() {
 
 // ROADMAP-002: AI task decomposition from brainstorm notes
 export function useDecomposeTasksFromNotes() {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: (projectId: number) => api.decomposeTasksFromNotes(projectId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-    },
   });
 }
 

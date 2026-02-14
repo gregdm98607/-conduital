@@ -17,7 +17,7 @@ export function AIEnergyRecommendations() {
 
   return (
     <div className="mb-8">
-      <div className="card">
+      <div className="card border border-violet-200 dark:border-violet-800">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-amber-500" />
@@ -91,7 +91,7 @@ export function AIEnergyRecommendations() {
                   )}
                   {task.context && (
                     <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-0.5">
-                      <Tag className="w-3 h-3" /> {task.context.replace('_', ' ')}
+                      <Tag className="w-3 h-3" /> {task.context.replace(/_/g, ' ')}
                     </span>
                   )}
                 </div>

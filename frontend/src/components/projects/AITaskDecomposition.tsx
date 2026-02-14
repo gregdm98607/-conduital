@@ -163,6 +163,7 @@ export function AITaskDecomposition({ projectId, hasBrainstormNotes, hasOrganizi
                       onClick={() => handleCreateTask(task, i)}
                       className="text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 shrink-0 mt-0.5"
                       title="Create this task"
+                      aria-label={`Create task: ${task.title}`}
                     >
                       <Plus className="w-4 h-4" />
                     </button>
@@ -181,7 +182,7 @@ export function AITaskDecomposition({ projectId, hasBrainstormNotes, hasOrganizi
                   )}
                   {task.context && (
                     <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-0.5">
-                      <Tag className="w-3 h-3" /> {task.context.replace('_', ' ')}
+                      <Tag className="w-3 h-3" /> {task.context.replace(/_/g, ' ')}
                     </span>
                   )}
                 </div>

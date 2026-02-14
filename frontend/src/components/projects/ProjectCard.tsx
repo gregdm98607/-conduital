@@ -205,7 +205,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const remainingTasks = totalTasks - completedTasks;
 
   return (
-    <div className={`card hover:shadow-lg transition-all ${project.priority >= 8 ? 'border-l-4 border-l-red-500' : project.priority >= 7 ? 'border-l-4 border-l-orange-400' : ''}`}>
+    <div className={`card hover:shadow-lg transition-all ${project.priority >= 8 ? 'border-l-4 border-l-red-500' : project.priority >= 7 ? 'border-l-4 border-l-orange-400' : ''} ${project.stalled_since ? 'animate-stalled-shake' : ''}`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">

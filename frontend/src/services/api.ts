@@ -39,6 +39,7 @@ import type {
   TaskDecompositionResponse,
   RebalanceResponse,
   EnergyRecommendationResponse,
+  MomentumHeatmapResponse,
   WeeklyReviewAISummary,
   ProjectReviewInsight,
   Goal,
@@ -368,6 +369,14 @@ class APIClient {
 
   async getMomentumSummary(signal?: AbortSignal): Promise<MomentumSummary> {
     const response = await this.client.get<MomentumSummary>('/intelligence/dashboard/momentum-summary', { signal });
+    return response.data;
+  }
+
+  async getMomentumHeatmap(days: number = 90, signal?: AbortSignal): Promise<MomentumHeatmapResponse> {
+    const response = await this.client.get<MomentumHeatmapResponse>('/intelligence/momentum-heatmap', {
+      params: { days },
+      signal,
+    });
     return response.data;
   }
 

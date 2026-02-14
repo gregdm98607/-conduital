@@ -2,20 +2,17 @@ import { useState } from 'react';
 import { RefreshCw, AlertCircle, Lightbulb, TrendingDown, ChevronRight, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProactiveAnalysis } from '../../hooks/useIntelligence';
-import type { ProactiveInsight } from '../../types';
+
 
 export function AIProactiveInsights() {
   const proactiveAnalysis = useProactiveAnalysis();
-  const [insights, setInsights] = useState<ProactiveInsight[]>([]);
   const [hasRun, setHasRun] = useState(false);
+
+  const insights = proactiveAnalysis.data?.insights ?? [];
 
   const handleAnalyze = () => {
     setHasRun(true);
-    proactiveAnalysis.mutate(5, {
-      onSuccess: (data) => {
-        setInsights(data.insights);
-      },
-    });
+    proactiveAnalysis.mutate(5);
   };
 
   return (

@@ -282,11 +282,11 @@ For SQLAlchemy self-referential relationships:
 ### Technical Debt Identified
 - [ ] DEBT-042: `_persist_to_env` race condition on concurrent .env writes
 - [ ] DEBT-043: `_persist_to_env` no value sanitization (newlines/special chars)
-- [ ] DEBT-044: Unused imports in settings.py and export.py
-- [ ] DEBT-045: AI context export N+1 query in overview path
-- [ ] DEBT-046: ContextExportModal setState-in-render (same as DEBT-030)
-- [ ] DEBT-047: ContextExportModal stale data + memory leak on unmount
-- [ ] DEBT-048: SQLAlchemy `== False` → `.is_(False)` in export.py
+- [x] DEBT-044: ~~Unused imports in settings.py and export.py~~ → FIXED (Batch 4-6)
+- [x] DEBT-045: ~~AI context export N+1 query in overview path~~ → FIXED (Batch 5-6)
+- [x] DEBT-046: ~~ContextExportModal setState-in-render~~ → FIXED (Batch 4)
+- [x] DEBT-047: ~~ContextExportModal stale data + memory leak~~ → FIXED (Batch 4)
+- [x] DEBT-048: ~~SQLAlchemy `== False` → `.is_(False)`~~ → FIXED (Batch 4, 3 files)
 - [ ] DEBT-049: Collapsible section buttons missing `type="button"` and `aria-expanded`
 
 ### Potential Backlog Items
@@ -327,7 +327,7 @@ For SQLAlchemy self-referential relationships:
 **Rule:** Any onboarding/setup endpoint should handle re-entry gracefully — check for existing data and update rather than fail or duplicate.
 
 ### Technical Debt Identified
-- [ ] DEBT-050: Unused `timedelta` import in ai_service.py
+- [x] DEBT-050: ~~Unused `timedelta` import in ai_service.py~~ → FIXED (Batch 5-6)
 - [ ] DEBT-051: Inconsistent BaseModel naming in memory_layer/routes.py (`PydanticBaseModel` alias)
 - [ ] DEBT-052: Empty model dropdown edge case in Settings.tsx when provider_models not yet loaded
 
@@ -424,7 +424,7 @@ For SQLAlchemy self-referential relationships:
 - [x] DEBT-055: ~~ContextExportModal missing backdrop~~ → N/A (already has backdrop via Modal)
 - [ ] DEBT-064: "Processed Today" count needs dedicated API endpoint (current fix shows 0 when viewing unprocessed tab)
 - [ ] DEBT-065: API client methods don't accept AbortSignal — prevents true HTTP request cancellation
-- [ ] DEBT-066: SQLAlchemy `== True` pattern exists in 8 locations (intelligence_service.py ×3, next_actions_service.py ×3, task_service.py ×1, memory_layer/services.py ×1)
+- [x] DEBT-066: ~~SQLAlchemy `== True` pattern~~ → FIXED (Batch 5-6, all 8 locations)
 - [ ] DEBT-067: FastAPI `@app.on_event("startup"/"shutdown")` deprecated — migrate to lifespan context manager (9 deprecation warnings in test output)
 - [ ] DEBT-068: Pydantic V1-style `class Config` and `Field(example=...)` deprecated — migrate to `ConfigDict` and `json_schema_extra`
 - [ ] DEBT-069: conftest.py `in_memory_engine` fixture missing `StaticPool` — will break if used with multi-session patterns
@@ -652,10 +652,10 @@ For SQLAlchemy self-referential relationships:
 **Rule:** Only invalidate query caches when the underlying data actually changes. A read/compute operation (like AI decomposition) should not invalidate the entity cache.
 
 ### Technical Debt Identified
-- [ ] BUG-027: Rebalance endpoint `due_date` type check — `isinstance(t.due_date, datetime)` always False for date columns; critical_now promotion is dead code
+- [x] BUG-027: ~~Rebalance due_date type check~~ → FIXED (Session 4)
 - [ ] DEBT-093: `String.replace('_', ' ')` only replaces first underscore in AITaskDecomposition.tsx and AIEnergyRecommendations.tsx (2 locations)
-- [ ] DEBT-094: `handleCreateAll` in AITaskDecomposition fires N parallel mutations without throttling + uses `indexOf` for index lookup
-- [ ] DEBT-095: AIEnergyRecommendations and AIRebalanceSuggestions missing error state handling (no isError destructure)
+- [x] DEBT-094: ~~handleCreateAll parallel mutations~~ → FIXED (Session 4, async/await loop)
+- [x] DEBT-095: ~~Missing error state in AI components~~ → FIXED (Session 4, AlertCircle UI)
 - [ ] DEBT-096: `useDecomposeTasksFromNotes` hook invalidates `['projects']` cache prematurely (decomposition doesn't modify data)
 - [ ] DEBT-097: AIProactiveInsights stores data in both mutation result AND separate useState (split source of truth)
 - [ ] DEBT-098: `getProactiveAnalysis` and `decomposeTasksFromNotes` API methods lack AbortSignal support (POST mutations to slow AI endpoints)
@@ -663,7 +663,7 @@ For SQLAlchemy self-referential relationships:
 - [ ] DEBT-100: AIRebalanceSuggestions expand/collapse button missing `aria-expanded` and `aria-controls`
 - [ ] DEBT-101: AITaskDecomposition "Create this task" Plus button missing `aria-label`
 - [ ] DEBT-102: Proactive analysis and decompose endpoints missing upfront ANTHROPIC_API_KEY check (inconsistent with other AI endpoints; falls back to try/except)
-- [ ] DEBT-103: Proactive analysis per-project error handler leaks raw exception strings to client
+- [x] DEBT-103: ~~Proactive analysis leaks raw exceptions~~ → FIXED (Session 4, sanitized message)
 - [ ] DEBT-104: Task decomposition AI response parsing is fragile (pipe-delimited text); no error indication when zero tasks are parsed
 - [ ] DEBT-105: Dashboard AI grid uses `mb-0` (layout inconsistency — all other sections use `mb-8`)
 - [ ] DEBT-106: Rebalance and Energy endpoints don't use AI but live under `/ai/` URL path (misleading)
@@ -725,14 +725,14 @@ For SQLAlchemy self-referential relationships:
 - [x] DEBT-103: Proactive analysis leaks raw exceptions → FIXED (sanitized message)
 
 ### Technical Debt Identified
-- [ ] DEBT-107: New AI API methods (`getWeeklyReviewAISummary`, `getProjectReviewInsight`) missing `signal?: AbortSignal` — inconsistent with other API methods (`api.ts:875-881`)
-- [ ] DEBT-108: `AIReviewSummary` loading spinner missing `aria-label` / `role="status"` for screen readers (`AIReviewSummary.tsx:48`)
-- [ ] DEBT-109: `projectInsight.mutate()` can fire multiple times for same project — no deduplication or cancellation (`WeeklyReviewPage.tsx:95`)
-- [ ] DEBT-110: `completeReview.mutate()` has no `onError` callback — user won't know if review completion fails (`WeeklyReviewPage.tsx:365`)
-- [ ] DEBT-111: N+1 query in `get_weekly_review_ai_summary` — loops per-project for MomentumSnapshot instead of single batch query (`intelligence.py:922-940`)
-- [ ] DEBT-112: JSON fence stripping in AI service uses naive string ops — embedded triple-backticks in narrative could break parsing (`ai_service.py:482-502`)
-- [ ] DEBT-113: `getWeekKey()` ISO week calculation doesn't match ISO 8601 Thursday rule — may assign wrong week number (`WeeklyReviewPage.tsx:27-30`)
-- [ ] DEBT-114: `AIReviewSummary` renders `attention_items` without null check — partial API response could crash component (`AIReviewSummary.tsx:104-107`)
+- [x] DEBT-107: ~~AI API methods missing AbortSignal~~ → FIXED (Session 5)
+- [x] DEBT-108: ~~AIReviewSummary spinner missing aria-label~~ → FIXED (Session 6)
+- [x] DEBT-109: ~~projectInsight.mutate() fires multiple times~~ → FIXED (Session 5, dedup Set)
+- [x] DEBT-110: ~~completeReview.mutate() no onError~~ → FIXED (Session 5, toast.error)
+- [x] DEBT-111: ~~N+1 query in weekly review AI summary~~ → FIXED (Session 5, batch subquery)
+- [x] DEBT-112: ~~JSON fence stripping fragile~~ → FIXED (Session 6)
+- [x] DEBT-113: ~~getWeekKey() ISO week calculation~~ → FIXED (Session 5, Thursday rule)
+- [x] DEBT-114: ~~AIReviewSummary null check~~ → FIXED (Session 5, nullish coalescing)
 
 ### Potential Backlog Items
 1. **BACKLOG-142 (candidate):** localStorage keys should be namespaced by user/session for multi-user scenarios (`weeklyReviewChecklist` key would conflict)

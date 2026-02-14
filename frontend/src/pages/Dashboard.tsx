@@ -12,6 +12,7 @@ import { AIDashboardSuggestions } from '../components/intelligence/AIDashboardSu
 import { AIProactiveInsights } from '../components/intelligence/AIProactiveInsights';
 import { AIEnergyRecommendations } from '../components/intelligence/AIEnergyRecommendations';
 import { AIRebalanceSuggestions } from '../components/intelligence/AIRebalanceSuggestions';
+import { MomentumHeatmap } from '../components/intelligence/MomentumHeatmap';
 import { StatsSkeleton, NextActionSkeleton } from '../components/common/Skeleton';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { ContextExportModal } from '../components/common/ContextExportModal';
@@ -241,6 +242,9 @@ export function Dashboard() {
         </div>
       )}
 
+      {/* Momentum Heatmap — BACKLOG-139 */}
+      <MomentumHeatmap />
+
       {/* Stalled Projects Alert */}
       {!stalledLoading && stalled && stalled.length > 0 && (
         <div className="mb-8">
@@ -257,7 +261,7 @@ export function Dashboard() {
       <AIProactiveInsights />
 
       {/* AI Intelligence Grid — ROADMAP-002 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <AIEnergyRecommendations />
         <AIRebalanceSuggestions />
       </div>

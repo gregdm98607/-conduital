@@ -107,6 +107,20 @@
   stroke-dashoffset: 24;
 }
 
+/* Stalled project shake animation (BACKLOG-138) */
+@keyframes stalled-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-2px); }
+  30% { transform: translateX(2px); }
+  45% { transform: translateX(-2px); }
+  60% { transform: translateX(1px); }
+  75% { transform: translateX(-1px); }
+}
+
+.animate-stalled-shake {
+  animation: stalled-shake 0.5s ease-in-out 0.3s 1;
+}
+
 /* Momentum Pulse Ring animation */
 @keyframes momentum-pulse {
   0%, 100% {
