@@ -1,5 +1,37 @@
 # Progress Log
 
+## Session: 2026-02-14 — v1.1.0 Session 12: Heatmap Quality + List View UX
+
+### Warmup: task_plan.md Reconciliation
+- Marked Phase 1A (ROADMAP-002) and Phase 1B (ROADMAP-007) as fully ✅ Done
+- Updated Implementation Order section with actual session history (Sessions 4-12)
+- Added Session 12 entry with correct objectives
+
+### Part A: Heatmap Quality Sweep (5 items)
+- **DEBT-117**: Extracted shared `MOMENTUM_THRESHOLDS` constant to `momentum.ts`, updated `getMomentumLevel()` and `getHeatmapColor()` in heatmap to use it
+- **DEBT-118**: Added `project_id.in_(active_project_ids)` filter to heatmap completions query in `intelligence.py` — deleted/archived project tasks no longer inflate counts; added test `test_heatmap_excludes_deleted_project_completions` (285 tests total)
+- **DEBT-119**: Full a11y rewrite — `role="grid"`, `aria-labelledby`, `role="gridcell"` with `aria-label`, `role="columnheader"`/`role="rowheader"`, keyboard navigation (arrow keys, Home, End), roving tabindex, `focus:ring-2` styling
+- **DEBT-120**: Replaced fragile absolute positioning with CSS Grid (`inline-grid` with `gridTemplateColumns`/`gridTemplateRows`)
+- **BACKLOG-144**: Added `onTouchStart` handler on cells + document-level `touchstart` listener to dismiss tooltip on outside touch
+
+### Part B: BACKLOG-076 List View Design Standard
+- Created `SortableHeader` + `StaticHeader` shared components in `components/common/SortableHeader.tsx`
+  - Clickable column headers with sort direction indicators (ChevronUp/ChevronDown/ChevronsUpDown)
+  - `aria-sort` attribute for accessibility
+  - Active/inactive visual states
+- Updated `ProjectListView.tsx`: conditional SortableHeader/StaticHeader rendering when sort props provided
+- Updated `Projects.tsx`: `parseSortOption()` helper, wired sort props to ProjectListView, skeleton headers use StaticHeader
+- Updated `TaskListView.tsx`: same pattern — sortable Task/Priority/Due Date columns, static Project/Status/Context/Energy/Est. Time/Actions
+- Updated `AllTasks.tsx`: `parseSortOption()` helper, wired sort props to TaskListView, skeleton headers use StaticHeader
+- Also fixed `.replace('_', ' ')` → `.replace(/_/g, ' ')` in ProjectListView `formatStatus()`
+
+### Verification
+- TypeScript: 0 errors
+- Backend: 285 tests passing
+- Vite build: clean
+
+---
+
 ## Session: 2026-02-14 — v1.1.0 Session 11: Backlog Hygiene + Momentum Heatmap + Visual Polish
 
 ### Phase 1a: Lessons.md Reconciliation

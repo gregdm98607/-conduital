@@ -2,9 +2,13 @@ import { Link } from 'react-router-dom';
 import { Flame, TrendingUp, Minus, AlertCircle, Eye } from 'lucide-react';
 import { Project } from '../../types';
 import { formatRelativeTime, daysSince } from '../../utils/date';
+import { SortableHeader, StaticHeader, SortDirection } from '../common/SortableHeader';
 
 interface ProjectListViewProps {
   projects: Project[];
+  sortKey?: string;
+  sortDirection?: SortDirection;
+  onSort?: (key: string, direction: SortDirection) => void;
 }
 
 // Get badge class based on project status
@@ -30,7 +34,7 @@ function formatStatus(status: string): string {
   if (status === 'someday_maybe') {
     return 'Someday/Maybe';
   }
-  return status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
 // Get priority indicator info
@@ -122,40 +126,47 @@ function getReviewIndicator(project: Project): { label: string; colorClass: stri
   };
 }
 
-export function ProjectListView({ projects }: ProjectListViewProps) {
+export function ProjectListView({ projects, sortKey, sortDirection, onSort }: ProjectListViewProps) {
+  const hasSorting = sortKey && sortDirection && onSort;
+
+  const headerProps = (key: string) => ({
+    sortKey: key,
+    currentSortKey: sortKey || '',
+    currentDirection: sortDirection || ('desc' as SortDirection),
+    onSort: onSort || (() => {}),
+  });
+
   return (
     <div className="card overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-800 border-b">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Title
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Area
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Priority
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Momentum
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Review
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Tasks
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Last Activity
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Target Date
-              </th>
+              {hasSorting ? (
+                <>
+                  <SortableHeader label="Title" {...headerProps('title')} />
+                  <StaticHeader label="Area" />
+                  <StaticHeader label="Status" />
+                  <SortableHeader label="Priority" {...headerProps('priority')} />
+                  <SortableHeader label="Momentum" {...headerProps('momentum')} />
+                  <StaticHeader label="Review" />
+                  <StaticHeader label="Tasks" />
+                  <SortableHeader label="Last Activity" {...headerProps('activity')} />
+                  <SortableHeader label="Target Date" {...headerProps('target')} />
+                </>
+              ) : (
+                <>
+                  <StaticHeader label="Title" />
+                  <StaticHeader label="Area" />
+                  <StaticHeader label="Status" />
+                  <StaticHeader label="Priority" />
+                  <StaticHeader label="Momentum" />
+                  <StaticHeader label="Review" />
+                  <StaticHeader label="Tasks" />
+                  <StaticHeader label="Last Activity" />
+                  <StaticHeader label="Target Date" />
+                </>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">

@@ -13,6 +13,7 @@ import { TaskListView } from '../components/tasks/TaskListView';
 import { CompleteTaskButton } from '../components/tasks/CompleteTaskButton';
 import { getDueDateInfo } from '../utils/date';
 import type { Task } from '../types';
+import { StaticHeader, type SortDirection } from '../components/common/SortableHeader';
 
 type ViewMode = 'grid' | 'list';
 type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'waiting' | 'cancelled';
@@ -65,6 +66,14 @@ const energyOptions = [
   { value: 'medium', label: 'Medium Energy' },
   { value: 'low', label: 'Low Energy' },
 ];
+
+/** Parse SortOption ("priority_desc") into key + direction */
+function parseSortOption(opt: SortOption): { key: string; direction: SortDirection } {
+  const parts = opt.split('_');
+  const direction = parts.pop() as SortDirection;
+  const key = parts.join('_');
+  return { key, direction };
+}
 
 export function AllTasks() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -399,15 +408,15 @@ export function AllTasks() {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Task</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Project</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Priority</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Context</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Energy</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Due Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Est. Time</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                  <StaticHeader label="Task" />
+                  <StaticHeader label="Project" />
+                  <StaticHeader label="Status" />
+                  <StaticHeader label="Priority" />
+                  <StaticHeader label="Context" />
+                  <StaticHeader label="Energy" />
+                  <StaticHeader label="Due Date" />
+                  <StaticHeader label="Est. Time" />
+                  <StaticHeader label="Actions" />
                 </tr>
               </thead>
               <tbody>
@@ -432,6 +441,9 @@ export function AllTasks() {
             onComplete={handleComplete}
             onEdit={handleOpenTask}
             isUpdating={updateTask.isPending || completeTask.isPending}
+            sortKey={parseSortOption(sortBy).key}
+            sortDirection={parseSortOption(sortBy).direction}
+            onSort={(key, dir) => setSortBy(`${key}_${dir}` as SortOption)}
           />
         ) : (
           <div className="space-y-4">

@@ -25,7 +25,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 | ID | Description | Status | Notes |
 |----|-------------|--------|-------|
-| BACKLOG-076 | **List View Design Standard** | Deferred to R2 | UX consistency + column header sorting (see BACKLOG-141) |
+| BACKLOG-076 | **List View Design Standard** | Done (S12) | SortableHeader/StaticHeader components, wired in Projects + AllTasks pages |
 | DOC-005 | **Module System Documentation** | Deferred to R2 | User-facing docs |
 
 ---
@@ -147,10 +147,10 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-078 | Test run requires explicit venv python | `backend/venv` | Open |
 | DEBT-081 | No app icon (.ico) — installer and exe use default icons | Need `assets/conduital.ico` | **Done** (Session 1) |
 | DEBT-108 | `AIReviewSummary` loading spinner missing `aria-label` / `role="status"` | `AIReviewSummary.tsx:48` | **Done** (Session 6) |
-| DEBT-117 | Heatmap color thresholds (0.25/0.5/0.75) inconsistent with `getMomentumLevel()` (0.2/0.4/0.7) | `MomentumHeatmap.tsx:9-15` | Open |
-| DEBT-118 | Heatmap task completions don't filter by project active status — deleted/archived project tasks inflate count | `intelligence.py:535-542` | Open |
-| DEBT-119 | MomentumHeatmap missing a11y — no `aria-label` on grid cells, no keyboard nav, tooltip mouse-only | `MomentumHeatmap.tsx` | Open |
-| DEBT-120 | Heatmap month labels use fragile absolute positioning (`col * 16 + 32px`) | `MomentumHeatmap.tsx:122` | Open |
+| DEBT-117 | Heatmap color thresholds (0.25/0.5/0.75) inconsistent with `getMomentumLevel()` (0.2/0.4/0.7) | `MomentumHeatmap.tsx:9-15` | Done (S12) |
+| DEBT-118 | Heatmap task completions don't filter by project active status — deleted/archived project tasks inflate count | `intelligence.py:535-542` | Done (S12) |
+| DEBT-119 | MomentumHeatmap missing a11y — no `aria-label` on grid cells, no keyboard nav, tooltip mouse-only | `MomentumHeatmap.tsx` | Done (S12) |
+| DEBT-120 | Heatmap month labels use fragile absolute positioning (`col * 16 + 32px`) | `MomentumHeatmap.tsx:122` | Done (S12) |
 
 ---
 
@@ -251,7 +251,8 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-141 | List View Column Header Sorting | Sort-by-column with ascending/descending toggle |
 | BACKLOG-142 | localStorage Key Namespacing | **Done** (Session 6) — all keys use `pt-` prefix |
 | BACKLOG-143 | CompleteTaskButton accessibility (aria-label, focus-visible ring, aria-disabled) | **Done** (Session 8) |
-| BACKLOG-144 | MomentumHeatmap mobile touch support | Tooltip uses onMouseEnter only — needs touch interaction for mobile |
+| BACKLOG-144 | MomentumHeatmap mobile touch support | Done (S12) — onTouchStart + document touchstart listener |
+| BACKLOG-145 | **AI Features End-to-End Testing & Bug Fix Session** | Dedicated session to test all 7 AI components through the frontend UI, fix runtime errors, standardize error handling patterns (status code detection is inconsistent across components), verify AI-configured vs not-configured states. Weekly Review Co-Pilot works well — others need validation. See: AIDashboardSuggestions, AIProactiveInsights, AIEnergyRecommendations, AIRebalanceSuggestions, AIProjectInsights, AITaskDecomposition, AIReviewSummary |
 
 ---
 

@@ -3,6 +3,7 @@ import { Calendar, Flag, Zap, Clock, ChevronDown } from 'lucide-react';
 import { Task } from '../../types';
 import { getDueDateInfo } from '../../utils/date';
 import { CompleteTaskButton } from './CompleteTaskButton';
+import { SortableHeader, StaticHeader, SortDirection } from '../common/SortableHeader';
 
 interface TaskListViewProps {
   tasks: Task[];
@@ -10,6 +11,9 @@ interface TaskListViewProps {
   onComplete?: (taskId: number) => void;
   onEdit?: (task: Task) => void;
   isUpdating?: boolean;
+  sortKey?: string;
+  sortDirection?: SortDirection;
+  onSort?: (key: string, direction: SortDirection) => void;
 }
 
 type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'waiting' | 'cancelled';
@@ -49,40 +53,47 @@ function getEnergyInfo(level?: string): { label: string; colorClass: string } | 
   }
 }
 
-export function TaskListView({ tasks, onStatusChange, onComplete, onEdit, isUpdating }: TaskListViewProps) {
+export function TaskListView({ tasks, onStatusChange, onComplete, onEdit, isUpdating, sortKey, sortDirection, onSort }: TaskListViewProps) {
+  const hasSorting = sortKey && sortDirection && onSort;
+
+  const headerProps = (key: string) => ({
+    sortKey: key,
+    currentSortKey: sortKey || '',
+    currentDirection: sortDirection || ('desc' as SortDirection),
+    onSort: onSort || (() => {}),
+  });
+
   return (
     <div className="card overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-800 border-b">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Task
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Project
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Priority
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Context
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Energy
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Due Date
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Est. Time
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Actions
-              </th>
+              {hasSorting ? (
+                <>
+                  <SortableHeader label="Task" {...headerProps('title')} />
+                  <StaticHeader label="Project" />
+                  <StaticHeader label="Status" />
+                  <SortableHeader label="Priority" {...headerProps('priority')} />
+                  <StaticHeader label="Context" />
+                  <StaticHeader label="Energy" />
+                  <SortableHeader label="Due Date" {...headerProps('due_date')} />
+                  <StaticHeader label="Est. Time" />
+                  <StaticHeader label="Actions" />
+                </>
+              ) : (
+                <>
+                  <StaticHeader label="Task" />
+                  <StaticHeader label="Project" />
+                  <StaticHeader label="Status" />
+                  <StaticHeader label="Priority" />
+                  <StaticHeader label="Context" />
+                  <StaticHeader label="Energy" />
+                  <StaticHeader label="Due Date" />
+                  <StaticHeader label="Est. Time" />
+                  <StaticHeader label="Actions" />
+                </>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">

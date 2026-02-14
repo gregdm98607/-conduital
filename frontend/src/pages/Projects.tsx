@@ -10,6 +10,7 @@ import { ProjectCardSkeleton, TableRowSkeleton } from '@/components/common/Skele
 import { SearchInput } from '@/components/common/SearchInput';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Project } from '../types';
+import { StaticHeader, type SortDirection } from '../components/common/SortableHeader';
 
 type ViewMode = 'grid' | 'list';
 
@@ -43,6 +44,14 @@ const sortOptions: { value: SortOption; label: string }[] = [
   { value: 'created_desc', label: 'Created (Newest)' },
   { value: 'created_asc', label: 'Created (Oldest)' },
 ];
+
+/** Parse SortOption ("priority_desc") into key + direction */
+function parseSortOption(opt: SortOption): { key: string; direction: SortDirection } {
+  const parts = opt.split('_');
+  const direction = parts.pop() as SortDirection;
+  const key = parts.join('_');
+  return { key, direction };
+}
 
 export function Projects() {
   const [status, setStatus] = useState<string>('active');
@@ -368,13 +377,13 @@ export function Projects() {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Title</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Area</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Priority</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Momentum</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tasks</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Last Activity</th>
+                  <StaticHeader label="Title" />
+                  <StaticHeader label="Area" />
+                  <StaticHeader label="Status" />
+                  <StaticHeader label="Priority" />
+                  <StaticHeader label="Momentum" />
+                  <StaticHeader label="Tasks" />
+                  <StaticHeader label="Last Activity" />
                 </tr>
               </thead>
               <tbody>
@@ -393,7 +402,12 @@ export function Projects() {
             ))}
           </div>
         ) : (
-          <ProjectListView projects={filteredProjects} />
+          <ProjectListView
+            projects={filteredProjects}
+            sortKey={parseSortOption(sortBy).key}
+            sortDirection={parseSortOption(sortBy).direction}
+            onSort={(key, dir) => setSortBy(`${key}_${dir}` as SortOption)}
+          />
         )
       ) : allProjects.length === 0 ? (
         <EmptyState

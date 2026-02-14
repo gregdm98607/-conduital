@@ -1,6 +1,6 @@
 # Task Plan: v1.1.0 Full Commercial Release
 
-**Status:** in_progress (Session 11 complete)
+**Status:** in_progress (Session 12 in progress)
 **Date:** 2026-02-14
 **Goal:** First full commercial release of Conduital — AI-augmented productivity with all modules enabled.
 **Version:** v1.0.0-beta → v1.1.0
@@ -31,8 +31,8 @@ The beta already ships: momentum intelligence, GTD inbox, file sync, horizons (g
 - NPM fields already fed into AI prompts (BACKLOG-124 done)
 
 **Work needed:**
-- [ ] AI analysis summary on ProjectDetail (prominent placement)
-- [ ] AI-suggested next actions surfaced on Dashboard ("AI recommends...")
+- [x] AI analysis summary on ProjectDetail (prominent placement) ✅
+- [x] AI-suggested next actions surfaced on Dashboard ("AI recommends...") ✅
 - [x] Proactive stalled project analysis (auto-trigger when momentum drops) ✅
 - [x] AI task decomposition from brainstorm notes (NPM Step 3 → tasks) ✅
 - [x] Priority rebalancing suggestions when Opportunity Now overflows ✅
@@ -47,12 +47,12 @@ The beta already ships: momentum intelligence, GTD inbox, file sync, horizons (g
 **Current state:** Weekly review is a localStorage-based checklist (BACKLOG-024 done) with completion tracking (BETA-030 done). No AI involvement.
 
 **Work needed:**
-- [ ] AI review co-pilot: "Let's review your projects. Project X has been stalled for 14 days. What's blocking it?"
-- [ ] AI-generated review summary: portfolio health, trend analysis, recommendations
-- [ ] AI identifies projects that need attention (stalled, declining momentum, overdue reviews)
-- [ ] Suggested next actions for each reviewed project
-- [ ] Review session persistence (save AI dialogue + user decisions)
-- [ ] Integration with existing weekly review completion tracking
+- [x] AI review co-pilot: "Let's review your projects. Project X has been stalled for 14 days. What's blocking it?" ✅
+- [x] AI-generated review summary: portfolio health, trend analysis, recommendations ✅
+- [x] AI identifies projects that need attention (stalled, declining momentum, overdue reviews) ✅
+- [x] Suggested next actions for each reviewed project ✅
+- [x] Review session persistence (save AI dialogue + user decisions) ✅
+- [x] Integration with existing weekly review completion tracking ✅
 
 **Estimated sessions:** 2-3
 
@@ -62,13 +62,14 @@ The beta already ships: momentum intelligence, GTD inbox, file sync, horizons (g
 
 ### Phase 2A: UI Consistency & Missing Features
 
-| ID | Task | Est. |
-|----|------|------|
-| BACKLOG-104 | Area Health Drill-Down UI (backend ready) | 1-2h |
-| BACKLOG-128 | Badge Configuration & Today's Focus layout | 2-3h |
-| BACKLOG-101 | Dashboard Stats Block visual consistency | 1-2h |
-| BACKLOG-099 | Archive Area confirmation dialog | 1h |
-| BACKLOG-062 | Project Standard of Excellence | 2-3h |
+| ID | Task | Est. | Status |
+|----|------|------|--------|
+| BACKLOG-104 | Area Health Drill-Down UI (backend ready) | 1-2h | ✅ Done (Session 1) |
+| BACKLOG-128 | Badge Configuration & Today's Focus layout | 2-3h | Open |
+| BACKLOG-101 | Dashboard Stats Block visual consistency | 1-2h | ✅ Done (Session 5) |
+| BACKLOG-099 | Archive Area confirmation dialog | 1h | ✅ Done (Session 1) |
+| BACKLOG-076 | List View Design Standard — sorting UX | 2-3h | Open |
+| BACKLOG-062 | Project Standard of Excellence | 2-3h | Open |
 
 ### Phase 2B: Data & Memory Features
 
@@ -168,37 +169,56 @@ The beta already ships: momentum intelligence, GTD inbox, file sync, horizons (g
 - ~~Priority rebalancing suggestions (Opportunity Now overflow)~~ ✅
 - ~~Energy-matched task recommendations~~ ✅
 
-### Session 4-5: AI Weekly Review Co-Pilot (ROADMAP-007)
-- AI review dialogue system
-- Review summary generation
-- Integration with existing review tracking
-- Review session persistence
+### Session 4-5: AI Weekly Review Co-Pilot (ROADMAP-007) ✅ DONE
+- ~~AI review dialogue system~~ ✅
+- ~~Review summary generation~~ ✅
+- ~~Integration with existing review tracking~~ ✅
+- ~~AI error handling (BUG-028/029)~~ ✅
+- ~~Dashboard polish (BACKLOG-140/101)~~ ✅
+- ~~9 DEBT items (DEBT-107/109/111/113/114 + warmup fixes)~~ ✅
 
-### Session 6: UI Polish Batch (Phase 2A)
-- BACKLOG-128: Badge configuration
-- BACKLOG-101: Dashboard stats consistency
-- BACKLOG-062: Project Standard of Excellence
+### Session 6: Commit + Tests + UX Polish ✅ DONE
+- ~~Committed Sessions 4+5 work~~ ✅
+- ~~25 new tests (257 total)~~ ✅
+- ~~DEBT-108/112 + BACKLOG-131/142 UX polish~~ ✅
 
-### Session 7: Data & Memory Features (Phase 2B)
-- BACKLOG-090: Data import
-- BACKLOG-082: Session summary capture
-- BACKLOG-087: Starter templates
+### Session 7: TZ Fix + GitHub + CI ✅ DONE
+- ~~DEBT-115 tz-naive fix (6 locations, 6 regression tests)~~ ✅
+- ~~GitHub remote setup + CI pipeline green~~ ✅
 
-### Session 8: Tech Debt & Docs (Phase 2C)
-- DEBT-010: Dependency updates
-- DOC-005, DOC-001, DOC-002: Documentation
+### Session 8: Soft Delete + a11y ✅ DONE
+- ~~DEBT-007 soft delete (SoftDeleteMixin, migration 015, 8 tests)~~ ✅
+- ~~BACKLOG-143 a11y~~ ✅
+- ~~Backlog hygiene (5 items marked Done)~~ ✅
 
-### Session 9: Distribution (Phase 3)
-- DIST-030: Code signing setup
-- BACKLOG-118: Windows VM testing
-- BACKLOG-117: Upgrade testing
-- Installer rebuild with icon + signing
+### Session 9: Soft Delete Coverage + Polish + Version Bump ✅ DONE
+- ~~DEBT-116 soft delete coverage (62 gaps, 8 new tests, 279 total)~~ ✅
+- ~~BACKLOG-134/135 frontend polish~~ ✅
+- ~~Version bump to 1.1.0-beta~~ ✅
 
-### Session 10: Release (Phase 5)
-- Version bump, CHANGELOG, full test suite
-- Build signed installer
-- Clean VM smoke test
-- Tag + distribute
+### Session 10: Tech Debt + Frontend Polish + Deps ✅ DONE
+- ~~DEBT-010/021/022/023/041~~ ✅
+- ~~BACKLOG-130/132/136 (pulse ring, streak counter, keyboard shortcuts)~~ ✅
+- ~~12 backend + 20 frontend dependency updates~~ ✅
+
+### Session 11: Heatmap + Visual Polish + Debt Sweep ✅ DONE
+- ~~Backlog hygiene (17 DEBT items reconciled)~~ ✅
+- ~~XS/S debt sweep (7 items)~~ ✅
+- ~~BACKLOG-139 momentum heatmap (backend + frontend)~~ ✅
+- ~~BACKLOG-137/138 visual polish (sidebar glow, stalled shake)~~ ✅
+- ~~284 tests passing~~ ✅
+
+### Session 12: Heatmap Quality + List View UX (Phase 2A)
+
+#### Part A: Heatmap Quality Sweep (5 items)
+- DEBT-117: Align heatmap color thresholds with shared `MOMENTUM_THRESHOLDS` constants
+- DEBT-118: Filter heatmap task completions by project active status
+- DEBT-119: Heatmap a11y — `aria-label` on grid cells, keyboard navigation
+- DEBT-120: Heatmap month labels — replace fragile absolute positioning with CSS grid
+- BACKLOG-144: Heatmap mobile touch support for tooltips
+
+#### Part B: Phase 2A UI Polish
+- BACKLOG-076: List View Design Standard — consistent column headers + sorting UX
 
 ---
 

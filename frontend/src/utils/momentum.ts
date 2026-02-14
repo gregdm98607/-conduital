@@ -2,12 +2,19 @@
  * Momentum scoring utilities
  */
 
+/** Shared thresholds for momentum level boundaries (used by heatmap, labels, colors) */
+export const MOMENTUM_THRESHOLDS = {
+  LOW: 0.2,
+  MODERATE: 0.4,
+  STRONG: 0.7,
+} as const;
+
 export type MomentumLevel = 'weak' | 'low' | 'moderate' | 'strong';
 
 export function getMomentumLevel(score: number): MomentumLevel {
-  if (score >= 0.7) return 'strong';
-  if (score >= 0.4) return 'moderate';
-  if (score >= 0.2) return 'low';
+  if (score >= MOMENTUM_THRESHOLDS.STRONG) return 'strong';
+  if (score >= MOMENTUM_THRESHOLDS.MODERATE) return 'moderate';
+  if (score >= MOMENTUM_THRESHOLDS.LOW) return 'low';
   return 'weak';
 }
 

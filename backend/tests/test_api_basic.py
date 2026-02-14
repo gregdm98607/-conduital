@@ -510,6 +510,40 @@ class TestMomentumHeatmap:
         )
         assert response.status_code == 422
 
+    def test_heatmap_excludes_deleted_project_completions(self, test_client):
+        """Heatmap task completions exclude tasks from deleted/archived projects (DEBT-118)"""
+        from datetime import datetime, timezone
+
+        # Create project, create task, complete it
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Delete Me", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+        task = test_client.post(
+            "/api/v1/tasks",
+            json={"title": "Doomed Task", "project_id": project_id, "status": "pending", "priority": 3},
+        )
+        task_id = task.json()["id"]
+        test_client.post(f"/api/v1/tasks/{task_id}/complete")
+
+        # Verify completion shows before delete
+        response = test_client.get("/api/v1/intelligence/momentum-heatmap", params={"days": 7})
+        today = datetime.now(timezone.utc).date().isoformat()
+        today_entry = next((d for d in response.json()["data"] if d["date"] == today), None)
+        assert today_entry is not None
+        completions_before = today_entry["completions"]
+        assert completions_before >= 1
+
+        # Soft-delete the project
+        test_client.delete(f"/api/v1/projects/{project_id}")
+
+        # After delete, completions should decrease
+        response = test_client.get("/api/v1/intelligence/momentum-heatmap", params={"days": 7})
+        today_entry = next((d for d in response.json()["data"] if d["date"] == today), None)
+        assert today_entry is not None
+        assert today_entry["completions"] < completions_before
+
 
 class TestAIEndpointsROADMAP002:
     """Test ROADMAP-002 AI feature endpoints"""

@@ -530,16 +530,21 @@ def get_momentum_heatmap(
             date_str = dt.date().isoformat()
             daily_scores[date_str].append(snap.score)
 
-    # 2) Task completions grouped by date
+    # 2) Task completions grouped by date (only from active, non-deleted projects)
     daily_completions: dict[str, int] = defaultdict(int)
-    completion_rows = db.execute(
-        select(TaskModel.completed_at)
-        .where(
-            TaskModel.completed_at.is_not(None),
-            TaskModel.completed_at >= cutoff,
-            TaskModel.deleted_at.is_(None),
+    completion_query = select(TaskModel.completed_at).where(
+        TaskModel.completed_at.is_not(None),
+        TaskModel.completed_at >= cutoff,
+        TaskModel.deleted_at.is_(None),
+    )
+    if active_project_ids:
+        completion_query = completion_query.where(
+            TaskModel.project_id.in_(active_project_ids)
         )
-    ).all()
+    else:
+        # No active projects → no completions to count
+        completion_query = completion_query.where(False)
+    completion_rows = db.execute(completion_query).all()
     for (completed_at,) in completion_rows:
         dt = ensure_tz_aware(completed_at)
         date_str = dt.date().isoformat()
