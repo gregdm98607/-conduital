@@ -30,6 +30,13 @@
 - Backend: 285 tests passing
 - Vite build: clean
 
+### Post-Session Audit (4 new DEBT items)
+- **DEBT-121**: `getMomentumColorClass()` in ProjectListView uses 0.7/0.5/0.3 — drifted from shared `MOMENTUM_THRESHOLDS` (0.7/0.4/0.2)
+- **DEBT-122**: SortableHeader button missing `focus:` ring styling — WCAG keyboard nav gap
+- **DEBT-123**: TaskListView `getEnergyInfo()` missing `dark:` color variants
+- **DEBT-124**: `parseSortOption()` duplicated in Projects.tsx and AllTasks.tsx — extract to utility
+- Also marked BACKLOG-141 as Done (subsumed by BACKLOG-076)
+
 ---
 
 ## Session: 2026-02-14 — v1.1.0 Session 11: Backlog Hygiene + Momentum Heatmap + Visual Polish

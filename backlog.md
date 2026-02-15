@@ -151,6 +151,10 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-118 | Heatmap task completions don't filter by project active status — deleted/archived project tasks inflate count | `intelligence.py:535-542` | Done (S12) |
 | DEBT-119 | MomentumHeatmap missing a11y — no `aria-label` on grid cells, no keyboard nav, tooltip mouse-only | `MomentumHeatmap.tsx` | Done (S12) |
 | DEBT-120 | Heatmap month labels use fragile absolute positioning (`col * 16 + 32px`) | `MomentumHeatmap.tsx:122` | Done (S12) |
+| DEBT-121 | `getMomentumColorClass()` in `ProjectListView.tsx` uses 0.7/0.5/0.3 thresholds — drifted from `MOMENTUM_THRESHOLDS` (0.7/0.4/0.2) | `ProjectListView.tsx:75-79` | Open |
+| DEBT-122 | SortableHeader button missing `focus:` ring styling — fails WCAG keyboard nav | `SortableHeader.tsx:31` | Open |
+| DEBT-123 | TaskListView `getEnergyInfo()` missing `dark:` color variants — energy labels hard to read in dark mode | `TaskListView.tsx:46-50` | Open |
+| DEBT-124 | `parseSortOption()` duplicated in Projects.tsx and AllTasks.tsx — extract to shared utility | `Projects.tsx:49`, `AllTasks.tsx:71` | Open |
 
 ---
 
@@ -248,7 +252,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-137 | Momentum Color Glow on Sidebar | **Done** (Session 11) — Active nav item glow matching avg momentum |
 | BACKLOG-138 | Stalled Project Shake | **Done** (Session 11) — CSS shake animation on stalled project cards |
 | BACKLOG-139 | Daily Momentum Heatmap | **Done** (Session 11) — GitHub-style 90-day heatmap on Dashboard |
-| BACKLOG-141 | List View Column Header Sorting | Sort-by-column with ascending/descending toggle |
+| BACKLOG-141 | List View Column Header Sorting | **Done** (S12) — subsumed by BACKLOG-076; SortableHeader component + wiring |
 | BACKLOG-142 | localStorage Key Namespacing | **Done** (Session 6) — all keys use `pt-` prefix |
 | BACKLOG-143 | CompleteTaskButton accessibility (aria-label, focus-visible ring, aria-disabled) | **Done** (Session 8) |
 | BACKLOG-144 | MomentumHeatmap mobile touch support | Done (S12) — onTouchStart + document touchstart listener |
