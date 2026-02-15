@@ -85,6 +85,12 @@ This backlog is organized by commercial release milestones. Each release builds 
 |----|-------------|--------|--------|
 | - | Multi-user / Teams | Future | Post-R4 |
 
+### Inter-App Integration
+
+| ID | Description | Status | Target | Notes |
+|----|-------------|--------|--------|-------|
+| ROADMAP-011 | **Conduital ↔ Board of Advisors Bi-Directional Local API** | Needs Design | R3+ | Both apps in `C:\Dev\`; share data & functions via local REST/IPC. Requires design doc first — define shared data model, auth model, API surface, sync conflict resolution. |
+
 ### Storage & Sync
 
 | ID | Description | Status | Target |
@@ -155,6 +161,14 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-122 | SortableHeader button missing `focus:` ring styling — fails WCAG keyboard nav | `SortableHeader.tsx:31` | **Done** (S13) |
 | DEBT-123 | TaskListView `getEnergyInfo()` missing `dark:` color variants — energy labels hard to read in dark mode | `TaskListView.tsx:46-50` | **Done** (S13) |
 | DEBT-124 | `parseSortOption()` duplicated in Projects.tsx and AllTasks.tsx — extract to shared utility | `Projects.tsx:49`, `AllTasks.tsx:71` | **Done** (S13) |
+| DEBT-125 | TaskListView due date status colors missing `dark:` variants — hard to read in dark mode | `TaskListView.tsx:205-208` | Open |
+| DEBT-126 | TaskListView default due date color `text-gray-600` insufficient contrast in dark mode | `TaskListView.tsx:208` | Open |
+| DEBT-127 | `aiErrors.ts` missing handlers for 429 (rate limit) and 502/503/504 (gateway errors) | `utils/aiErrors.ts:9-20` | Open |
+| DEBT-128 | AIDashboardSuggestions uses `getAIErrorStatus()` directly instead of `getAIErrorMessage()` like other components | `AIDashboardSuggestions.tsx:50-54` | Open |
+| DEBT-129 | `parseSortOption()` lacks defensive validation for malformed input | `utils/sort.ts:5-7` | Open |
+| DEBT-130 | Decompose-tasks generic exception handler leaks `str(e)` in detail — should sanitize | `intelligence.py:1319-1321` | Open |
+| DEBT-131 | Rebalance/energy endpoint soft-delete filters — verify subqueries respect `deleted_at` | `intelligence.py:1345-1485` | Open |
+| DEBT-132 | SortableHeader `focus-visible:ring-offset-1` may cause visual overflow in tight table headers | `SortableHeader.tsx:31` | Open |
 
 ---
 
