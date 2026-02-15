@@ -1,5 +1,49 @@
 # Progress Log
 
+## Session: 2026-02-14 — v1.1.0 Session 13: Debt Cleanup + AI E2E Validation
+
+### Warmup: 4 Debt Items from Session 12 Post-Audit
+- **DEBT-121**: Fixed `getMomentumColorClass()` in ProjectListView — replaced hardcoded 0.7/0.5/0.3 thresholds with `MOMENTUM_THRESHOLDS` import (0.7/0.4/0.2)
+- **DEBT-122**: Added WCAG `focus-visible:ring-2` styling to SortableHeader button
+- **DEBT-123**: Added `dark:` color variants to `getEnergyInfo()` in TaskListView (red-400, yellow-400, green-400)
+- **DEBT-124**: Created shared `utils/sort.ts` with `parseSortOption()`, removed duplicates from Projects.tsx and AllTasks.tsx
+
+### Part A: BACKLOG-145 AI Features End-to-End Validation
+**Frontend (6 components standardized):**
+- Created shared `utils/aiErrors.ts` with `getAIErrorStatus()` and `getAIErrorMessage()` utilities
+- Fixed AIDashboardSuggestions: replaced fragile `errMsg.includes('400')` with `getAIErrorStatus()` status code check
+- Fixed AIEnergyRecommendations: added `error` to destructured hook result, wired `getAIErrorMessage()`
+- Fixed AITaskDecomposition: replaced `error.message.includes('400')` with `getAIErrorMessage()`
+- Standardized AIProactiveInsights: replaced inline status check with shared utility
+- Standardized AIReviewSummary: replaced generic error with `getAIErrorMessage()`
+- Standardized AIProjectInsights: replaced local `getAIErrorMessage()` method with shared import
+
+**Backend (1 fix + 13 tests):**
+- Sanitized decompose-tasks error — no longer leaks raw exception in HTTP response
+- Added `TestSession13AIEdgeCases` class with 13 new tests:
+  - AI disabled state (5 endpoints: analyze, suggest, weekly-review, proactive, review-project)
+  - No API key test
+  - Decompose tasks: no notes, error sanitization
+  - Rebalance suggestions: happy path, works without AI
+  - Energy recommendations: happy path, no matching tasks
+  - Proactive analysis: no stalled projects
+
+**Browser Testing (7 AI components verified):**
+- AIDashboardSuggestions: "AI not configured" error ✓
+- AIProactiveInsights: Per-project "AI not configured" with momentum scores ✓
+- AIEnergyRecommendations: Low/Med/High energy buttons, task list renders ✓
+- AIRebalanceSuggestions: 3 suggestions with rebalance actions ✓
+- AIProjectInsights: "AI not configured" error ✓
+- AITaskDecomposition: Code verified (component in NPM section) ✓
+- AIReviewSummary: "AI not configured" with Retry link ✓
+
+### Verification
+- TypeScript: 0 errors
+- Backend: **298 tests passing** (285 → 298, +13 new)
+- Vite build: clean
+
+---
+
 ## Session: 2026-02-14 — v1.1.0 Session 12: Heatmap Quality + List View UX
 
 ### Warmup: task_plan.md Reconciliation

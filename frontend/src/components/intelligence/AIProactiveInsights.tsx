@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { RefreshCw, AlertCircle, Lightbulb, TrendingDown, ChevronRight, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProactiveAnalysis } from '../../hooks/useIntelligence';
+import { getAIErrorMessage } from '../../utils/aiErrors';
 
 
 export function AIProactiveInsights() {
@@ -50,10 +51,7 @@ export function AIProactiveInsights() {
         {proactiveAnalysis.isError && (
           <div className="text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5 py-2">
             <AlertCircle className="w-4 h-4" />
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {(proactiveAnalysis.error as any)?.response?.status === 400
-              ? 'AI not configured — set up your API key in Settings'
-              : 'Analysis unavailable — please try again later'}
+            {getAIErrorMessage(proactiveAnalysis.error, 'Analysis unavailable — please try again later')}
           </div>
         )}
 

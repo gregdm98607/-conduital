@@ -1,6 +1,7 @@
 import { Sparkles, AlertCircle, TrendingUp, TrendingDown, Minus, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useWeeklyReviewAISummary } from '../../hooks/useIntelligence';
+import { getAIErrorMessage } from '../../utils/aiErrors';
 import type { WeeklyReviewAISummary } from '../../types';
 
 interface AIReviewSummaryProps {
@@ -56,7 +57,7 @@ export function AIReviewSummary({ onSummaryGenerated }: AIReviewSummaryProps) {
         <div className="flex items-center justify-between py-3">
           <div className="text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5">
             <AlertCircle className="w-3.5 h-3.5" />
-            Failed to generate review summary.
+            {getAIErrorMessage(summary.error, 'Failed to generate review summary.')}
           </div>
           <button
             onClick={handleGenerate}

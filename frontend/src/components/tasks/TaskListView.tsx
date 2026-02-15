@@ -43,11 +43,11 @@ function getEnergyInfo(level?: string): { label: string; colorClass: string } | 
   if (!level) return null;
   switch (level) {
     case 'high':
-      return { label: 'High', colorClass: 'text-red-600' };
+      return { label: 'High', colorClass: 'text-red-600 dark:text-red-400' };
     case 'medium':
-      return { label: 'Med', colorClass: 'text-yellow-600' };
+      return { label: 'Med', colorClass: 'text-yellow-600 dark:text-yellow-400' };
     case 'low':
-      return { label: 'Low', colorClass: 'text-green-600' };
+      return { label: 'Low', colorClass: 'text-green-600 dark:text-green-400' };
     default:
       return null;
   }

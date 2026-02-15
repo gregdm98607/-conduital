@@ -10,7 +10,8 @@ import { ProjectCardSkeleton, TableRowSkeleton } from '@/components/common/Skele
 import { SearchInput } from '@/components/common/SearchInput';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Project } from '../types';
-import { StaticHeader, type SortDirection } from '../components/common/SortableHeader';
+import { StaticHeader } from '../components/common/SortableHeader';
+import { parseSortOption } from '../utils/sort';
 
 type ViewMode = 'grid' | 'list';
 
@@ -44,14 +45,6 @@ const sortOptions: { value: SortOption; label: string }[] = [
   { value: 'created_desc', label: 'Created (Newest)' },
   { value: 'created_asc', label: 'Created (Oldest)' },
 ];
-
-/** Parse SortOption ("priority_desc") into key + direction */
-function parseSortOption(opt: SortOption): { key: string; direction: SortDirection } {
-  const parts = opt.split('_');
-  const direction = parts.pop() as SortDirection;
-  const key = parts.join('_');
-  return { key, direction };
-}
 
 export function Projects() {
   const [status, setStatus] = useState<string>('active');

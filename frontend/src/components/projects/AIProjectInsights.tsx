@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Brain, Sparkles, AlertCircle, ChevronDown, ChevronRight, Lightbulb, RefreshCw } from 'lucide-react';
 import { useAnalyzeProject, useSuggestNextAction } from '../../hooks/useIntelligence';
+import { getAIErrorMessage } from '../../utils/aiErrors';
 import type { AIAnalysis, AITaskSuggestion } from '../../types';
 
 interface AIProjectInsightsProps {
@@ -29,18 +30,6 @@ export function AIProjectInsights({ projectId, isActive }: AIProjectInsightsProp
     const next = !isExpanded;
     setIsExpanded(next);
     localStorage.setItem('pt-projectDetail.aiInsightsExpanded', JSON.stringify(next));
-  };
-
-  const getAIErrorMessage = (err: unknown, fallback: string): string => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const status = (err as any)?.response?.status;
-    if (status === 400 || status === 403) {
-      return 'AI features not configured. Add your Anthropic API key in Settings.';
-    }
-    if (status === 500) {
-      return 'AI service encountered an error. Please try again later.';
-    }
-    return fallback;
   };
 
   const handleAnalyze = () => {

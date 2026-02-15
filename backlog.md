@@ -151,10 +151,10 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-118 | Heatmap task completions don't filter by project active status — deleted/archived project tasks inflate count | `intelligence.py:535-542` | Done (S12) |
 | DEBT-119 | MomentumHeatmap missing a11y — no `aria-label` on grid cells, no keyboard nav, tooltip mouse-only | `MomentumHeatmap.tsx` | Done (S12) |
 | DEBT-120 | Heatmap month labels use fragile absolute positioning (`col * 16 + 32px`) | `MomentumHeatmap.tsx:122` | Done (S12) |
-| DEBT-121 | `getMomentumColorClass()` in `ProjectListView.tsx` uses 0.7/0.5/0.3 thresholds — drifted from `MOMENTUM_THRESHOLDS` (0.7/0.4/0.2) | `ProjectListView.tsx:75-79` | Open |
-| DEBT-122 | SortableHeader button missing `focus:` ring styling — fails WCAG keyboard nav | `SortableHeader.tsx:31` | Open |
-| DEBT-123 | TaskListView `getEnergyInfo()` missing `dark:` color variants — energy labels hard to read in dark mode | `TaskListView.tsx:46-50` | Open |
-| DEBT-124 | `parseSortOption()` duplicated in Projects.tsx and AllTasks.tsx — extract to shared utility | `Projects.tsx:49`, `AllTasks.tsx:71` | Open |
+| DEBT-121 | `getMomentumColorClass()` in `ProjectListView.tsx` uses 0.7/0.5/0.3 thresholds — drifted from `MOMENTUM_THRESHOLDS` (0.7/0.4/0.2) | `ProjectListView.tsx:75-79` | **Done** (S13) |
+| DEBT-122 | SortableHeader button missing `focus:` ring styling — fails WCAG keyboard nav | `SortableHeader.tsx:31` | **Done** (S13) |
+| DEBT-123 | TaskListView `getEnergyInfo()` missing `dark:` color variants — energy labels hard to read in dark mode | `TaskListView.tsx:46-50` | **Done** (S13) |
+| DEBT-124 | `parseSortOption()` duplicated in Projects.tsx and AllTasks.tsx — extract to shared utility | `Projects.tsx:49`, `AllTasks.tsx:71` | **Done** (S13) |
 
 ---
 
@@ -256,7 +256,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-142 | localStorage Key Namespacing | **Done** (Session 6) — all keys use `pt-` prefix |
 | BACKLOG-143 | CompleteTaskButton accessibility (aria-label, focus-visible ring, aria-disabled) | **Done** (Session 8) |
 | BACKLOG-144 | MomentumHeatmap mobile touch support | Done (S12) — onTouchStart + document touchstart listener |
-| BACKLOG-145 | **AI Features End-to-End Testing & Bug Fix Session** | Dedicated session to test all 7 AI components through the frontend UI, fix runtime errors, standardize error handling patterns (status code detection is inconsistent across components), verify AI-configured vs not-configured states. Weekly Review Co-Pilot works well — others need validation. See: AIDashboardSuggestions, AIProactiveInsights, AIEnergyRecommendations, AIRebalanceSuggestions, AIProjectInsights, AITaskDecomposition, AIReviewSummary |
+| BACKLOG-145 | **AI Features End-to-End Validation** | **Done** (S13) — Shared `aiErrors.ts` utility, 6 components standardized, 13 backend tests added (298 total), browser-tested all 7 AI components |
 
 ---
 

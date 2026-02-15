@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Flame, TrendingUp, Minus, AlertCircle, Eye } from 'lucide-react';
 import { Project } from '../../types';
 import { formatRelativeTime, daysSince } from '../../utils/date';
+import { MOMENTUM_THRESHOLDS } from '../../utils/momentum';
 import { SortableHeader, StaticHeader, SortDirection } from '../common/SortableHeader';
 
 interface ProjectListViewProps {
@@ -71,11 +72,11 @@ function getPriorityInfo(priority: number): { label: string; colorClass: string;
   };
 }
 
-// Get momentum color class
+// Get momentum color class (uses shared thresholds)
 function getMomentumColorClass(score: number): string {
-  if (score >= 0.7) return 'bg-momentum-strong';
-  if (score >= 0.5) return 'bg-momentum-moderate';
-  if (score >= 0.3) return 'bg-momentum-low';
+  if (score >= MOMENTUM_THRESHOLDS.STRONG) return 'bg-momentum-strong';
+  if (score >= MOMENTUM_THRESHOLDS.MODERATE) return 'bg-momentum-moderate';
+  if (score >= MOMENTUM_THRESHOLDS.LOW) return 'bg-momentum-low';
   return 'bg-momentum-weak';
 }
 

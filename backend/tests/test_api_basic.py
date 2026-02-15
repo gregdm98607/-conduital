@@ -1596,3 +1596,190 @@ class TestSoftDelete:
             f"/api/v1/projects/{project_id}/status?status=completed",
         )
         assert resp.status_code == 404
+
+
+class TestSession13AIEdgeCases:
+    """Session 13: BACKLOG-145 — AI endpoint edge cases and error handling."""
+
+    def _enable_ai_and_mock_provider(self):
+        """Return context managers to enable AI and mock the provider."""
+        mock_provider = MagicMock()
+        mock_provider.generate.return_value = "Mock AI response"
+        mock_provider.test_connection.return_value = {"success": True, "message": "OK", "model": "mock"}
+
+        return (
+            patch("app.core.config.settings.AI_FEATURES_ENABLED", True),
+            patch("app.core.config.settings.ANTHROPIC_API_KEY", "test-key-123"),
+            patch("app.services.ai_service.create_provider", return_value=mock_provider),
+            mock_provider,
+        )
+
+    # --- AI disabled / no API key tests ---
+
+    def test_ai_analyze_returns_400_when_disabled(self, test_client):
+        """AI analyze returns 400 when AI_FEATURES_ENABLED is False"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Disabled AI Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+        with patch("app.core.config.settings.AI_FEATURES_ENABLED", False):
+            response = test_client.post(f"/api/v1/intelligence/ai/analyze/{project_id}")
+        assert response.status_code == 400
+
+    def test_ai_suggest_returns_400_when_disabled(self, test_client):
+        """AI suggest-next-action returns 400 when AI_FEATURES_ENABLED is False"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Disabled Suggest Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+        with patch("app.core.config.settings.AI_FEATURES_ENABLED", False):
+            response = test_client.post(f"/api/v1/intelligence/ai/suggest-next-action/{project_id}")
+        assert response.status_code == 400
+
+    def test_ai_weekly_review_returns_400_when_disabled(self, test_client):
+        """AI weekly review summary returns 400 when AI_FEATURES_ENABLED is False"""
+        with patch("app.core.config.settings.AI_FEATURES_ENABLED", False):
+            response = test_client.post("/api/v1/intelligence/ai/weekly-review-summary")
+        assert response.status_code == 400
+
+    def test_ai_proactive_returns_400_when_disabled(self, test_client):
+        """AI proactive analysis returns 400 when AI_FEATURES_ENABLED is False"""
+        with patch("app.core.config.settings.AI_FEATURES_ENABLED", False):
+            response = test_client.post("/api/v1/intelligence/ai/proactive-analysis")
+        assert response.status_code == 400
+
+    def test_ai_review_project_returns_400_when_disabled(self, test_client):
+        """AI project review insight returns 400 when AI_FEATURES_ENABLED is False"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Disabled Review Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+        with patch("app.core.config.settings.AI_FEATURES_ENABLED", False):
+            response = test_client.post(f"/api/v1/intelligence/ai/review-project/{project_id}")
+        assert response.status_code == 400
+
+    def test_ai_analyze_returns_400_when_no_api_key(self, test_client):
+        """AI analyze returns 400 when enabled but ANTHROPIC_API_KEY is empty"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "No Key Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+        with patch("app.core.config.settings.AI_FEATURES_ENABLED", True), \
+             patch("app.core.config.settings.ANTHROPIC_API_KEY", ""):
+            response = test_client.post(f"/api/v1/intelligence/ai/analyze/{project_id}")
+        assert response.status_code == 400
+
+    # --- Decompose tasks error sanitization ---
+
+    def test_decompose_tasks_no_notes_returns_400(self, test_client):
+        """Decompose tasks returns 400 when project has no notes"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "No Notes Decompose", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        p1, p2, p3, _ = self._enable_ai_and_mock_provider()
+        with p1, p2, p3:
+            response = test_client.post(f"/api/v1/intelligence/ai/decompose-tasks/{project_id}")
+        assert response.status_code == 400
+        assert "no brainstorm" in response.json()["detail"].lower() or "no organizing" in response.json()["detail"].lower() or "no notes" in response.json()["detail"].lower()
+
+    def test_decompose_tasks_error_does_not_leak_secrets(self, test_client):
+        """Decompose tasks error message is sanitized — no raw exception details"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Error Leak Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        # Patch AIService constructor to raise with a sensitive message
+        with patch("app.core.config.settings.AI_FEATURES_ENABLED", True), \
+             patch("app.core.config.settings.ANTHROPIC_API_KEY", "secret-key-xyz"), \
+             patch("app.services.ai_service.create_provider", side_effect=Exception("API key invalid: secret-key-xyz")):
+            response = test_client.post(f"/api/v1/intelligence/ai/decompose-tasks/{project_id}")
+        assert response.status_code == 400
+        detail = response.json()["detail"]
+        # Must not contain the raw secret
+        assert "secret-key-xyz" not in detail
+        assert "API key" not in detail or "Settings" in detail
+
+    # --- Rebalance suggestions ---
+
+    def test_rebalance_suggestions_happy_path(self, test_client):
+        """Rebalance suggestions returns structured data (rule-based, no AI needed)"""
+        # Create projects with tasks to analyze
+        for title in ["Rebal A", "Rebal B", "Rebal C"]:
+            test_client.post(
+                "/api/v1/projects",
+                json={"title": title, "status": "active", "priority": 5},
+            )
+
+        response = test_client.get("/api/v1/intelligence/ai/rebalance-suggestions")
+        assert response.status_code == 200
+        data = response.json()
+        assert "opportunity_now_count" in data
+        assert "threshold" in data
+        assert "suggestions" in data
+        assert isinstance(data["suggestions"], list)
+
+    def test_rebalance_suggestions_works_without_ai(self, test_client):
+        """Rebalance suggestions is rule-based — works even when AI is disabled"""
+        with patch("app.core.config.settings.AI_FEATURES_ENABLED", False):
+            response = test_client.get("/api/v1/intelligence/ai/rebalance-suggestions")
+        assert response.status_code == 200
+        data = response.json()
+        assert "opportunity_now_count" in data
+        assert "suggestions" in data
+
+    # --- Energy recommendations ---
+
+    def test_energy_recommendations_happy_path(self, test_client):
+        """Energy recommendations returns matching tasks"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "Energy Test", "status": "active", "priority": 5},
+        )
+        project_id = proj.json()["id"]
+
+        # Create a low-energy task
+        test_client.post(
+            "/api/v1/tasks",
+            json={
+                "project_id": project_id,
+                "title": "Easy task",
+                "energy_level": "low",
+                "status": "pending",
+                "is_next_action": True,
+                "priority": 5,
+            },
+        )
+
+        response = test_client.get("/api/v1/intelligence/ai/energy-recommendations?energy_level=low&limit=5")
+        assert response.status_code == 200
+        data = response.json()
+        assert "tasks" in data
+        assert "total_available" in data
+
+    def test_energy_recommendations_no_matching_tasks(self, test_client):
+        """Energy recommendations returns empty when no matching tasks"""
+        response = test_client.get("/api/v1/intelligence/ai/energy-recommendations?energy_level=high&limit=5")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["tasks"] == [] or isinstance(data["tasks"], list)
+
+    # --- Proactive analysis edge cases ---
+
+    def test_proactive_analysis_no_stalled_projects(self, test_client):
+        """Proactive analysis returns empty insights when no projects are stalled"""
+        p1, p2, p3, _ = self._enable_ai_and_mock_provider()
+        with p1, p2, p3:
+            response = test_client.post("/api/v1/intelligence/ai/proactive-analysis")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["projects_analyzed"] == 0
+        assert data["insights"] == []

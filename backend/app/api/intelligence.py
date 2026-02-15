@@ -1233,7 +1233,8 @@ def decompose_brainstorm_to_tasks(
     try:
         ai_service = AIService()
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"AI not configured: {e}")
+        logger.warning("AI service init failed in decompose-tasks: %s", e)
+        raise HTTPException(status_code=400, detail="AI features not configured. Add your Anthropic API key in Settings.")
 
     # Get existing tasks to avoid duplicates
     from app.models.task import Task as TaskModel

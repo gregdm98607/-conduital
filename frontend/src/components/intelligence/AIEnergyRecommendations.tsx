@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Zap, Clock, Tag, ChevronRight, Battery, BatteryMedium, BatteryLow, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEnergyRecommendations } from '../../hooks/useIntelligence';
+import { getAIErrorMessage } from '../../utils/aiErrors';
 
 const energyOptions = [
   { value: 'low', label: 'Low', icon: BatteryLow, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-100 dark:bg-green-900/30' },
@@ -13,7 +14,7 @@ export function AIEnergyRecommendations() {
   const [selectedEnergy, setSelectedEnergy] = useState('low');
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { data, isLoading, isError } = useEnergyRecommendations(selectedEnergy, 5, isExpanded);
+  const { data, isLoading, isError, error } = useEnergyRecommendations(selectedEnergy, 5, isExpanded);
 
   return (
     <div className="mb-8">
@@ -60,7 +61,7 @@ export function AIEnergyRecommendations() {
         {isExpanded && isError && (
           <div className="text-sm text-red-500 dark:text-red-400 flex items-center gap-2 py-3 justify-center">
             <AlertCircle className="w-3.5 h-3.5" />
-            Failed to load recommendations. Try a different energy level.
+            {getAIErrorMessage(error, 'Failed to load recommendations. Try a different energy level.')}
           </div>
         )}
 

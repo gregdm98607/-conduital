@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sparkles, AlertCircle, Plus, Clock, Zap, Tag, Check } from 'lucide-react';
 import { useDecomposeTasksFromNotes } from '../../hooks/useIntelligence';
 import { useCreateTask } from '../../hooks/useTasks';
+import { getAIErrorMessage } from '../../utils/aiErrors';
 import type { DecomposedTask } from '../../types';
 import toast from 'react-hot-toast';
 
@@ -114,9 +115,7 @@ export function AITaskDecomposition({ projectId, hasBrainstormNotes, hasOrganizi
       {decompose.isError && (
         <div className="text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5 mt-2">
           <AlertCircle className="w-3.5 h-3.5" />
-          {decompose.error instanceof Error && decompose.error.message.includes('400')
-            ? 'AI not configured or no notes to decompose'
-            : 'Decomposition failed'}
+          {getAIErrorMessage(decompose.error, 'Decomposition failed')}
         </div>
       )}
 
