@@ -271,6 +271,90 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-143 | CompleteTaskButton accessibility (aria-label, focus-visible ring, aria-disabled) | **Done** (Session 8) |
 | BACKLOG-144 | MomentumHeatmap mobile touch support | Done (S12) — onTouchStart + document touchstart listener |
 | BACKLOG-145 | **AI Features End-to-End Validation** | **Done** (S13) — Shared `aiErrors.ts` utility, 6 components standardized, 13 backend tests added (298 total), browser-tested all 7 AI components |
+| BACKLOG-146 | **Migrate Markdown Sync Files from Old Machine** | Open — See instructions below |
+
+### BACKLOG-146: Migrate Markdown Sync Files from Old Machine
+
+**Goal:** Copy your `10_Projects` and `20_Areas` markdown folders from the old machine to this one, then reconnect Conduital's file sync.
+
+---
+
+#### Step 1 — Find the sync folder on the old machine
+
+Open `backend/.env` on the old machine and look for:
+
+```
+SECOND_BRAIN_ROOT=C:/path/to/your/notes
+```
+
+That folder contains two subdirectories Conduital cares about:
+
+```
+<SECOND_BRAIN_ROOT>/
+  10_Projects/   ← project markdown files
+  20_Areas/      ← area markdown files
+```
+
+If `SECOND_BRAIN_ROOT` is not set, look for a folder you manually configured in Settings → File Sync Path.
+
+---
+
+#### Step 2 — Copy the folders off the old machine
+
+Choose whichever transfer method is available:
+
+**Option A — USB drive**
+1. Plug in a USB drive on the old machine.
+2. Copy the entire `SECOND_BRAIN_ROOT` folder to the USB drive.
+3. Plug USB into this machine and copy the folder to a permanent location, e.g. `C:\Users\gregm\Documents\Notes`.
+
+**Option B — Network share / same LAN**
+On the old machine (Windows), right-click the folder → Properties → Sharing → Share.
+On this machine, open File Explorer → `\\<old-machine-name>\<share-name>` and copy the folder across.
+
+**Option C — SCP / SSH (if old machine has SSH)**
+```
+scp -r user@old-machine-ip:/path/to/notes C:\Users\gregm\Documents\Notes
+```
+
+**Option D — Cloud drive (Google Drive / Dropbox / OneDrive)**
+On old machine: move/copy the `10_Projects` and `20_Areas` folders into a shared cloud folder.
+Wait for sync to complete, then access them from this machine via the same cloud app.
+This also gives you ongoing cross-machine sync going forward.
+
+---
+
+#### Step 3 — Point Conduital at the new location
+
+Open `backend/.env` on **this machine** and set:
+
+```
+SECOND_BRAIN_ROOT=C:/Users/gregm/Documents/Notes
+WATCH_DIRECTORIES=10_Projects,20_Areas
+```
+
+Use forward slashes even on Windows.
+
+---
+
+#### Step 4 — Restart the backend and trigger sync
+
+1. Stop the backend if it is running.
+2. Start it again: `python main.py` (from `backend/`).
+3. Open Conduital in the browser → Settings → File Sync → click **Sync Now**.
+4. Check the Projects and Areas pages — your data should appear.
+
+---
+
+#### Step 5 — Verify
+
+- Projects page shows your projects.
+- Areas page shows your areas.
+- Check `backend/logs/conduital.log` if anything is missing — look for `[sync]` lines with errors.
+
+---
+
+**Done** when all projects and areas from the old machine are visible and correct in the UI.
 
 ---
 
