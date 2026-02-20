@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from app.core.paths import get_alembic_dir
+
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
@@ -40,8 +42,7 @@ class ChainValidationResult:
 
 def get_migrations_dir() -> Path:
     """Get the path to the alembic versions directory."""
-    backend_dir = Path(__file__).parent.parent.parent
-    return backend_dir / "alembic" / "versions"
+    return get_alembic_dir() / "versions"
 
 
 def parse_migration_file(filepath: Path) -> Optional[MigrationInfo]:

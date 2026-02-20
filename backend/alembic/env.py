@@ -14,6 +14,7 @@ from sqlalchemy import engine_from_config, pool
 
 # Import all models to ensure they're registered with SQLAlchemy
 from app.core.config import settings
+from app.core.paths import is_packaged
 from app.models import (
     ActivityLog,
     Area,
@@ -40,8 +41,10 @@ config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 # Interpret the config file for Python logging.
-# This line sets up loggers basically.
-if config.config_file_name is not None:
+# Skipped in packaged builds: logging_config.py handles setup there, and
+# sys.stderr may be None in console=False PyInstaller bundles which causes
+# fileConfig to crash when it tries to attach a StreamHandler.
+if config.config_file_name is not None and not is_packaged():
     fileConfig(config.config_file_name)
 
 # add your model's MetaData object here

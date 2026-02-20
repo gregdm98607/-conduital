@@ -161,7 +161,7 @@ def main():
     version = settings.VERSION
 
     # Choose execution mode
-    if getattr(sys, "frozen", False):
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         run_packaged(port, version)
     else:
         run_development(args, port, version)
