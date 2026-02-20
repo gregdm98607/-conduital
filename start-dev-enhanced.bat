@@ -20,38 +20,43 @@ if not exist "frontend" (
 
 REM Check .env configuration
 echo Checking configuration...
-if exist "backend\.env" (
-    echo ✓ Found .env configuration
-    findstr /C:"AUTO_DISCOVERY_ENABLED=true" backend\.env >nul
-    if %errorlevel% equ 0 (
-        echo ✓ Auto-discovery: ENABLED
-        echo   ^(New project folders will import automatically^)
-    ) else (
-        echo ℹ Auto-discovery: Disabled
-        echo   ^(Enable in backend\.env to auto-import new projects^)
-    )
-) else (
-    echo ⚠ No .env file found - using defaults
+if not exist "backend\.env" (
+    echo [!] No .env file found - using defaults
+    goto :config_done
 )
+
+echo [+] Found .env configuration
+findstr /C:"AUTO_DISCOVERY_ENABLED=true" backend\.env >nul 2>&1
+if %errorlevel% equ 0 (
+    echo [+] Auto-discovery: ENABLED
+    echo     ^(New project folders will import automatically^)
+) else (
+    echo [i] Auto-discovery: Disabled
+    echo     ^(Enable in backend\.env to auto-import new projects^)
+)
+
+:config_done
 echo.
 
 echo Starting Backend Server...
 if exist "backend\venv\Scripts\activate.bat" (
     echo Using virtual environment...
-    start "Backend Server" cmd /k "cd backend && call venv\Scripts\activate.bat && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
-) else (
-    echo Checking for Poetry...
-    where poetry >nul 2>&1
-    if %errorlevel% equ 0 (
-        echo Using Poetry...
-        start "Backend Server" cmd /k "cd backend && poetry run python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
-    ) else (
-        echo WARNING: No Poetry or venv found. Using system Python...
-        echo          This may cause issues if Pydantic V2 is not installed globally.
-        start "Backend Server" cmd /k "cd backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
-    )
+    start "Backend Server" cmd /k "cd backend && call venv\Scripts\activate.bat && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
+    goto :backend_started
 )
 
+where poetry >nul 2>&1
+if %errorlevel% equ 0 (
+    echo Using Poetry...
+    start "Backend Server" cmd /k "cd backend && poetry run python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
+    goto :backend_started
+)
+
+echo WARNING: No Poetry or venv found. Using system Python...
+echo          This may cause issues if Pydantic V2 is not installed globally.
+start "Backend Server" cmd /k "cd backend && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
+
+:backend_started
 echo Waiting for backend to start...
 timeout /t 3 /nobreak >nul
 
