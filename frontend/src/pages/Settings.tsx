@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight, Download, HardDrive, Activity, Rocket } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAreaMappings, useUpdateAreaMappings, useAreaMappingSuggestions, useScanProjects } from '@/hooks/useDiscovery';
 import { useTheme } from '@/context/ThemeContext';
 import { api } from '@/services/api';
+import type { ImportResult } from '@/types';
 
 const SETTINGS_SECTIONS_KEY = 'pt-settings-sections';
 
@@ -95,14 +96,7 @@ export function Settings() {
 
   // Import state
   const [importLoading, setImportLoading] = useState(false);
-  const [importResult, setImportResult] = useState<{
-    total_imported: number; total_skipped: number;
-    areas_imported: number; goals_imported: number; visions_imported: number;
-    contexts_imported: number; projects_imported: number; tasks_imported: number;
-    inbox_items_imported: number; areas_skipped: number; goals_skipped: number;
-    visions_skipped: number; contexts_skipped: number; projects_skipped: number;
-    tasks_skipped: number; inbox_items_skipped: number; warnings: string[];
-  } | null>(null);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
   const { theme, setTheme } = useTheme();
 
@@ -427,7 +421,7 @@ export function Settings() {
     setDownloadingBackup(false);
   };
 
-  const handleImportJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportJSON = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     // Reset so same file can be re-selected after a failed attempt
@@ -444,7 +438,20 @@ export function Settings() {
       // Refresh export preview to reflect new counts
       setExportPreview(null);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Import failed';
+      let msg = 'Import failed';
+      if (err instanceof SyntaxError) {
+        msg = 'Invalid JSON file — please select a valid Conduital export';
+      } else if (err && typeof err === 'object' && 'response' in err) {
+        const axiosErr = err as { response?: { status?: number; data?: { detail?: string } } };
+        const status = axiosErr.response?.status;
+        if (status === 400) {
+          msg = axiosErr.response?.data?.detail || 'Invalid export file format';
+        } else if (status === 422) {
+          msg = 'File structure does not match expected export format';
+        } else if (status && status >= 500) {
+          msg = 'Server error during import — please try again';
+        }
+      }
       toast.error(msg);
     }
     setImportLoading(false);

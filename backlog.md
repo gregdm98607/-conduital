@@ -169,6 +169,9 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-130 | Decompose-tasks generic exception handler leaks `str(e)` in detail — should sanitize | `intelligence.py:1319-1321` | **Done** (S14) |
 | DEBT-131 | Rebalance/energy endpoint soft-delete filters — verify subqueries respect `deleted_at` | `intelligence.py:1345-1485` | **Done** (S14) — verified, no changes needed |
 | DEBT-132 | SortableHeader `focus-visible:ring-offset-1` may cause visual overflow in tight table headers | `SortableHeader.tsx:31` | **Done** (S14) |
+| DEBT-133 | `importResult` type duplicated in Settings.tsx and api.ts — extract to shared types | `Settings.tsx` / `api.ts` | **Done** (S17) — Extracted `ImportResult` type to `types/index.ts` |
+| DEBT-134 | Import error handler shows raw JS Error message — needs user-friendly messaging | `Settings.tsx` | **Done** (S17) — Parses JSON/HTTP errors into user-friendly messages |
+| DEBT-135 | `React` default import in Settings.tsx — use named imports | `Settings.tsx` | **Done** (S17) — `import type { ChangeEvent } from 'react'` |
 
 ---
 
@@ -246,7 +249,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-066 | Automated Urgency Zone (Phase 3) | Zone lock capability |
 | BACKLOG-090 | Data Import from JSON Backup | **Done** (S14) — `POST /export/import`, merge strategy, Settings UI with result summary |
 | BACKLOG-093 | Quick Capture Success Animation | Visual flash/animation feedback |
-| BACKLOG-095 | Collapsible Sections Pattern Extension | Weekly Review + ProjectDetail task sections |
+| BACKLOG-095 | Collapsible Sections Pattern Extension | **Done** (S17) — Collapsible sections in WeeklyReviewPage (5 sections) + ProjectDetail (3 task sections) with localStorage persistence |
 | BACKLOG-099 | Archive Area Confirmation Dialog | **Done** (Session 1) — Already implemented with Modal + force archive |
 | BACKLOG-104 | Area Health Score Drill-Down + Improvements | Backend ready, frontend needed |
 | BACKLOG-110 | Auto-Discovery as Optional Setting | Toggle on/off independently in Settings |

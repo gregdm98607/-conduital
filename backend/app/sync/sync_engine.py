@@ -328,7 +328,7 @@ class SyncEngine:
             "skipped": 0,
         }
 
-        for watch_dir in settings.WATCH_DIRECTORIES:
+        for watch_dir in settings.watch_directories:
             dir_path = self.root_path / watch_dir
 
             if not dir_path.exists():

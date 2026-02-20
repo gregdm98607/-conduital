@@ -366,7 +366,7 @@ def get_sync_settings():
     """Get current file sync settings"""
     return SyncSettingsResponse(
         sync_folder_root=settings.SECOND_BRAIN_ROOT,
-        watch_directories=settings.WATCH_DIRECTORIES,
+        watch_directories=settings.watch_directories,
         sync_interval=settings.SYNC_INTERVAL,
         conflict_strategy=settings.CONFLICT_STRATEGY,
     )
@@ -399,7 +399,7 @@ def update_sync_settings(update: SyncSettingsUpdate):
 
     if update.watch_directories is not None:
         cleaned = [d.strip() for d in update.watch_directories if d.strip()]
-        settings.WATCH_DIRECTORIES = cleaned
+        settings.WATCH_DIRECTORIES = ",".join(cleaned)
         env_updates["WATCH_DIRECTORIES"] = ",".join(cleaned)
 
     if update.sync_interval is not None:

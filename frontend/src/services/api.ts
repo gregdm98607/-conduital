@@ -42,6 +42,7 @@ import type {
   MomentumHeatmapResponse,
   WeeklyReviewAISummary,
   ProjectReviewInsight,
+  ImportResult,
   Goal,
   Vision,
   Context,
@@ -779,27 +780,8 @@ class APIClient {
     this.triggerBlobDownload(response, 'conduital_backup.db');
   }
 
-  async importJSON(data: unknown): Promise<{
-    success: boolean;
-    total_imported: number;
-    total_skipped: number;
-    areas_imported: number;
-    goals_imported: number;
-    visions_imported: number;
-    contexts_imported: number;
-    projects_imported: number;
-    tasks_imported: number;
-    inbox_items_imported: number;
-    areas_skipped: number;
-    goals_skipped: number;
-    visions_skipped: number;
-    contexts_skipped: number;
-    projects_skipped: number;
-    tasks_skipped: number;
-    inbox_items_skipped: number;
-    warnings: string[];
-  }> {
-    const response = await this.client.post('/export/import', data);
+  async importJSON(data: unknown): Promise<ImportResult> {
+    const response = await this.client.post<ImportResult>('/export/import', data);
     return response.data;
   }
 

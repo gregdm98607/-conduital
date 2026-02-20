@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   CalendarCheck, Sparkles, Star, Clock, AlertCircle, CheckCircle2,
   FolderOpen, Inbox, Lightbulb, ListChecks, ChevronDown, ChevronUp,
-  FolderKanban, Layers, CheckSquare
+  ChevronRight, FolderKanban, Layers, CheckSquare
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useWeeklyReview, useProjectReviewInsight, useCompleteWeeklyReview } from '../hooks/useIntelligence';
@@ -30,6 +30,21 @@ function getWeekKey(): string {
 }
 
 const CHECKLIST_STORAGE_KEY = 'pt-weeklyReviewChecklist';
+const REVIEW_SECTIONS_KEY = 'pt-weeklyReviewSections';
+
+type ReviewSectionId = 'areas-overdue' | 'areas-due-soon' | 'orphan-projects' | 'projects-needing-review' | 'projects-without-next-action';
+
+function loadCollapsedReviewSections(): Set<ReviewSectionId> {
+  try {
+    const stored = localStorage.getItem(REVIEW_SECTIONS_KEY);
+    if (stored) {
+      return new Set(JSON.parse(stored) as ReviewSectionId[]);
+    }
+  } catch {
+    localStorage.removeItem(REVIEW_SECTIONS_KEY);
+  }
+  return new Set<ReviewSectionId>();
+}
 
 interface ChecklistState {
   [stepId: string]: boolean;
@@ -70,6 +85,20 @@ export function WeeklyReviewPage() {
   const projectInsight = useProjectReviewInsight();
   const [expandedInsights, setExpandedInsights] = useState<Record<number, ProjectReviewInsight>>({});
   const [pendingInsightIds, setPendingInsightIds] = useState<Set<number>>(new Set());
+  const [collapsedSections, setCollapsedSections] = useState<Set<ReviewSectionId>>(loadCollapsedReviewSections);
+
+  const toggleSection = useCallback((id: ReviewSectionId) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      localStorage.setItem(REVIEW_SECTIONS_KEY, JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
 
   const toggleStep = useCallback((stepId: string) => {
     setChecklistState(prev => {
@@ -392,10 +421,18 @@ export function WeeklyReviewPage() {
       {/* Areas Due for Review - Overdue */}
       {areaReviewData.overdueAreas.length > 0 && (
         <section className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
+          <button
+            type="button"
+            onClick={() => toggleSection('areas-overdue')}
+            aria-expanded={!collapsedSections.has('areas-overdue')}
+            className="flex items-center gap-2 mb-4 w-full text-left"
+          >
+            {collapsedSections.has('areas-overdue') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
             <AlertCircle className="w-6 h-6 text-red-600" />
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Areas Overdue for Review</h2>
-          </div>
+            <span className="badge badge-red ml-2">{areaReviewData.overdueAreas.length}</span>
+          </button>
+          {!collapsedSections.has('areas-overdue') && (<>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             These areas haven't been reviewed within their scheduled frequency
           </p>
@@ -446,16 +483,25 @@ export function WeeklyReviewPage() {
               </div>
             ))}
           </div>
+          </>)}
         </section>
       )}
 
       {/* Areas Due Soon */}
       {areaReviewData.dueSoonAreas.length > 0 && (
         <section className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
+          <button
+            type="button"
+            onClick={() => toggleSection('areas-due-soon')}
+            aria-expanded={!collapsedSections.has('areas-due-soon')}
+            className="flex items-center gap-2 mb-4 w-full text-left"
+          >
+            {collapsedSections.has('areas-due-soon') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
             <Clock className="w-6 h-6 text-yellow-600" />
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Areas Due for Review Soon</h2>
-          </div>
+            <span className="badge badge-yellow ml-2">{areaReviewData.dueSoonAreas.length}</span>
+          </button>
+          {!collapsedSections.has('areas-due-soon') && (
           <div className="space-y-3">
             {areaReviewData.dueSoonAreas.map((area) => (
               <div key={area.id} className="card hover:shadow-md transition-shadow border-l-4 border-l-yellow-500">
@@ -503,16 +549,25 @@ export function WeeklyReviewPage() {
               </div>
             ))}
           </div>
+          )}
         </section>
       )}
 
       {/* Projects Without Area Assignment */}
       {orphanProjects.length > 0 && (
         <section className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
+          <button
+            type="button"
+            onClick={() => toggleSection('orphan-projects')}
+            aria-expanded={!collapsedSections.has('orphan-projects')}
+            className="flex items-center gap-2 mb-4 w-full text-left"
+          >
+            {collapsedSections.has('orphan-projects') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
             <FolderOpen className="w-6 h-6 text-yellow-600" />
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Projects Without Area</h2>
-          </div>
+            <span className="badge badge-yellow ml-2">{orphanProjects.length}</span>
+          </button>
+          {!collapsedSections.has('orphan-projects') && (<>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             These projects are not assigned to any Area. Assign them to maintain a complete project-area structure.
           </p>
@@ -534,13 +589,24 @@ export function WeeklyReviewPage() {
               </div>
             ))}
           </div>
+          </>)}
         </section>
       )}
 
       {/* Projects Needing Review */}
       {review.projects_needing_review_details && review.projects_needing_review_details.length > 0 && (
         <section className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Projects Needing Review</h2>
+          <button
+            type="button"
+            onClick={() => toggleSection('projects-needing-review')}
+            aria-expanded={!collapsedSections.has('projects-needing-review')}
+            className="flex items-center gap-2 mb-4 w-full text-left"
+          >
+            {collapsedSections.has('projects-needing-review') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Projects Needing Review</h2>
+            <span className="badge badge-yellow ml-2">{review.projects_needing_review_details.length}</span>
+          </button>
+          {!collapsedSections.has('projects-needing-review') && (
           <div className="space-y-3">
             {review.projects_needing_review_details.map((project) => {
               const insight = expandedInsights[project.id];
@@ -610,13 +676,24 @@ export function WeeklyReviewPage() {
               );
             })}
           </div>
+          )}
         </section>
       )}
 
       {/* Projects Without Next Actions */}
       {review.projects_without_next_action_details && review.projects_without_next_action_details.length > 0 && (
         <section className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Projects Without Next Actions</h2>
+          <button
+            type="button"
+            onClick={() => toggleSection('projects-without-next-action')}
+            aria-expanded={!collapsedSections.has('projects-without-next-action')}
+            className="flex items-center gap-2 mb-4 w-full text-left"
+          >
+            {collapsedSections.has('projects-without-next-action') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Projects Without Next Actions</h2>
+            <span className="badge badge-yellow ml-2">{review.projects_without_next_action_details.length}</span>
+          </button>
+          {!collapsedSections.has('projects-without-next-action') && (<>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             These projects need a next action defined to maintain momentum
           </p>
@@ -637,6 +714,7 @@ export function WeeklyReviewPage() {
               </div>
             ))}
           </div>
+          </>)}
         </section>
       )}
 
