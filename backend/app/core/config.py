@@ -13,7 +13,6 @@ import secrets
 from pathlib import Path
 from typing import Optional, Literal
 
-from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core.paths import (
@@ -151,9 +150,23 @@ class Settings(BaseSettings):
     # Or set ENABLED_MODULES directly for custom configurations
     COMMERCIAL_MODE: str = "basic"
 
-    # Explicit list of enabled modules (overrides COMMERCIAL_MODE if set)
-    # Example: ENABLED_MODULES=["core", "projects", "memory_layer"]
-    ENABLED_MODULES: Optional[list[str]] = None
+    # Stored as comma-separated string to avoid pydantic-settings JSON parsing.
+    # Use the enabled_modules property to get the parsed list.
+    # Example: ENABLED_MODULES=core,projects,memory_layer
+    ENABLED_MODULES: Optional[str] = None
+
+    @property
+    def enabled_modules(self) -> Optional[list[str]]:
+        """Parse ENABLED_MODULES into a list from comma-separated string."""
+        val = self.ENABLED_MODULES
+        if val is None:
+            return None
+        if isinstance(val, list):
+            return val
+        val = val.strip()
+        if not val:
+            return None
+        return [m.strip() for m in val.split(",") if m.strip()]
 
     # Database
     DATABASE_PATH: str = get_database_path()
@@ -162,7 +175,18 @@ class Settings(BaseSettings):
     # Markdown File Sync Integration
     # NOTE: Set SECOND_BRAIN_ROOT in .env - this default may not exist on your system
     SECOND_BRAIN_ROOT: Optional[str] = None  # Required for sync features
-    WATCH_DIRECTORIES: list[str] = ["10_Projects", "20_Areas"]
+    # Stored as comma-separated string to avoid pydantic-settings JSON parsing.
+    # Use the watch_directories property to get the parsed list.
+    WATCH_DIRECTORIES: str = "10_Projects,20_Areas"
+
+    @property
+    def watch_directories(self) -> list[str]:
+        """Parse WATCH_DIRECTORIES into a list from comma-separated string."""
+        val = self.WATCH_DIRECTORIES
+        if isinstance(val, list):
+            return val
+        return [d.strip() for d in val.split(",") if d.strip()]
+
     SYNC_INTERVAL: int = 30  # seconds
     CONFLICT_STRATEGY: str = "prompt"  # prompt, file_wins, db_wins, merge
 
@@ -202,37 +226,17 @@ class Settings(BaseSettings):
     # CORS allowed origins — include common dev ports so Vite fallback ports work.
     # Frontend uses Vite proxy (/api/v1 -> backend), so CORS is only needed
     # for non-proxy dev setups. Override via CORS_ORIGINS in .env for production.
-    CORS_ORIGINS: list[str] = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-    ]
+    # Stored as comma-separated string to avoid pydantic-settings JSON parsing.
+    # Use the cors_origins property to get the parsed list.
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175"
 
-    @field_validator("CORS_ORIGINS", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v: str | list[str]) -> list[str]:
-        """Parse CORS_ORIGINS from comma-separated string or JSON array.
-
-        Accepts:
-        - Comma-separated: "http://localhost:3000,http://localhost:5173"
-        - JSON array: '["http://localhost:3000","http://localhost:5173"]'
-        - Already-parsed list (from default or pydantic-settings)
-        """
-        if isinstance(v, list):
-            return v
-        if isinstance(v, str):
-            # Try JSON parse first (pydantic-settings may pass stringified JSON)
-            v = v.strip()
-            if v.startswith("["):
-                import json
-                try:
-                    return json.loads(v)
-                except json.JSONDecodeError:
-                    pass
-            # Fall back to comma-separated
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
-        return v
+    @property
+    def cors_origins(self) -> list[str]:
+        """Parse CORS_ORIGINS into a list from comma-separated string."""
+        val = self.CORS_ORIGINS
+        if isinstance(val, list):
+            return val
+        return [o.strip() for o in val.split(",") if o.strip()]
 
     # Server
     SERVER_HOST: str = "0.0.0.0"
@@ -281,8 +285,8 @@ class Settings(BaseSettings):
         1. ENABLED_MODULES if explicitly set
         2. Modules from COMMERCIAL_MODE preset
         """
-        if self.ENABLED_MODULES:
-            return self.ENABLED_MODULES
+        if self.enabled_modules:
+            return self.enabled_modules
 
         if self.COMMERCIAL_MODE not in COMMERCIAL_PRESETS:
             # Fall back to basic if invalid mode

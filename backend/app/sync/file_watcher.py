@@ -127,7 +127,7 @@ class FileWatcher:
             debounce_seconds: Debounce time in seconds
         """
         self.root_path = Path(root_path) if root_path else settings.SECOND_BRAIN_PATH
-        self.watch_dirs = watch_dirs or settings.WATCH_DIRECTORIES
+        self.watch_dirs = watch_dirs or settings.watch_directories
         self.debounce_seconds = debounce_seconds
 
         self.observer: Optional[Observer] = None
