@@ -69,12 +69,6 @@ export function ProjectDetail() {
     });
   }, []);
 
-  if (error) {
-    console.error('Project load error:', error);
-    return <Error message={`Failed to load project: ${error instanceof Error ? error.message : String(error)}`} fullPage />;
-  }
-  if (!isLoading && !project) return <Error message="Project not found" fullPage />;
-
   const allTasks = project?.tasks || [];
 
   // Filter tasks by search query
@@ -89,6 +83,12 @@ export function ProjectDetail() {
       return matchesTitle || matchesDescription || matchesContext;
     });
   }, [allTasks, taskSearchQuery]);
+
+  if (error) {
+    console.error('Project load error:', error);
+    return <Error message={`Failed to load project: ${error instanceof Error ? error.message : String(error)}`} fullPage />;
+  }
+  if (!isLoading && !project) return <Error message="Project not found" fullPage />;
 
   const nextActions = filteredTasks.filter(t => t.is_next_action && t.status !== 'completed' && t.status !== 'cancelled');
   const completedTasks = filteredTasks.filter(t => t.status === 'completed' || t.status === 'cancelled');
