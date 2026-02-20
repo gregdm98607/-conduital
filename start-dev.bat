@@ -17,21 +17,23 @@ if not exist "frontend" (
 )
 
 echo Starting Backend Server...
+
+REM Try venv (standard)
 if exist "backend\venv\Scripts\activate.bat" (
-    echo Using virtual environment...
+    echo Using virtual environment ^(backend\venv^)...
     start "Backend Server" cmd /k "cd backend && call venv\Scripts\activate.bat && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
     goto :backend_started
 )
 
-where poetry >nul 2>&1
-if %errorlevel% equ 0 (
-    echo Using Poetry...
-    start "Backend Server" cmd /k "cd backend && poetry run python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
+REM Try .venv (common alternative)
+if exist "backend\.venv\Scripts\activate.bat" (
+    echo Using virtual environment ^(backend\.venv^)...
+    start "Backend Server" cmd /k "cd backend && call .venv\Scripts\activate.bat && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
     goto :backend_started
 )
 
-echo WARNING: No Poetry or venv found. Using system Python...
-echo          This may cause issues if Pydantic V2 is not installed globally.
+echo WARNING: No virtual environment found at backend\venv or backend\.venv
+echo          Using system Python — ensure dependencies are installed globally.
 start "Backend Server" cmd /k "cd backend && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
 
 :backend_started

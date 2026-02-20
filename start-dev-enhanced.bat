@@ -39,21 +39,23 @@ if %errorlevel% equ 0 (
 echo.
 
 echo Starting Backend Server...
+
+REM Try venv (standard)
 if exist "backend\venv\Scripts\activate.bat" (
-    echo Using virtual environment...
+    echo Using virtual environment ^(backend\venv^)...
     start "Backend Server" cmd /k "cd backend && call venv\Scripts\activate.bat && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
     goto :backend_started
 )
 
-where poetry >nul 2>&1
-if %errorlevel% equ 0 (
-    echo Using Poetry...
-    start "Backend Server" cmd /k "cd backend && poetry run python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
+REM Try .venv (common alternative)
+if exist "backend\.venv\Scripts\activate.bat" (
+    echo Using virtual environment ^(backend\.venv^)...
+    start "Backend Server" cmd /k "cd backend && call .venv\Scripts\activate.bat && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
     goto :backend_started
 )
 
-echo WARNING: No Poetry or venv found. Using system Python...
-echo          This may cause issues if Pydantic V2 is not installed globally.
+echo WARNING: No virtual environment found at backend\venv or backend\.venv
+echo          Using system Python — ensure dependencies are installed globally.
 start "Backend Server" cmd /k "cd backend && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
 
 :backend_started
@@ -78,11 +80,6 @@ echo - Phase 2: Auto-discovery ^(if enabled^)
 echo - AI features ^(if API key configured^)
 echo - Momentum tracking
 echo - Bidirectional sync
-echo.
-echo Useful Commands:
-echo - Create markdown files: poetry run python scripts/create_project_files.py
-echo - Run discovery:        poetry run python scripts/discover_projects.py
-echo - Update momentum:      curl -X POST http://localhost:8000/api/v1/intelligence/momentum/update
 echo.
 echo Press any key to exit ^(servers will keep running^)
 pause >nul
