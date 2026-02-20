@@ -172,6 +172,8 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-133 | `importResult` type duplicated in Settings.tsx and api.ts — extract to shared types | `Settings.tsx` / `api.ts` | **Done** (S17) — Extracted `ImportResult` type to `types/index.ts` |
 | DEBT-134 | Import error handler shows raw JS Error message — needs user-friendly messaging | `Settings.tsx` | **Done** (S17) — Parses JSON/HTTP errors into user-friendly messages |
 | DEBT-135 | `React` default import in Settings.tsx — use named imports | `Settings.tsx` | **Done** (S17) — `import type { ChangeEvent } from 'react'` |
+| DEBT-136 | After import, TanStack Query caches for projects/tasks/areas not invalidated — stale data until manual refresh | `Settings.tsx:handleImportJSON` | Open |
+| DEBT-137 | No client-side file size validation before import upload — large files cause slow/silent failures | `Settings.tsx:handleImportJSON` | Open |
 
 ---
 
@@ -186,6 +188,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DOC-003 | Area discovery API docs | Low | R2 |
 | DOC-006 | Memory layer API documentation | Medium | R3 |
 | DOC-007 | AI context API documentation | Medium | R3 |
+| DOC-008 | `POST /export/import` endpoint missing from `API_DOCUMENTATION.md` | Medium | R2 |
 
 ---
 
@@ -248,6 +251,9 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-061 | Register Claude Code Skills | Developer tooling |
 | BACKLOG-066 | Automated Urgency Zone (Phase 3) | Zone lock capability |
 | BACKLOG-090 | Data Import from JSON Backup | **Done** (S14) — `POST /export/import`, merge strategy, Settings UI with result summary |
+| BACKLOG-146 | Import: conflict resolution UI — show duplicate list before import, let user choose skip/overwrite | UX Enhancement |
+| BACKLOG-147 | Import: progress indicator for large files — streaming or polling approach | UX Enhancement |
+| BACKLOG-148 | Import: export format version migration — handle older export schemas gracefully | Reliability |
 | BACKLOG-093 | Quick Capture Success Animation | Visual flash/animation feedback |
 | BACKLOG-095 | Collapsible Sections Pattern Extension | **Done** (S17) — Collapsible sections in WeeklyReviewPage (5 sections) + ProjectDetail (3 task sections) with localStorage persistence |
 | BACKLOG-099 | Archive Area Confirmation Dialog | **Done** (Session 1) — Already implemented with Modal + force archive |
