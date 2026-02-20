@@ -788,4 +788,25 @@ For SQLAlchemy self-referential relationships:
 
 ---
 
+## 2026-02-20: Session 18 — BACKLOG-082 Session Summary Capture
+
+### Lessons Learned
+
+#### 1. URL Query Parameter `+` Encoding
+**Issue:** ISO 8601 timestamps with `+00:00` timezone in URL query params get the `+` decoded as a space, causing parse failures.
+**Fix:** Use the `params` dict in test clients (not f-string interpolation) so the library handles URL encoding properly.
+**Rule:** Never embed timezone-offset timestamps directly in URL strings. Use `params={}` for query parameters.
+
+#### 2. pydantic-settings dict Fields
+**Issue:** `dict[str, str]` fields in pydantic-settings v2 have the same JSON parsing vulnerability as `list[str]` fields — env vars like `KEY=value` will fail JSONDecodeError.
+**Fix:** Use `str` type with `@property` accessor that parses a delimiter format (comma-separated `key:value` pairs for dicts).
+**Rule:** All complex types (list, dict) in pydantic-settings Settings classes should be `str` with property accessors.
+
+#### 3. Memory Layer Model Registration for Tests
+**Issue:** Tests using `Base.metadata.create_all()` don't include memory layer tables unless the models are imported first.
+**Fix:** Import `MemoryObject`, `MemoryNamespace` in test files that need memory layer functionality.
+**Rule:** When testing endpoints that depend on module models (memory_layer, etc.), import those models in the test file.
+
+---
+
 *Review this file at session start for relevant project patterns.*

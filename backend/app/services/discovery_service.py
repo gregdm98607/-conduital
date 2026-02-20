@@ -29,7 +29,7 @@ class ProjectDiscoveryService:
     def __init__(self, db: Session):
         self.db = db
         self.sync_engine = SyncEngine(db)
-        self.area_prefix_map = settings.AREA_PREFIX_MAP
+        self.area_prefix_map = settings.area_prefix_map
         self.project_pattern = re.compile(settings.PROJECT_FOLDER_PATTERN)
 
     def discover_all_projects(self) -> dict:

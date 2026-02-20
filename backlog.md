@@ -37,7 +37,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | ID | Description | Status | Notes |
 |----|-------------|--------|-------|
 | BACKLOG-087 | Starter Templates by Persona | Open | Writer, Knowledge Worker, etc. |
-| BACKLOG-082 | Session Summary Capture | Open | End-of-session memory updates |
+| BACKLOG-082 | Session Summary Capture | Done (S18) | End-of-session memory updates |
 | DOC-006 | Memory Layer API Documentation | Open | Developer docs |
 | DOC-007 | AI Context API Documentation | Open | Developer docs |
 
@@ -310,7 +310,7 @@ For each release, verify:
 | Open tech debt | ~12 |
 | Open documentation | 7 |
 | Completed items (archived) | 200+ |
-| Backend tests | 284 |
+| Backend tests | 327 |
 
-*Last updated: 2026-02-14 (Session 11)*
+*Last updated: 2026-02-20 (Session 18)*
 *Full history: `backlog-archive-2026-02-12.md`*

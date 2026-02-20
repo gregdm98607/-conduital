@@ -4,6 +4,7 @@ Intelligence API endpoints - Momentum, stalled projects, AI features
 
 import logging
 from datetime import date, datetime, timedelta, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -1572,4 +1573,298 @@ def get_energy_recommendations(
             for _, t in top_tasks
         ],
         total_available=len(all_tasks),
+    )
+
+
+# =============================================================================
+# BACKLOG-082: Session Summary Capture
+# =============================================================================
+
+
+class MomentumDelta(BaseModel):
+    """Momentum change for a project during a session"""
+
+    project_name: str
+    old_score: Optional[float] = None
+    new_score: float
+
+
+class SessionSummaryResponse(BaseModel):
+    """Response for session summary endpoint"""
+
+    session_start: str  # ISO datetime
+    session_end: str  # ISO datetime
+    tasks_completed: int
+    tasks_created: int
+    tasks_updated: int
+    projects_touched: list[str]
+    momentum_changes: list[MomentumDelta]
+    activity_count: int
+    summary_text: str
+    persisted: bool = False
+    memory_object_id: Optional[str] = None
+
+
+@router.post("/session-summary", response_model=SessionSummaryResponse)
+def capture_session_summary(
+    session_start: Optional[str] = Query(None, description="Session start ISO timestamp (default: 4 hours ago)"),
+    persist: bool = Query(False, description="Persist summary to memory layer"),
+    notes: Optional[str] = Query(None, description="Optional user notes about the session"),
+    db: Session = Depends(get_db),
+):
+    """
+    Generate a session summary of what changed during a work session.
+
+    Queries ActivityLog, completed tasks, created tasks, and momentum changes
+    to build a template-based narrative summary. No AI dependency.
+
+    When persist=True, stores the summary in the memory layer under the
+    sessions.history namespace for cross-session continuity.
+
+    BACKLOG-082: Session Summary Capture.
+    """
+    from app.models.activity_log import ActivityLog
+    from app.models.task import Task as TaskModel
+
+    now = datetime.now(timezone.utc)
+
+    # Parse session_start or default to 4 hours ago
+    if session_start:
+        try:
+            # Normalize timezone: "Z" -> "+00:00"
+            normalized = session_start.strip().replace("Z", "+00:00")
+            start = datetime.fromisoformat(normalized)
+            if start.tzinfo is None:
+                start = start.replace(tzinfo=timezone.utc)
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid session_start format. Use ISO 8601.")
+    else:
+        start = now - timedelta(hours=4)
+
+    # 1. Query ActivityLog for all entries since session_start
+    activities = (
+        db.execute(
+            select(ActivityLog)
+            .where(ActivityLog.timestamp >= start)
+            .order_by(ActivityLog.timestamp)
+        )
+        .scalars()
+        .all()
+    )
+    activity_count = len(activities)
+
+    # Group by entity_type + action_type for summary
+    action_groups: dict[str, int] = {}
+    for a in activities:
+        key = f"{a.entity_type}:{a.action_type}"
+        action_groups[key] = action_groups.get(key, 0) + 1
+
+    # 2. Tasks completed during session
+    completed_tasks = (
+        db.execute(
+            select(TaskModel)
+            .where(
+                TaskModel.completed_at >= start,
+                TaskModel.completed_at.is_not(None),
+                TaskModel.deleted_at.is_(None),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    tasks_completed = len(completed_tasks)
+
+    # 3. Tasks created during session
+    created_tasks = (
+        db.execute(
+            select(TaskModel)
+            .where(
+                TaskModel.created_at >= start,
+                TaskModel.deleted_at.is_(None),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    tasks_created = len(created_tasks)
+
+    # Count updated tasks (from activity log)
+    tasks_updated = action_groups.get("task:updated", 0)
+
+    # 4. Projects touched during session
+    touched_project_ids: set[int] = set()
+    for t in completed_tasks:
+        if t.project_id:
+            touched_project_ids.add(t.project_id)
+    for t in created_tasks:
+        if t.project_id:
+            touched_project_ids.add(t.project_id)
+
+    # Also gather project IDs from activity log
+    for a in activities:
+        if a.entity_type == "project":
+            touched_project_ids.add(a.entity_id)
+        elif a.entity_type == "task":
+            # Look up the task's project
+            task = db.get(TaskModel, a.entity_id)
+            if task and task.project_id:
+                touched_project_ids.add(task.project_id)
+
+    # Get project names
+    projects_touched: list[str] = []
+    if touched_project_ids:
+        touched_projects = (
+            db.execute(
+                select(Project)
+                .where(Project.id.in_(touched_project_ids))
+            )
+            .scalars()
+            .all()
+        )
+        projects_touched = [p.title for p in touched_projects]
+
+    # 5. Momentum deltas
+    momentum_changes: list[MomentumDelta] = []
+    if touched_project_ids:
+        for pid in touched_project_ids:
+            project = db.get(Project, pid)
+            if not project:
+                continue
+
+            current_score = project.momentum_score or 0.0
+
+            # Find snapshot closest to (but before) session_start
+            old_snapshot = (
+                db.execute(
+                    select(MomentumSnapshot)
+                    .where(
+                        MomentumSnapshot.project_id == pid,
+                        MomentumSnapshot.snapshot_at < start,
+                    )
+                    .order_by(MomentumSnapshot.snapshot_at.desc())
+                    .limit(1)
+                )
+                .scalars()
+                .first()
+            )
+            old_score = old_snapshot.score if old_snapshot else None
+
+            # Only include if there's a meaningful change or no baseline
+            if old_score is None or abs(current_score - old_score) > 0.001:
+                momentum_changes.append(
+                    MomentumDelta(
+                        project_name=project.title,
+                        old_score=old_score,
+                        new_score=current_score,
+                    )
+                )
+
+    # 6. Build summary text
+    parts = []
+    if tasks_completed > 0:
+        project_count = len(projects_touched)
+        parts.append(
+            f"Completed {tasks_completed} task{'s' if tasks_completed != 1 else ''}"
+            + (f" across {project_count} project{'s' if project_count != 1 else ''}" if project_count > 0 else "")
+        )
+    if tasks_created > 0:
+        parts.append(f"Created {tasks_created} new task{'s' if tasks_created != 1 else ''}")
+    for mc in momentum_changes:
+        if mc.old_score is not None:
+            delta = mc.new_score - mc.old_score
+            direction = "+" if delta >= 0 else ""
+            parts.append(f"Project '{mc.project_name}' momentum {direction}{delta:.2f}")
+
+    if not parts:
+        if activity_count > 0:
+            parts.append(f"{activity_count} activity log entries recorded")
+        else:
+            parts.append("No activity recorded during this session")
+
+    summary_text = ". ".join(parts) + "."
+
+    # 7. Optionally persist to memory layer
+    persisted = False
+    memory_object_id = None
+
+    if persist:
+        try:
+            from app.modules.memory_layer.services import MemoryService
+            from app.modules.memory_layer.schemas import MemoryObjectCreate, MemoryObjectUpdate
+
+            today = date.today()
+            timestamp_str = now.strftime("%Y%m%d-%H%M")
+            object_id = f"session-summary-{timestamp_str}"
+
+            content = {
+                "session_start": start.isoformat(),
+                "session_end": now.isoformat(),
+                "tasks_completed": tasks_completed,
+                "tasks_created": tasks_created,
+                "tasks_updated": tasks_updated,
+                "projects_touched": projects_touched,
+                "momentum_changes": [mc.model_dump() for mc in momentum_changes],
+                "activity_count": activity_count,
+                "summary_text": summary_text,
+            }
+            if notes:
+                content["user_notes"] = notes
+
+            # Create the session-specific memory object
+            MemoryService.create_object(
+                db,
+                MemoryObjectCreate(
+                    object_id=object_id,
+                    namespace="sessions.history",
+                    priority=60,
+                    effective_from=today,
+                    content=content,
+                    tags=["session", "auto-generated"],
+                ),
+            )
+            memory_object_id = object_id
+
+            # Upsert session-latest (always holds most recent session)
+            latest_id = "session-latest"
+            existing_latest = MemoryService.get_object(db, latest_id)
+            if existing_latest:
+                MemoryService.update_object(
+                    db,
+                    latest_id,
+                    MemoryObjectUpdate(
+                        content=content,
+                        priority=80,
+                        tags=["session", "auto-generated", "latest"],
+                    ),
+                )
+            else:
+                MemoryService.create_object(
+                    db,
+                    MemoryObjectCreate(
+                        object_id=latest_id,
+                        namespace="sessions.history",
+                        priority=80,
+                        effective_from=today,
+                        content=content,
+                        tags=["session", "auto-generated", "latest"],
+                    ),
+                )
+
+            persisted = True
+        except Exception as e:
+            logger.error(f"Failed to persist session summary to memory layer: {e}")
+            # Don't fail the response — summary is still returned
+
+    return SessionSummaryResponse(
+        session_start=start.isoformat(),
+        session_end=now.isoformat(),
+        tasks_completed=tasks_completed,
+        tasks_created=tasks_created,
+        tasks_updated=tasks_updated,
+        projects_touched=projects_touched,
+        momentum_changes=momentum_changes,
+        activity_count=activity_count,
+        summary_text=summary_text,
+        persisted=persisted,
+        memory_object_id=memory_object_id,
     )
