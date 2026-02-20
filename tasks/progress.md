@@ -360,3 +360,70 @@
 ---
 
 *Session 8 completed: 2026-02-12*
+
+---
+
+# Session 17: Debt Sweep + Collapsible Sections (2026-02-20)
+
+## Baseline
+- Backend tests: 321 passing
+- TypeScript: 0 errors
+- Vite build: clean
+
+## Phase 1: Warmup — Quick Debt Sweep (3 items)
+
+### DEBT-135 [XS]: Clean up React import in Settings.tsx
+- Status: COMPLETE
+- Replaced `import React from 'react'` with `import { ..., type ChangeEvent } from 'react'`
+- Updated `React.ChangeEvent<HTMLInputElement>` to `ChangeEvent<HTMLInputElement>`
+
+### DEBT-133 [XS]: Extract importResult type duplication
+- Status: COMPLETE
+- Extracted `ImportResult` interface to `types/index.ts` (single source of truth)
+- Updated `api.ts` `importJSON()` to use shared type
+- Updated `Settings.tsx` inline type to use `ImportResult`
+
+### DEBT-134 [S]: Improve import error UX
+- Status: COMPLETE
+- Replaced raw `Error.message` with user-friendly messages:
+  - SyntaxError → "Invalid JSON file — please select a valid Conduital export"
+  - HTTP 400 → detail from server or "Invalid export file format"
+  - HTTP 422 → "File structure does not match expected export format"
+  - HTTP 5xx → "Server error during import — please try again"
+
+## Phase 2: BACKLOG-095 — Collapsible Sections Pattern Extension
+
+### WeeklyReviewPage (5 sections)
+- Status: COMPLETE
+- Made 5 review sections collapsible: Areas Overdue, Areas Due Soon, Orphan Projects, Projects Needing Review, Projects Without Next Actions
+- Each section header is a `<button>` with `aria-expanded` for accessibility
+- Added count badges next to section titles
+- State persisted to localStorage under `pt-weeklyReviewSections` key
+- All sections default expanded
+
+### ProjectDetail (3 task sections)
+- Status: COMPLETE
+- Made 3 task sections collapsible: Next Actions, Other Tasks, Completed Tasks
+- Each section header is a `<button>` with `aria-expanded` for accessibility
+- Added count badges next to section titles
+- State persisted to localStorage under `pt-projectDetail.collapsedSections` key
+- Completed Tasks defaults to collapsed; other sections default expanded
+
+## Verification
+- Backend tests: 321 passing (no backend changes)
+- TypeScript: 0 errors
+- Vite production build: clean
+
+## Files Modified
+| File | Changes |
+|------|---------|
+| `frontend/src/pages/Settings.tsx` | DEBT-133/134/135 — type extraction, error UX, React import |
+| `frontend/src/services/api.ts` | DEBT-133 — `ImportResult` type from shared types |
+| `frontend/src/types/index.ts` | DEBT-133 — New `ImportResult` interface |
+| `frontend/src/pages/WeeklyReviewPage.tsx` | BACKLOG-095 — 5 collapsible sections |
+| `frontend/src/pages/ProjectDetail.tsx` | BACKLOG-095 — 3 collapsible task sections |
+| `backlog.md` | Marked DEBT-133/134/135 + BACKLOG-095 Done |
+
+---
+
+*Session 17 completed: 2026-02-20*

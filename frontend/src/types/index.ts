@@ -494,6 +494,28 @@ export interface Context {
   updated_at: string;
 }
 
+// Import/Export types
+export interface ImportResult {
+  success: boolean;
+  total_imported: number;
+  total_skipped: number;
+  areas_imported: number;
+  goals_imported: number;
+  visions_imported: number;
+  contexts_imported: number;
+  projects_imported: number;
+  tasks_imported: number;
+  inbox_items_imported: number;
+  areas_skipped: number;
+  goals_skipped: number;
+  visions_skipped: number;
+  contexts_skipped: number;
+  projects_skipped: number;
+  tasks_skipped: number;
+  inbox_items_skipped: number;
+  warnings: string[];
+}
+
 // Sync types
 export interface SyncFileStatus {
   file_path: string;

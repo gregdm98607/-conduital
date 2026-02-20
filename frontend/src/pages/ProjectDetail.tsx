@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Plus, CheckCircle, Edit, X, Trash2, Target, Star, ChevronDown, ChevronRight, Lightbulb, FileText, RefreshCw, Clock, Zap, ArrowUp, ArrowDown, Calendar } from 'lucide-react';
 import { useProject, useMarkProjectReviewed, useCreateUnstuckTask } from '../hooks/useProjects';
@@ -45,6 +45,29 @@ export function ProjectDetail() {
       return false;
     }
   });
+  const [collapsedTaskSections, setCollapsedTaskSections] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('pt-projectDetail.collapsedSections');
+      if (stored) return new Set(JSON.parse(stored) as string[]);
+    } catch {
+      localStorage.removeItem('pt-projectDetail.collapsedSections');
+    }
+    // Completed tasks collapsed by default
+    return new Set(['completed']);
+  });
+
+  const toggleTaskSection = useCallback((section: string) => {
+    setCollapsedTaskSections(prev => {
+      const next = new Set(prev);
+      if (next.has(section)) {
+        next.delete(section);
+      } else {
+        next.add(section);
+      }
+      localStorage.setItem('pt-projectDetail.collapsedSections', JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
 
   if (error) {
     console.error('Project load error:', error);
@@ -500,7 +523,16 @@ export function ProjectDetail() {
       {/* Next Actions Section */}
       <section className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Next Actions</h2>
+          <button
+            type="button"
+            onClick={() => toggleTaskSection('next-actions')}
+            aria-expanded={!collapsedTaskSections.has('next-actions')}
+            className="flex items-center gap-2 text-left"
+          >
+            {collapsedTaskSections.has('next-actions') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Next Actions</h2>
+            <span className="badge badge-green ml-1">{nextActions.length}</span>
+          </button>
           <button
             onClick={() => setIsCreateTaskModalOpen(true)}
             className="btn btn-sm btn-primary flex items-center gap-2"
@@ -509,6 +541,8 @@ export function ProjectDetail() {
             Add Task
           </button>
         </div>
+        {!collapsedTaskSections.has('next-actions') && (
+        <>
         {nextActions.length > 0 ? (
           <div className="space-y-2">
             {nextActions.map((task) => (
@@ -531,12 +565,24 @@ export function ProjectDetail() {
             <p className="text-yellow-800 dark:text-yellow-300 text-center">No next actions defined</p>
           </div>
         )}
+        </>
+        )}
       </section>
 
       {/* Other Tasks Section */}
       {otherTasks.length > 0 && (
         <section className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Other Tasks</h2>
+          <button
+            type="button"
+            onClick={() => toggleTaskSection('other')}
+            aria-expanded={!collapsedTaskSections.has('other')}
+            className="flex items-center gap-2 mb-4 text-left"
+          >
+            {collapsedTaskSections.has('other') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Other Tasks</h2>
+            <span className="badge badge-gray ml-1">{otherTasks.length}</span>
+          </button>
+          {!collapsedTaskSections.has('other') && (
           <div className="space-y-2">
             {otherTasks.map((task) => (
               <TaskItem
@@ -549,18 +595,30 @@ export function ProjectDetail() {
               />
             ))}
           </div>
+          )}
         </section>
       )}
 
       {/* Completed Tasks Section */}
       {completedTasks.length > 0 && (
         <section>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Completed Tasks</h2>
+          <button
+            type="button"
+            onClick={() => toggleTaskSection('completed')}
+            aria-expanded={!collapsedTaskSections.has('completed')}
+            className="flex items-center gap-2 mb-4 text-left"
+          >
+            {collapsedTaskSections.has('completed') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Completed Tasks</h2>
+            <span className="badge badge-gray ml-1">{completedTasks.length}</span>
+          </button>
+          {!collapsedTaskSections.has('completed') && (
           <div className="space-y-2">
             {completedTasks.map((task) => (
               <TaskItem key={task.id} task={task} completed onEdit={setEditingTask} />
             ))}
           </div>
+          )}
         </section>
       )}
         </>
