@@ -192,12 +192,27 @@ class Settings(BaseSettings):
 
     # Project Discovery
     # Map project folder prefixes (xx.xx) to area names
-    # Example: "01" -> "Literary Projects", "10" -> "Tech Projects"
-    AREA_PREFIX_MAP: dict[str, str] = {
-        "01": "Literary Projects",
-        "10": "Personal Development",
-        "20": "Research"
-    }
+    # Stored as comma-separated key:value pairs to avoid pydantic-settings JSON parsing.
+    # Use the area_prefix_map property to get the parsed dict.
+    # Example: AREA_PREFIX_MAP=01:Literary Projects,10:Tech Projects
+    AREA_PREFIX_MAP: str = "01:Literary Projects,10:Personal Development,20:Research"
+
+    @property
+    def area_prefix_map(self) -> dict[str, str]:
+        """Parse AREA_PREFIX_MAP into a dict from comma-separated key:value pairs."""
+        val = self.AREA_PREFIX_MAP
+        if isinstance(val, dict):
+            return val
+        val = val.strip()
+        if not val:
+            return {}
+        result = {}
+        for pair in val.split(","):
+            pair = pair.strip()
+            if ":" in pair:
+                key, value = pair.split(":", 1)
+                result[key.strip()] = value.strip()
+        return result
     # Pattern for numbered folders: xx.xx Name (used for both projects and areas)
     PROJECT_FOLDER_PATTERN: str = r"^(\d{2})\.(\d{2})\s+(.+)$"
     AREA_FOLDER_PATTERN: str = r"^(\d{2})\.(\d{2})\s+(.+)$"

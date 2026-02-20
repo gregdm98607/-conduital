@@ -110,8 +110,8 @@ def update_area_mappings(
                 detail=f"Invalid prefix '{prefix}'. Must be 2 digits (e.g., '01', '10')"
             )
 
-    # Update runtime settings
-    settings.AREA_PREFIX_MAP = mappings
+    # Update runtime settings (serialize dict back to comma-separated string)
+    settings.AREA_PREFIX_MAP = ",".join(f"{k}:{v}" for k, v in mappings.items())
 
     return {
         "success": True,

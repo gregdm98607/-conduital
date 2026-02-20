@@ -118,3 +118,11 @@ export function useProjectReviewInsight() {
     mutationFn: (projectId: number) => api.getProjectReviewInsight(projectId),
   });
 }
+
+// BACKLOG-082: Session Summary Capture
+export function useSessionSummary() {
+  return useMutation({
+    mutationFn: (params: { sessionStart?: string; persist?: boolean; notes?: string }) =>
+      api.getSessionSummary(params),
+  });
+}

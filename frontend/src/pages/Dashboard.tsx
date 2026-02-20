@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { RefreshCw, Edit2, Calendar, ChevronDown, Star, Clock, AlertCircle, Layers, FolderOpen, CheckCircle, FileText, TrendingUp, TrendingDown, Minus, Flame } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -16,8 +16,11 @@ import { MomentumHeatmap } from '../components/intelligence/MomentumHeatmap';
 import { StatsSkeleton, NextActionSkeleton } from '../components/common/Skeleton';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { ContextExportModal } from '../components/common/ContextExportModal';
+import { SessionSummaryModal } from '../components/common/SessionSummaryModal';
 import { getDueDateInfo, getReviewStatus } from '../utils/date';
 import type { Task, UrgencyZone, Area } from '../types';
+
+const SESSION_START_KEY = 'pt-sessionStart';
 
 type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'waiting' | 'cancelled';
 
@@ -50,6 +53,26 @@ export function Dashboard() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isContextExportOpen, setIsContextExportOpen] = useState(false);
+  const [isSessionSummaryOpen, setIsSessionSummaryOpen] = useState(false);
+
+  // BACKLOG-082: Session start tracking
+  const [sessionStart, setSessionStart] = useState<string | null>(() =>
+    localStorage.getItem(SESSION_START_KEY)
+  );
+
+  useEffect(() => {
+    // On first mount, if no session is active, start one
+    if (!sessionStart) {
+      const now = new Date().toISOString();
+      localStorage.setItem(SESSION_START_KEY, now);
+      setSessionStart(now);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSessionEnd = () => {
+    localStorage.removeItem(SESSION_START_KEY);
+    setSessionStart(null);
+  };
 
   const handleStatusChange = (taskId: number, newStatus: TaskStatus) => {
     updateTask.mutate(
@@ -115,6 +138,15 @@ export function Dashboard() {
             <p className="text-gray-600 dark:text-gray-400 mt-1">Your project momentum overview</p>
           </div>
           <div className="flex items-center gap-2">
+            {sessionStart && (
+              <button
+                onClick={() => setIsSessionSummaryOpen(true)}
+                className="btn btn-secondary flex items-center gap-2"
+              >
+                <Clock className="w-4 h-4" />
+                End Session
+              </button>
+            )}
             <button
               onClick={() => setIsContextExportOpen(true)}
               className="btn btn-secondary flex items-center gap-2"
@@ -539,6 +571,14 @@ export function Dashboard() {
       <ContextExportModal
         isOpen={isContextExportOpen}
         onClose={() => setIsContextExportOpen(false)}
+      />
+
+      {/* Session Summary Modal — BACKLOG-082 */}
+      <SessionSummaryModal
+        isOpen={isSessionSummaryOpen}
+        onClose={() => setIsSessionSummaryOpen(false)}
+        sessionStart={sessionStart}
+        onSessionEnd={handleSessionEnd}
       />
     </div>
   );

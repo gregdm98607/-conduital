@@ -494,6 +494,27 @@ export interface Context {
   updated_at: string;
 }
 
+// BACKLOG-082: Session Summary Capture
+export interface MomentumDelta {
+  project_name: string;
+  old_score: number | null;
+  new_score: number;
+}
+
+export interface SessionSummaryResponse {
+  session_start: string;
+  session_end: string;
+  tasks_completed: number;
+  tasks_created: number;
+  tasks_updated: number;
+  projects_touched: string[];
+  momentum_changes: MomentumDelta[];
+  activity_count: number;
+  summary_text: string;
+  persisted: boolean;
+  memory_object_id: string | null;
+}
+
 // Import/Export types
 export interface ImportResult {
   success: boolean;

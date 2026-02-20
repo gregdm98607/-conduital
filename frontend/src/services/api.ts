@@ -42,6 +42,7 @@ import type {
   MomentumHeatmapResponse,
   WeeklyReviewAISummary,
   ProjectReviewInsight,
+  SessionSummaryResponse,
   ImportResult,
   Goal,
   Vision,
@@ -486,6 +487,26 @@ class APIClient {
       `/intelligence/ai/review-project/${projectId}`,
       null,
       { signal }
+    );
+    return response.data;
+  }
+
+  // BACKLOG-082: Session Summary Capture
+  async getSessionSummary(params: {
+    sessionStart?: string;
+    persist?: boolean;
+    notes?: string;
+  }): Promise<SessionSummaryResponse> {
+    const response = await this.client.post<SessionSummaryResponse>(
+      '/intelligence/session-summary',
+      null,
+      {
+        params: {
+          session_start: params.sessionStart,
+          persist: params.persist,
+          notes: params.notes,
+        },
+      }
     );
     return response.data;
   }

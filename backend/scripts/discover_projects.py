@@ -41,7 +41,7 @@ def main():
         sys.exit(1)
 
     print("📊 Current Area Mappings:")
-    for prefix, area in settings.AREA_PREFIX_MAP.items():
+    for prefix, area in settings.area_prefix_map.items():
         print(f"   {prefix} → {area}")
     print()
 

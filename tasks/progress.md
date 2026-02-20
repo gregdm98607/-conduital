@@ -427,3 +427,90 @@
 ---
 
 *Session 17 completed: 2026-02-20*
+
+---
+
+# Session 18: Hotfix Verification + Session Summary Capture (2026-02-20)
+
+## Baseline
+- Backend tests: 321 passing
+- TypeScript: 0 errors
+- Vite build: clean
+
+## Pre-Session
+- Merged S17 hotfix branch (claude/plan-s17-files-TwzKE) into feature branch
+- All 3 verification checks passed
+
+## Phase 1: Warmup — Hotfix Follow-Up
+### DEBT-136 [S]: Fix AREA_PREFIX_MAP parsing
+- Changed `AREA_PREFIX_MAP` from `dict[str, str]` to `str` type in config.py
+- Added `area_prefix_map` property to parse comma-separated `key:value` pairs
+- Updated 3 callers: discovery.py, discovery_service.py, discover_projects.py
+- Status: COMPLETE
+
+### DEBT-137 [XS]: Verify ESLint hooks rules
+- Confirmed `plugin:react-hooks/recommended` in `.eslintrc.cjs` already enables both rules
+- `react-hooks/rules-of-hooks` = error, `react-hooks/exhaustive-deps` = warn
+- Status: COMPLETE (already configured)
+
+### Backlog stats update
+- Updated backlog.md: backend tests 284 → 327, last updated S18
+- Marked BACKLOG-082 as Done (S18)
+
+## Phase 2: BACKLOG-082 — Session Summary Capture
+
+### Step 1 [M]: Backend Session Summary Endpoint
+- Added `POST /api/v1/intelligence/session-summary` endpoint
+- Queries ActivityLog, completed tasks, created tasks, momentum snapshots
+- Builds template-based narrative summary (no AI dependency)
+- Response model: SessionSummaryResponse with MomentumDelta
+- Status: COMPLETE
+
+### Step 2 [S]: Memory Layer Persistence
+- Added `persist=true` and `notes` query params
+- Creates memory object in `sessions.history` namespace (priority 60)
+- Upserts `session-latest` object (priority 80) for context hydration
+- Idempotent: re-calling updates rather than duplicates
+- Status: COMPLETE
+
+### Step 3 [S]: Frontend Types, API, Hook
+- Added `MomentumDelta` and `SessionSummaryResponse` to types/index.ts
+- Added `getSessionSummary()` API method in api.ts
+- Added `useSessionSummary()` mutation hook in useIntelligence.ts
+- Status: COMPLETE
+
+### Step 4 [M]: Dashboard End Session Button + Modal
+- Session start tracking via `pt-sessionStart` localStorage key
+- "End Session" button in Dashboard header (with Clock icon)
+- SessionSummaryModal component: preview, notes textarea, save & end
+- Shows task stats (completed/created/activities), projects touched, momentum deltas
+- Save persists to memory layer, clears session start
+- Status: COMPLETE
+
+## Testing
+- 6 new backend tests for session summary endpoint
+- Tests cover: empty session, completions, momentum changes, persist, idempotent latest, validation
+- Backend tests: 327 passing (321 + 6 new)
+- TypeScript: 0 errors
+- Vite build: clean
+
+## Files Modified
+| File | Changes |
+|------|---------|
+| `backend/app/core/config.py` | DEBT-136 — AREA_PREFIX_MAP: dict → str with property |
+| `backend/app/api/discovery.py` | DEBT-136 — Serialize dict to comma-separated string |
+| `backend/app/services/discovery_service.py` | DEBT-136 — Use property accessor |
+| `backend/scripts/discover_projects.py` | DEBT-136 — Use property accessor |
+| `backend/app/api/intelligence.py` | BACKLOG-082 — Session summary endpoint + persistence |
+| `backend/tests/test_session_summary.py` | BACKLOG-082 — 6 new tests |
+| `frontend/src/types/index.ts` | BACKLOG-082 — MomentumDelta, SessionSummaryResponse |
+| `frontend/src/services/api.ts` | BACKLOG-082 — getSessionSummary() method |
+| `frontend/src/hooks/useIntelligence.ts` | BACKLOG-082 — useSessionSummary() hook |
+| `frontend/src/components/common/SessionSummaryModal.tsx` | BACKLOG-082 — New modal component |
+| `frontend/src/pages/Dashboard.tsx` | BACKLOG-082 — End Session button + modal integration |
+| `backlog.md` | Stats update + BACKLOG-082 marked Done |
+| `tasks/progress.md` | Session 18 log |
+
+---
+
+*Session 18 completed: 2026-02-20*
