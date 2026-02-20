@@ -108,7 +108,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DIST-004 | Documentation Site | Open | R1 | User-facing docs |
 | DIST-005 | Email/Newsletter System | Open | R2 | Updates, onboarding |
 | DIST-014 | Desktop wrapper (Tauri) | Deferred | Post-R4 | Inno Setup installer works well |
-| DIST-023 | Path resolution for packaged exe | Open | R1 | .env/config paths must resolve relative to executable |
+| DIST-023 | Path resolution for packaged exe | **Done** (S16) | R1 | paths.py was already correct; fixed 4 edge cases: fileConfig crash in console=False builds, chain.py bypassing paths.py, alembic.ini dev-only URL comment, run.py frozen check inconsistency |
 | DIST-030 | Windows code signing certificate | Open | R1 | Avoid "Unknown Publisher" warnings (~$70-200/yr) |
 | DIST-031 | Auto-update mechanism | Open | R2 | Version-check endpoint or Sparkle-style updater |
 | DIST-051 | Register conduital.app domain | Open | P1 | $19.99, confirmed available |
@@ -392,11 +392,11 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~66 |
+| Open backlog items | ~65 |
 | Open tech debt | ~13 |
 | Open documentation | 8 |
 | Completed items (archived) | 200+ |
 | Backend tests | 284 |
 
-*Last updated: 2026-02-20 (Session 15)*
+*Last updated: 2026-02-20 (Session 16)*
 *Full history: `backlog-archive-2026-02-12.md`*
