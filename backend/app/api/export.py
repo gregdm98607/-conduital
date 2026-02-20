@@ -1,4 +1,4 @@
-"""
+﻿"""
 Export API endpoints for data export and backup
 
 BACKLOG-074: Data portability promise for R1 release.
@@ -9,6 +9,7 @@ Endpoints:
 - GET /export/json - Download full JSON export
 - GET /export/backup - Download SQLite database backup
 - GET /export/ai-context - Generate AI session context (markdown)
+- POST /export/import - Import data from JSON backup (BACKLOG-090)
 """
 
 import logging
@@ -16,7 +17,7 @@ import os
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -30,6 +31,7 @@ from app.models.vision import Vision
 from app.schemas.export import ExportData, ExportPreview
 from app.core.db_utils import ensure_tz_aware
 from app.services.export_service import ExportService
+from app.services.import_service import ImportService
 
 logger = logging.getLogger(__name__)
 
@@ -437,3 +439,80 @@ def _format_project_summary(project: Project) -> list[str]:
         lines.append(f"  *Outcome: {project.outcome_statement[:120]}*")
 
     return lines
+
+
+# ---------------------------------------------------------------------------
+# Import endpoint (BACKLOG-090)
+# ---------------------------------------------------------------------------
+
+class ImportResponse(BaseModel):
+    """Result of a JSON import operation"""
+    success: bool
+    total_imported: int
+    total_skipped: int
+    areas_imported: int
+    goals_imported: int
+    visions_imported: int
+    contexts_imported: int
+    projects_imported: int
+    tasks_imported: int
+    inbox_items_imported: int
+    areas_skipped: int
+    goals_skipped: int
+    visions_skipped: int
+    contexts_skipped: int
+    projects_skipped: int
+    tasks_skipped: int
+    inbox_items_skipped: int
+    warnings: list[str]
+
+
+@router.post("/import", response_model=ImportResponse)
+async def import_json_backup(request: Request, db: Session = Depends(get_db)):
+    """
+    Import data from a Conduital JSON export backup.
+
+    Accepts a raw JSON body (same format as GET /export/json produces).
+    Merge strategy: entities matched by title are skipped, new ones inserted.
+    Foreign-key IDs are remapped so relationships are preserved.
+
+    Returns a detailed summary of what was imported vs. skipped.
+    """
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Request body must be valid JSON.")
+
+    errors = ImportService.validate_export(data)
+    if errors:
+        raise HTTPException(
+            status_code=422,
+            detail={"message": "Invalid export file.", "errors": errors},
+        )
+
+    try:
+        result = ImportService.import_from_json(data, db)
+    except Exception:
+        logger.exception("Import failed")
+        raise HTTPException(status_code=500, detail="Import failed due to an internal error.")
+
+    return ImportResponse(
+        success=True,
+        total_imported=result.total_imported,
+        total_skipped=result.total_skipped,
+        areas_imported=result.areas_imported,
+        goals_imported=result.goals_imported,
+        visions_imported=result.visions_imported,
+        contexts_imported=result.contexts_imported,
+        projects_imported=result.projects_imported,
+        tasks_imported=result.tasks_imported,
+        inbox_items_imported=result.inbox_items_imported,
+        areas_skipped=result.areas_skipped,
+        goals_skipped=result.goals_skipped,
+        visions_skipped=result.visions_skipped,
+        contexts_skipped=result.contexts_skipped,
+        projects_skipped=result.projects_skipped,
+        tasks_skipped=result.tasks_skipped,
+        inbox_items_skipped=result.inbox_items_skipped,
+        warnings=result.warnings,
+    )

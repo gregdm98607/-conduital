@@ -1,5 +1,33 @@
 # Progress Log
 
+## Session: 2026-02-19 — v1.1.0 Session 14: Debt Sweep + Data Import (BACKLOG-090)
+
+### Warmup: Debt Sweep (DEBT-125/126/128/129/132)
+- **DEBT-125/126**: Added `dark:text-red-400`, `dark:text-yellow-400`, `dark:text-gray-300` to due date status colors in `TaskListView.tsx`
+- **DEBT-128**: Refactored `AIDashboardSuggestions.tsx` to use `getAIErrorMessage()` — consistent with all other AI components
+- **DEBT-129**: Added defensive validation to `parseSortOption()` — handles empty string and missing `_` delimiter gracefully
+- **DEBT-132**: Changed `focus-visible:ring-offset-1` → `ring-offset-0` in `SortableHeader.tsx` to prevent visual overflow
+
+### Part A: Backend Error Sanitization + AI Error Expansion
+- **DEBT-130**: Sanitized raw `str(e)` leak in `intelligence.py` decompose-tasks handler — now returns generic message; added `test_decompose_tasks_500_does_not_leak_exception_detail` test
+- **DEBT-127**: Expanded `aiErrors.ts` `getAIErrorMessage()` with 429 (rate limit), 502/503/504 (gateway errors) handlers
+- **DEBT-131**: Verified soft-delete filters in both rebalance and energy endpoints — `TaskModel.deleted_at.is_(None)` and `Project.deleted_at.is_(None)` already present, no changes needed
+
+### Part B: BACKLOG-090 — Data Import from JSON Backup
+**Backend:**
+- Created `backend/app/services/import_service.py` — `ImportService` with `validate_export()` + `import_from_json()`, merge strategy (skip by title, remap IDs for FK chain), `ImportResult` dataclass
+- Added `POST /export/import` endpoint to `backend/app/api/export.py` with `ImportResponse` Pydantic model (all per-entity imported/skipped counts + warnings)
+- Created `backend/tests/test_import.py` — 15 tests covering validation, per-entity import, round-trip idempotency, API endpoint
+
+**Frontend:**
+- Added `api.importJSON()` to `frontend/src/services/api.ts` with full typed response
+- Added import state + `handleImportJSON` handler to `Settings.tsx`
+- Added Import UI in Data Export section: file picker button (`<input type="file" accept=".json">`), loading state, per-entity result summary grid with imported/skipped counts, warnings list
+
+**Verification:** TypeScript `tsc --noEmit` exit 0, Vite build ✓ (2056 modules)
+
+---
+
 ## Session: 2026-02-14 — v1.1.0 Session 13: Debt Cleanup + AI E2E Validation
 
 ### Warmup: 4 Debt Items from Session 12 Post-Audit

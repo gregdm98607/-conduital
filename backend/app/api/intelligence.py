@@ -1320,7 +1320,7 @@ Return ONLY TASK lines, nothing else."""
     except Exception as e:
         logger.error(f"Task decomposition failed for project {project_id}: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Task decomposition failed: {str(e)}"
+            status_code=500, detail="Task decomposition failed due to an internal error."
         )
 
 

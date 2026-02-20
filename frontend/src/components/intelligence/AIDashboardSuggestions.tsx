@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Brain, RefreshCw, AlertCircle, Lightbulb, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
-import { getAIErrorStatus } from '../../utils/aiErrors';
+import { getAIErrorMessage } from '../../utils/aiErrors';
 import type { StalledProject, AITaskSuggestion } from '../../types';
 
 interface AIDashboardSuggestionsProps {
@@ -48,10 +48,7 @@ export function AIDashboardSuggestions({ stalledProjects }: AIDashboardSuggestio
       if (result.status === 'fulfilled') {
         return { ...s, suggestion: result.value, loading: false };
       } else {
-        const status = getAIErrorStatus(result.reason);
-        const displayError = status === 400 || status === 403
-          ? 'AI not configured — add API key in Settings'
-          : 'Suggestion unavailable';
+        const displayError = getAIErrorMessage(result.reason, 'Suggestion unavailable');
         return { ...s, loading: false, error: displayError };
       }
     });

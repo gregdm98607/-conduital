@@ -202,10 +202,10 @@ export function TaskListView({ tasks, onStatusChange, onComplete, onEdit, isUpda
                       <span
                         className={`inline-flex items-center gap-1 text-xs font-medium ${
                           dueDateInfo.status === 'overdue'
-                            ? 'text-red-600'
+                            ? 'text-red-600 dark:text-red-400'
                             : dueDateInfo.status === 'due-soon'
-                            ? 'text-yellow-600'
-                            : 'text-gray-600'
+                            ? 'text-yellow-600 dark:text-yellow-400'
+                            : 'text-gray-600 dark:text-gray-300'
                         }`}
                       >
                         <Calendar className="w-3 h-3" />

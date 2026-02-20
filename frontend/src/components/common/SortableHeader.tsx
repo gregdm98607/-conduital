@@ -28,7 +28,7 @@ export function SortableHeader({ label, sortKey, currentSortKey, currentDirectio
       <button
         type="button"
         onClick={handleClick}
-        className={`inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 rounded ${
+        className={`inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-gray-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-0 rounded ${
           isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'
         }`}
         aria-sort={isActive ? (currentDirection === 'asc' ? 'ascending' : 'descending') : 'none'}

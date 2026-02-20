@@ -1708,6 +1708,35 @@ class TestSession13AIEdgeCases:
         assert "secret-key-xyz" not in detail
         assert "API key" not in detail or "Settings" in detail
 
+    def test_decompose_tasks_500_does_not_leak_exception_detail(self, test_client):
+        """Decompose tasks 500 error never exposes raw str(e) in detail (DEBT-130)"""
+        proj = test_client.post(
+            "/api/v1/projects",
+            json={"title": "500 Leak Test", "status": "active", "priority": 3},
+        )
+        project_id = proj.json()["id"]
+
+        # Give the project brainstorm notes so it passes early validation
+        test_client.put(
+            f"/api/v1/projects/{project_id}",
+            json={"brainstorm_notes": "TASK: Do something | 30 | medium | deep_work"},
+        )
+
+        sensitive = "SENSITIVE_INTERNAL_DETAIL_XYZ"
+        # Patch provider.generate to raise inside the try block (triggers the 500 path)
+        with patch("app.core.config.settings.AI_FEATURES_ENABLED", True), \
+             patch("app.core.config.settings.ANTHROPIC_API_KEY", "fake-key"), \
+             patch("app.services.ai_service.create_provider") as mock_provider_factory:
+            mock_provider = MagicMock()
+            mock_provider.generate.side_effect = RuntimeError(sensitive)
+            mock_provider_factory.return_value = mock_provider
+            response = test_client.post(f"/api/v1/intelligence/ai/decompose-tasks/{project_id}")
+
+        assert response.status_code == 500
+        detail = response.json()["detail"]
+        assert sensitive not in detail
+        assert "internal error" in detail.lower()
+
     # --- Rebalance suggestions ---
 
     def test_rebalance_suggestions_happy_path(self, test_client):

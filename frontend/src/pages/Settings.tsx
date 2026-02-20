@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight, Download, HardDrive, Activity, Rocket } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -92,6 +92,17 @@ export function Settings() {
   const [exportLoading, setExportLoading] = useState(false);
   const [downloadingJSON, setDownloadingJSON] = useState(false);
   const [downloadingBackup, setDownloadingBackup] = useState(false);
+
+  // Import state
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    total_imported: number; total_skipped: number;
+    areas_imported: number; goals_imported: number; visions_imported: number;
+    contexts_imported: number; projects_imported: number; tasks_imported: number;
+    inbox_items_imported: number; areas_skipped: number; goals_skipped: number;
+    visions_skipped: number; contexts_skipped: number; projects_skipped: number;
+    tasks_skipped: number; inbox_items_skipped: number; warnings: string[];
+  } | null>(null);
 
   const { theme, setTheme } = useTheme();
 
@@ -414,6 +425,29 @@ export function Settings() {
       toast.error('Failed to download database backup');
     }
     setDownloadingBackup(false);
+  };
+
+  const handleImportJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset so same file can be re-selected after a failed attempt
+    e.target.value = '';
+    setImportResult(null);
+    setImportLoading(true);
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const result = await api.importJSON(data);
+      setImportResult(result);
+      const totalImported = result.total_imported;
+      toast.success(`Import complete — ${totalImported} item${totalImported !== 1 ? 's' : ''} imported`);
+      // Refresh export preview to reflect new counts
+      setExportPreview(null);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Import failed';
+      toast.error(msg);
+    }
+    setImportLoading(false);
   };
 
   const sortedMappings = mappings
@@ -1160,6 +1194,59 @@ export function Settings() {
                 JSON export includes all projects, tasks, areas, goals, visions, and inbox items.
                 Database backup is a raw SQLite copy.
               </p>
+
+              {/* Import Section */}
+              <div className="border-t border-gray-200 dark:border-gray-600 pt-4 space-y-3">
+                <h3 className="font-medium text-gray-900 dark:text-gray-100">Import from JSON Backup</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Restore data from a previously exported JSON backup. Existing items with matching titles are skipped (merge, not overwrite).
+                </p>
+                <label className={`btn btn-secondary flex items-center gap-2 w-fit cursor-pointer ${importLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+                  {importLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4 rotate-180" />}
+                  {importLoading ? 'Importing…' : 'Import JSON Backup'}
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    className="sr-only"
+                    onChange={handleImportJSON}
+                    disabled={importLoading}
+                  />
+                </label>
+
+                {/* Import Result Summary */}
+                {importResult && (
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 space-y-2">
+                    <h4 className="font-medium text-green-900 dark:text-green-100 text-sm">Import Complete</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      {[
+                        { label: 'Areas', imp: importResult.areas_imported, skip: importResult.areas_skipped },
+                        { label: 'Goals', imp: importResult.goals_imported, skip: importResult.goals_skipped },
+                        { label: 'Visions', imp: importResult.visions_imported, skip: importResult.visions_skipped },
+                        { label: 'Contexts', imp: importResult.contexts_imported, skip: importResult.contexts_skipped },
+                        { label: 'Projects', imp: importResult.projects_imported, skip: importResult.projects_skipped },
+                        { label: 'Tasks', imp: importResult.tasks_imported, skip: importResult.tasks_skipped },
+                        { label: 'Inbox', imp: importResult.inbox_items_imported, skip: importResult.inbox_items_skipped },
+                      ].map(({ label, imp, skip }) => (
+                        <div key={label} className="bg-white dark:bg-gray-800 rounded p-2 text-center">
+                          <div className="font-bold text-green-700 dark:text-green-400">{imp} new</div>
+                          <div className="text-gray-500 dark:text-gray-400">{skip} skipped</div>
+                          <div className="text-gray-700 dark:text-gray-300 mt-0.5">{label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {importResult.warnings.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {importResult.warnings.map((w, i) => (
+                          <p key={i} className="text-xs text-amber-700 dark:text-amber-400 flex items-start gap-1">
+                            <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                            {w}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </section>
