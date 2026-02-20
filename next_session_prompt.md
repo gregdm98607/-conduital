@@ -1,4 +1,4 @@
-# Session 18 — Hotfix Verification + Next Feature
+# Session 18 — Hotfix Verification + Session Summary Capture (BACKLOG-082)
 
 ## Skill
 
@@ -32,11 +32,18 @@ Two bugs were discovered after Session 17 and fixed:
 ## Read First (verified paths)
 
 ```
-backlog.md                                    # Current priorities — BACKLOG-087 and BACKLOG-082 still open
-tasks/progress.md                             # Session 17 log + all prior history
-tasks/lessons.md                              # Friction patterns — review at session start
-backend/app/core/config.py                    # Hotfix: str fields + @property for list settings
-frontend/src/pages/ProjectDetail.tsx          # Hotfix: hooks ordering fix
+backlog.md                                        # Current priorities
+tasks/progress.md                                 # Session 17 log + all prior history
+tasks/lessons.md                                  # Friction patterns — review at session start
+backend/app/core/config.py                        # Hotfix: str fields + @property for list settings
+frontend/src/pages/ProjectDetail.tsx              # Hotfix: hooks ordering fix
+backend/app/core/db_utils.py                      # ActivityLog helpers: log_activity(), get_recent_activity()
+backend/app/models/activity_log.py                # ActivityLog model (entity_type, action_type, details JSON, timestamp, source)
+backend/app/modules/memory_layer/models.py        # MemoryObject, MemoryNamespace models
+backend/app/modules/memory_layer/routes.py        # Memory CRUD + hydration + onboarding endpoints
+backend/app/modules/memory_layer/schemas.py       # Pydantic schemas for memory objects
+backend/app/modules/memory_layer/services.py      # MemoryService, HydrationService
+frontend/src/pages/Dashboard.tsx                  # Where "End Session" button will go
 ```
 
 ## Known Debt (new from S17 hotfix audit)
@@ -44,7 +51,7 @@ frontend/src/pages/ProjectDetail.tsx          # Hotfix: hooks ordering fix
 | ID | Description | Location | Priority |
 |----|-------------|----------|----------|
 | DEBT-136 | `AREA_PREFIX_MAP: dict[str, str]` has the same pydantic-settings JSON parsing vulnerability as the fixed list fields — will fail if set as non-JSON in `.env` | `config.py:197` | S |
-| DEBT-137 | Lessons from hooks violation: add ESLint rule `react-hooks/exhaustive-deps` and `react-hooks/rules-of-hooks` if not already configured | `frontend/.eslintrc` or `eslint.config` | XS |
+| DEBT-137 | Verify ESLint hooks rules are configured — `react-hooks/rules-of-hooks` (error) and `react-hooks/exhaustive-deps` (warn) | `frontend/.eslintrc` or `eslint.config` | XS |
 
 ## Priority-Ordered Task List
 
@@ -56,23 +63,116 @@ frontend/src/pages/ProjectDetail.tsx          # Hotfix: hooks ordering fix
    - AC: Linter catches hooks-after-early-return pattern
 3. **Backlog stats update**: Update `backlog.md` Stats section — backend tests to 321, last updated S18
 
-### Part A: Choose ONE Feature
+### Feature: BACKLOG-082 — Session Summary Capture
 
-**Option A: BACKLOG-087 — Starter Templates by Persona** (Recommended)
-- Backend: seed endpoint `POST /api/v1/templates/apply/{persona}` (writer, knowledge-worker, developer)
-- Templates define 2-3 areas + 3-5 projects per persona with pre-set priorities/contexts
-- Frontend: Templates tab or modal in onboarding/Setup wizard or Settings page
-- Scope: ~2 hours for backend + frontend + tests
+**Goal:** When a user ends a work session, auto-generate a summary of what changed and store it in the memory layer for cross-session continuity.
 
-**Option B: BACKLOG-082 — Session Summary Capture**
-- After user marks session complete, capture what changed and store in memory layer
-- Backend: `POST /api/v1/memory/session-summary` auto-generates summary from recent activity
-- Frontend: "End Session" button in dashboard with summary preview
-- Scope: ~2 hours, depends on memory layer module being enabled
+**Key infrastructure already in place:**
+- `ActivityLog` table records all entity changes with `entity_type`, `action_type`, `details` JSON, `timestamp`, and `source`
+- `log_activity()` in `db_utils.py` writes activity entries throughout task/project services
+- `get_recent_activity()` in `db_utils.py` queries recent entries by entity
+- `Task.completed_at` timestamp for completion tracking
+- `Project.last_activity_at` for project-level activity
+- `MomentumSnapshot` table with daily score snapshots per project
+- `MemoryObject` model with namespace, priority, content JSON, effective dates, and tags
+- `MemoryService.create_object()` / `update_object()` for persistence
+- Auto-created namespaces via `MemoryService.create_namespace()`
+
+#### Step 1: Backend — Session Summary Endpoint [M]
+
+Create `POST /api/v1/intelligence/session-summary` in `intelligence.py` that:
+
+1. Accepts optional `session_start` ISO timestamp param (default: 4 hours ago)
+2. Queries `ActivityLog` for all entries since `session_start`, grouped by `entity_type` + `action_type`
+3. Queries `Task` where `completed_at >= session_start` and `deleted_at IS NULL`
+4. Queries `Task` where `created_at >= session_start` and `deleted_at IS NULL`
+5. Queries `Project` where `last_activity_at >= session_start` for project names
+6. Computes momentum deltas: latest `MomentumSnapshot` per project vs. snapshot before `session_start`
+7. Builds a template-based `summary_text` narrative (no AI call — pure data):
+   - "Completed 3 tasks across 2 projects. Created 1 new task. Project 'Novel Draft' momentum +0.27."
+
+Response model:
+```python
+class MomentumDelta(BaseModel):
+    project_name: str
+    old_score: Optional[float]
+    new_score: float
+
+class SessionSummaryResponse(BaseModel):
+    session_start: datetime
+    session_end: datetime
+    tasks_completed: int
+    tasks_created: int
+    tasks_updated: int
+    projects_touched: list[str]
+    momentum_changes: list[MomentumDelta]
+    activity_count: int
+    summary_text: str
+```
+
+**AC:**
+- Endpoint returns structured summary with all fields populated
+- Works without AI features enabled (pure data query, no Anthropic dependency)
+- 3+ backend tests: empty session, session with completions, session with momentum changes
+
+#### Step 2: Backend — Persist to Memory Layer [S]
+
+Add `persist: bool = False` and `notes: Optional[str] = None` query params. When `persist=True`:
+
+1. Ensure namespace `sessions.history` exists (auto-create if not)
+2. Create a `MemoryObject` with:
+   - `object_id`: `session-summary-{YYYYMMDD-HHmm}` (timestamped, unique per session)
+   - `namespace`: `sessions.history`
+   - `priority`: 60
+   - `content`: full summary dict + user `notes` if provided
+   - `effective_from`: today
+   - `tags`: `["session", "auto-generated"]`
+3. Upsert a `session-latest` memory object (priority 80) that always holds the most recent session — useful for AI context hydration
+
+**AC:**
+- `persist=True` creates memory object in `sessions.history` namespace
+- `session-latest` object always reflects most recent session
+- Idempotent: re-calling for same session updates rather than duplicates
+- 2+ backend tests: persist creates object, persist updates latest
+
+#### Step 3: Frontend — Types, API, Hook [S]
+
+- `types/index.ts`: Add `SessionSummary` and `MomentumDelta` interfaces matching backend response
+- `api.ts`: Add `getSessionSummary(params: { sessionStart?: string; persist?: boolean; notes?: string })` method
+- `hooks/useIntelligence.ts`: Add `useSessionSummary` mutation hook (POST, not query — user-triggered)
+
+**AC:**
+- Types match backend response model exactly
+- API method handles both preview (`persist=false`) and save (`persist=true`) modes
+- Hook returns `mutate`/`mutateAsync` with proper TanStack Query typing
+
+#### Step 4: Frontend — Dashboard "End Session" Button + Modal [M]
+
+1. **Session start tracking**: On first Dashboard mount (or after previous session end), store `pt-sessionStart` in localStorage with current ISO timestamp. Clear it after "End Session" save.
+
+2. **"End Session" button**: Add to Dashboard header, next to existing "Export AI Context" button. Use `Clock` icon from lucide-react. Only visible when `pt-sessionStart` exists.
+
+3. **SessionSummaryModal component** (`components/common/SessionSummaryModal.tsx`):
+   - On open: call `getSessionSummary({ sessionStart })` to preview
+   - Display: tasks completed count, tasks created count, projects touched list, momentum changes (project name + delta with green/red arrows), narrative text
+   - Optional notes `<textarea>` for user session notes
+   - "Save & End Session" button: calls with `persist=true` + notes, shows toast, clears `pt-sessionStart`
+   - "Dismiss" closes without saving
+   - Loading state while fetching summary
+   - Error state with retry
+   - Follow existing modal patterns (use shared `Modal` component)
+
+**AC:**
+- Button visible on Dashboard, consistent with existing header button styles
+- Modal shows summary preview before persisting
+- Session start time from localStorage
+- Toast confirmation on save, error handling on failure
+- Clearing `pt-sessionStart` resets for next session
 
 ### Part B: Release Polish
 
 - Review and update `tasks/progress.md` with Session 18 log
+- Update `backlog.md`: mark BACKLOG-082 as Done (S18)
 - End-of-session audit — new DEBT items
 - Design Session 19 prompt → save to `next_session_prompt.md`
 
