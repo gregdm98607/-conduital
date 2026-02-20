@@ -1085,11 +1085,11 @@ class TestSession6AIWithMock:
         )
 
         p1, p2, p3, mock_provider = self._enable_ai_and_mock_provider()
-        mock_provider.generate.return_value = (
-            "TASK: Research top 3 competitors | 60 | high | research\n"
-            "TASK: Draft proposal outline | 30 | medium | deep_work\n"
-            "TASK: Create initial mockup wireframes | 120 | high | creative"
-        )
+        mock_provider.generate.return_value = json.dumps([
+            {"title": "Research top 3 competitors", "estimated_minutes": 60, "energy_level": "high", "context": "research"},
+            {"title": "Draft proposal outline", "estimated_minutes": 30, "energy_level": "medium", "context": "deep_work"},
+            {"title": "Create initial mockup wireframes", "estimated_minutes": 120, "energy_level": "high", "context": "creative"},
+        ])
 
         with p1, p2, p3:
             response = test_client.post(f"/api/v1/intelligence/ai/decompose-tasks/{project_id}")

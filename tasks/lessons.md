@@ -765,6 +765,44 @@ For SQLAlchemy self-referential relationships:
 
 ---
 
+## 2026-02-20: Session 17 — Tech Debt Sweep
+
+### What Went Well
+1. **Systematic phase execution** — 5 phases completed cleanly with tests green after each
+2. **JSON-structured AI parsing** — DEBT-104 replacement is more robust, handles malformed/empty responses gracefully with fallback to empty task list
+3. **Pre-session audit value** — findings.md confirmed 6 of 9 AI debt items already fixed before any code was touched
+
+### Lessons Learned
+
+#### 1. Verify Model Attributes Before Adding Filters
+**Issue:** DEBT-134/135 were described as missing `deleted_at` filters on `Goal` and `Vision` queries. Both models only inherit `TimestampMixin`, not `SoftDeleteMixin` — they have no `deleted_at` column. Adding the filter caused `AttributeError` and broke 15 tests.
+**Fix:** Reverted; marked both items N/A in backlog.
+**Rule:** Before adding a `.filter(Model.deleted_at.is_(None))` filter, always verify the model inherits `SoftDeleteMixin`. Don't assume all models support soft deletion. One quick check: `grep "class Goal" models/goal.py` — if `SoftDeleteMixin` isn't in the class signature, the filter is wrong.
+
+#### 2. pydantic-settings 2.x Requires JSON Format for List Fields in .env
+**Issue:** After installing `pytest` into the venv (which upgraded pydantic-settings), tests started failing with `SettingsError: error parsing value for field "WATCH_DIRECTORIES"`. The `.env` had `WATCH_DIRECTORIES=10_Projects,20_Areas` — valid for older versions but not pydantic-settings 2.7+.
+**Fix:** Changed `.env` to `WATCH_DIRECTORIES=["10_Projects","20_Areas"]` (JSON array format).
+**Rule:** In pydantic-settings 2.x, `list[str]` fields in `.env` files must use JSON array notation: `FIELD=["val1","val2"]`. Comma-separated format without quotes is not supported. Update `.env.example` to reflect this format.
+
+#### 3. When Converting AI Parsing Format, Update the Test Mock Too
+**Issue:** DEBT-104 converted decompose-tasks from pipe-delimited text to JSON. The existing test mock still returned pipe-delimited text (`"TASK: ... | 60 | high | research"`), causing the test to log a JSON parse warning and return 0 tasks.
+**Fix:** Updated `mock_provider.generate.return_value` to `json.dumps([{...}, ...])` to match the new prompt format.
+**Rule:** When changing an AI endpoint's output format, always grep for test mocks (`mock_provider.generate.return_value`) that simulate the old format and update them in the same PR.
+
+### Technical Debt Resolved
+- [x] DEBT-102: Proactive analysis + decompose endpoints missing upfront API key check → FIXED
+- [x] DEBT-104: Pipe-delimited task parsing → JSON-structured (intelligence.py)
+- [x] DEBT-133: Import error handler shows raw error message → user-friendly messages by type
+- [x] DEBT-136: Post-import TanStack Query cache not invalidated → now invalidates projects/tasks/areas/inbox
+- [x] DEBT-137: No file size check before import → 10 MB client-side guard added
+- [x] DOC-008: POST /export/import missing from API docs → documented with request/response schemas
+
+### Technical Debt Identified
+- [ ] DEBT-138: `Goal` and `Vision` models lack `SoftDeleteMixin` — soft-deleted goals/visions will block reimport if they're ever soft-deleted (currently only hard-delete exists for these models)
+- [ ] DEBT-139: `WATCH_DIRECTORIES` in `.env.example` uses old comma-separated format — update to JSON array to match pydantic-settings 2.x requirement
+
+---
+
 ## Template for Future Sessions
 
 ```markdown

@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback, type ChangeEvent } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import type { ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight, Download, HardDrive, Activity, Rocket } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAreaMappings, useUpdateAreaMappings, useAreaMappingSuggestions, useScanProjects } from '@/hooks/useDiscovery';
@@ -96,9 +98,10 @@ export function Settings() {
 
   // Import state
   const [importLoading, setImportLoading] = useState(false);
-  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [importResult, setImportResult] = useState<Awaited<ReturnType<typeof api.importJSON>> | null>(null);
 
   const { theme, setTheme } = useTheme();
+  const queryClient = useQueryClient();
 
   // Load Sync settings on mount
   useEffect(() => {
@@ -426,6 +429,13 @@ export function Settings() {
     if (!file) return;
     // Reset so same file can be re-selected after a failed attempt
     e.target.value = '';
+
+    const MAX_IMPORT_SIZE = 10 * 1024 * 1024; // 10 MB
+    if (file.size > MAX_IMPORT_SIZE) {
+      toast.error('File is too large (max 10 MB). Please select a smaller export file.');
+      return;
+    }
+
     setImportResult(null);
     setImportLoading(true);
     try {
@@ -435,22 +445,27 @@ export function Settings() {
       setImportResult(result);
       const totalImported = result.total_imported;
       toast.success(`Import complete — ${totalImported} item${totalImported !== 1 ? 's' : ''} imported`);
+      // Invalidate all affected query caches so data refreshes immediately
+      void queryClient.invalidateQueries({ queryKey: ['projects'] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['areas'] });
+      void queryClient.invalidateQueries({ queryKey: ['inbox'] });
       // Refresh export preview to reflect new counts
       setExportPreview(null);
     } catch (err: unknown) {
-      let msg = 'Import failed';
+      let msg = 'Import failed. Please try again.';
       if (err instanceof SyntaxError) {
-        msg = 'Invalid JSON file — please select a valid Conduital export';
-      } else if (err && typeof err === 'object' && 'response' in err) {
-        const axiosErr = err as { response?: { status?: number; data?: { detail?: string } } };
-        const status = axiosErr.response?.status;
-        if (status === 400) {
-          msg = axiosErr.response?.data?.detail || 'Invalid export file format';
-        } else if (status === 422) {
-          msg = 'File structure does not match expected export format';
-        } else if (status && status >= 500) {
-          msg = 'Server error during import — please try again';
-        }
+        msg = 'Invalid JSON file. Please select a valid Conduital export.';
+      } else if (
+        err != null &&
+        typeof err === 'object' &&
+        'response' in err
+      ) {
+        const status = (err as { response: { status: number } }).response?.status;
+        if (status === 400) msg = 'Import failed: the file format is not valid.';
+        else if (status === 413) msg = 'Import failed: file is too large.';
+        else if (status === 422) msg = 'Import failed: file contains invalid data.';
+        else if (status != null) msg = `Import failed (server error ${status}). Please try again.`;
       }
       toast.error(msg);
     }

@@ -169,11 +169,11 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-130 | Decompose-tasks generic exception handler leaks `str(e)` in detail — should sanitize | `intelligence.py:1319-1321` | **Done** (S14) |
 | DEBT-131 | Rebalance/energy endpoint soft-delete filters — verify subqueries respect `deleted_at` | `intelligence.py:1345-1485` | **Done** (S14) — verified, no changes needed |
 | DEBT-132 | SortableHeader `focus-visible:ring-offset-1` may cause visual overflow in tight table headers | `SortableHeader.tsx:31` | **Done** (S14) |
-| DEBT-133 | `importResult` type duplicated in Settings.tsx and api.ts — extract to shared types | `Settings.tsx` / `api.ts` | **Done** (S17) — Extracted `ImportResult` type to `types/index.ts` |
-| DEBT-134 | Import error handler shows raw JS Error message — needs user-friendly messaging | `Settings.tsx` | **Done** (S17) — Parses JSON/HTTP errors into user-friendly messages |
-| DEBT-135 | `React` default import in Settings.tsx — use named imports | `Settings.tsx` | **Done** (S17) — `import type { ChangeEvent } from 'react'` |
-| DEBT-136 | After import, TanStack Query caches for projects/tasks/areas not invalidated — stale data until manual refresh | `Settings.tsx:handleImportJSON` | Open |
-| DEBT-137 | No client-side file size validation before import upload — large files cause slow/silent failures | `Settings.tsx:handleImportJSON` | Open |
+| DEBT-133 | Import handler catches `err instanceof Error ? err.message` — raw Axios error message shown to user | `Settings.tsx:handleImportJSON` | **Done** (S17) |
+| DEBT-134 | `import_service._import_goals` dedup uses `db.query(Goal).all()` — missing soft-delete filter; soft-deleted goals block reimport | `import_service.py:_import_goals` | **N/A** (S17) — `Goal` has no `deleted_at`; `SoftDeleteMixin` not applied |
+| DEBT-135 | `import_service._import_visions` dedup uses `db.query(Vision).all()` — same soft-delete gap as DEBT-134 | `import_service.py:_import_visions` | **N/A** (S17) — `Vision` has no `deleted_at` |
+| DEBT-136 | After import, TanStack Query caches for projects/tasks/areas not invalidated — stale data until manual refresh | `Settings.tsx:handleImportJSON` | **Done** (S17) |
+| DEBT-137 | No client-side file size validation before import upload — large files cause slow/silent failures | `Settings.tsx:handleImportJSON` | **Done** (S17) — 10 MB client-side guard |
 
 ---
 
@@ -188,7 +188,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DOC-003 | Area discovery API docs | Low | R2 |
 | DOC-006 | Memory layer API documentation | Medium | R3 |
 | DOC-007 | AI context API documentation | Medium | R3 |
-| DOC-008 | `POST /export/import` endpoint missing from `API_DOCUMENTATION.md` | Medium | R2 |
+| DOC-008 | `POST /export/import` endpoint missing from `API_DOCUMENTATION.md` | Medium | **Done** (S17) |
 
 ---
 
@@ -313,10 +313,10 @@ For each release, verify:
 | Metric | Count |
 |--------|-------|
 | Open backlog items | ~63 |
-| Open tech debt | ~12 |
-| Open documentation | 7 |
+| Open tech debt | ~9 |
+| Open documentation | 6 |
 | Completed items (archived) | 200+ |
-| Backend tests | 327 |
+| Backend tests | 321 |
 
-*Last updated: 2026-02-20 (Session 18)*
+*Last updated: 2026-02-20 (Session 17)*
 *Full history: `backlog-archive-2026-02-12.md`*

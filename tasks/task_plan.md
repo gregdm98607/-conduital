@@ -1,44 +1,39 @@
-# v1.1.0 Session 10: Tech Debt Cleanup + Frontend Polish
+# Session 17 Task Plan — 2026-02-20
 
 ## Goal
-Clear remaining medium-priority tech debt, then add 2-3 high-value UX polish items. Maintain 279+ tests, 0 TS errors, clean build.
+Tech debt sweep: resolve stale debt items, fix remaining AI component issues, fix import service gaps, update backlog tracking.
 
-## Phase 1: Dependency Audit (DEBT-010) — `complete`
-- [x] Backend: 12 packages updated (alembic, authlib, coverage, cryptography, greenlet, librt, pathspec, platformdirs, python-engineio, python-socketio, typer, click)
-- [x] Frontend: 20 packages updated (patch/minor within constraints)
-- [x] 279 tests passing, 0 TS errors, clean build
+## Phases
 
-## Phase 2: DEBT-041 — `create_unstuck_task` commit scope — `complete`
-- [x] Removed `db.commit()` from service method, added to API endpoint caller
-- [x] All 7 unstuck tests pass, 279 total passing
+### Phase 1: Housekeeping + DEBT-133 — `pending`
+- Delete `backend/requirements.txt` (stale, conflicts with pyproject.toml)
+- Update `backend/README.md` — pip → poetry install instructions
+- Update `build.bat` line 91 — error hint references requirements.txt
+- Update `next_session_prompt.md` — backend test setup
+- Mark 6 AI debt items as Done in backlog (DEBT-093/096/097/099/100/101)
+- Mark DEBT-105 as N/A (description mismatch — no `mb-0` exists)
 
-## Phase 3: DEBT-023 — Alembic migration chain audit — `complete`
-- [x] Verified chain is valid: 015 <- 014 <- ... <- cb7b35ad5824 <- None
-- [x] `006_memory_layer <- d4e5f6g7h8i9` correctly references urgency zone migration
-- [x] No fix needed — chain is intact
+### Phase 2: DEBT-102 + DEBT-104 — AI endpoint fixes — `pending`
+- DEBT-102: Add upfront `ANTHROPIC_API_KEY` check to proactive analysis + decompose endpoints
+- DEBT-104: Convert pipe-delimited task parsing to JSON-structured parsing (matches pattern from ROADMAP-007)
 
-## Phase 4: DEBT-021/022 — Area discovery service cleanup — `complete`
-- [x] Added `AREA_FOLDER_PATTERN` config setting (separate from `PROJECT_FOLDER_PATTERN`)
-- [x] Updated `AreaDiscoveryService` to use `AREA_FOLDER_PATTERN`
-- [x] Added area methods to `AutoDiscoveryService` (discover_area_folder, handle_area_renamed, handle_area_moved)
-- [x] Simplified area callbacks to use `AutoDiscoveryService` instead of raw `SessionLocal()`
-- [x] 279 tests passing
+### Phase 3: Import service fixes (DEBT-134/135/136/137) — `pending`
+- DEBT-134/135: Add `deleted_at.is_(None)` filter to goals/visions dedup in import_service.py
+- DEBT-136: Invalidate TanStack Query caches after successful import
+- DEBT-137: Add client-side file size validation before import upload
 
-## Phase 5: Frontend Polish — `complete`
-- [x] BACKLOG-136: Keyboard Shortcut Overlay — `?` key toggles, `g+key` chord navigation
-- [x] BACKLOG-130: Momentum Pulse Ring — animated ring on ProjectDetail with score-colored pulse
-- [x] BACKLOG-132: Streak Counter — backend calculates consecutive completion days, flame icon on Dashboard
-- [x] 1 new backend test (280 total), 0 TS errors, clean Vite build
+### Phase 4: DOC-008 — Fresh install setup guide — `pending`
+- Write new machine / fresh install setup guide
+- Cover: Python, Poetry, venv, frontend deps, first run
 
-## Phase 6: Verification + Wrap — `complete`
-- [x] Backend tests: 280 passing (1 new)
-- [x] TypeScript: 0 errors
-- [x] Vite production build: clean
-- [x] backlog.md updated (5 DEBT + 3 BACKLOG marked Done)
-- [x] MEMORY.md updated with session progress + test count
-- [x] Commit + push
+### Phase 5: Session closeout — `pending`
+- Update backlog.md stats + last updated date
+- Write lessons learned
+- Commit changes
+
+## Decisions
+- Skip BACKLOG-147/148/149 (machine migration story) — larger feature, defer to future session
+- Focus on debt cleanup to reduce open debt count before R2
 
 ## Errors Encountered
-| Error | Attempt | Resolution |
-|-------|---------|------------|
-| Streak test failed — PUT /tasks/{id} doesn't set completed_at | 1 | Changed test to use POST /tasks/{id}/complete |
+None yet.

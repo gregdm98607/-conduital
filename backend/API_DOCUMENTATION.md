@@ -462,6 +462,76 @@ Delete an inbox item
 
 ---
 
+## Data Export & Import
+
+### `GET /api/v1/export`
+Export all application data as a JSON backup.
+
+**Response:**
+```json
+{
+  "metadata": {
+    "export_version": "1.0.0",
+    "exported_at": "2026-02-20T12:00:00Z",
+    "app_version": "1.1.0"
+  },
+  "areas": [...],
+  "goals": [...],
+  "visions": [...],
+  "contexts": [...],
+  "projects": [...],
+  "inbox_items": [...]
+}
+```
+
+### `POST /api/v1/export/import`
+Import data from a JSON export backup into the database.
+
+**Merge strategy:** Match existing entities by title (case-insensitive). Skip duplicates; insert new ones. Foreign-key IDs are remapped so area→project→task chains remain consistent regardless of existing DB state.
+
+**Request body:** The JSON object produced by `GET /api/v1/export` (must include `metadata.export_version`).
+
+```json
+{
+  "metadata": { "export_version": "1.0.0", ... },
+  "areas": [...],
+  "goals": [...],
+  "visions": [...],
+  "contexts": [...],
+  "projects": [...],
+  "inbox_items": [...]
+}
+```
+
+**Response:**
+```json
+{
+  "total_imported": 42,
+  "total_skipped": 8,
+  "areas_imported": 3,
+  "areas_skipped": 1,
+  "goals_imported": 2,
+  "goals_skipped": 0,
+  "visions_imported": 1,
+  "visions_skipped": 0,
+  "contexts_imported": 4,
+  "contexts_skipped": 2,
+  "projects_imported": 15,
+  "projects_skipped": 5,
+  "tasks_imported": 17,
+  "tasks_skipped": 0,
+  "inbox_items_imported": 0,
+  "inbox_items_skipped": 0,
+  "warnings": []
+}
+```
+
+**Error responses:**
+- `400` — Unsupported export version or missing `metadata` key
+- `422` — Invalid request body structure
+
+---
+
 ## Status Enums
 
 ### Project Status
@@ -615,5 +685,5 @@ Not found errors return 404:
 
 ---
 
-**Last Updated:** 2026-02-08
+**Last Updated:** 2026-02-20
 **API Version:** v1

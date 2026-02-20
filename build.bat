@@ -88,7 +88,7 @@ cd /d "%BACKEND_DIR%"
 
 if not exist "%VENV_PYTHON%" (
     echo  ERROR: Python venv not found at %VENV_PYTHON%
-    echo  Create it with: python -m venv venv ^&^& venv\Scripts\pip install -r requirements.txt pyinstaller pystray Pillow
+    echo  Create it with: python -m venv venv ^&^& venv\Scripts\pip install pyinstaller pystray Pillow
     exit /b 1
 )
 

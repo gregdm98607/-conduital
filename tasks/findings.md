@@ -1,46 +1,23 @@
-# Findings — R3 Must-Have + Tech Debt Batch (2026-02-06)
+# Findings — Session 17 (2026-02-20)
 
-## Previous Session Patterns (retained)
-- Models use SQLAlchemy 2.0 Mapped/mapped_column style
-- TimestampMixin provides created_at/updated_at
-- Services use static methods with db session parameter
-- Routes use FastAPI APIRouter with Depends(get_db)
-- Alembic migrations use batch mode for SQLite FK support
-- Tailwind CSS with dark: prefix for dark mode
-- lucide-react for icons, TanStack Query for data fetching
-- Collapsible sections use localStorage for persistence
+## Pre-session audit
 
-## AI Key Persistence Analysis
+### AI Component Debt Cluster — 6 of 9 already fixed
+| ID | Status | Evidence |
+|----|--------|----------|
+| DEBT-093 | FIXED | Both files use `replace(/_/g, ' ')` |
+| DEBT-096 | N/A | No `onSuccess` invalidation exists on the mutation |
+| DEBT-097 | FIXED | Single source: mutation data; only `hasRun` boolean remains |
+| DEBT-099 | FIXED | `border border-violet-200 dark:border-violet-800` present |
+| DEBT-100 | FIXED | `aria-expanded` + `aria-controls` + matching `id` present |
+| DEBT-101 | FIXED | `aria-label={Create task: ${task.title}}` present |
+| DEBT-102 | OPEN | Proactive + decompose endpoints lack upfront API key check |
+| DEBT-104 | OPEN | Pipe-delimited parsing at intelligence.py:1281-1313 |
+| DEBT-105 | N/A | No `mb-0` exists; grid uses `mb-8` consistently |
 
-### Current State:
-- API key loaded from `.env` via pydantic-settings `BaseSettings` (config.py:82)
-- PUT /ai endpoint updates `settings.ANTHROPIC_API_KEY` at runtime only (settings.py:89)
-- On server restart, runtime changes are lost → reverts to .env value
-- No database storage for AI settings
+### DEBT-133: requirements.txt removal
+- `requirements.txt` is stale orphan (all versions old, missing deps, conflicting Pillow pin)
+- `pyproject.toml` is already the source of truth with Pillow `^11.0.0`
+- 3 live references need updating: README.md, build.bat, next_session_prompt.md
 
-### Approach: Write to .env file
-- Simplest approach, consistent with existing pydantic-settings pattern
-- Must handle .env file not existing (create it)
-- Must handle updating existing key line vs adding new one
-- Must NOT overwrite other .env settings
-- .env is already in .gitignore (secure)
-
-## Context Export Analysis
-
-### Data Available for Export:
-1. Active projects (name, status, momentum, outcome_statement, next actions)
-2. Stalled projects (14+ days inactive)
-3. Areas (name, health_score, standard_of_excellence)
-4. Upcoming/overdue tasks
-5. GTD horizons (goals, visions)
-6. Recent activity log
-
-### Format: Structured markdown
-- Sections for projects, tasks, areas
-- Include momentum scores for priority context
-- Keep concise for AI context windows
-- Support both full overview and per-project export
-
----
-
-*Updated: 2026-02-06*
+*Updated: 2026-02-20*

@@ -2,6 +2,7 @@
 Intelligence API endpoints - Momentum, stalled projects, AI features
 """
 
+import json
 import logging
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
@@ -1105,6 +1106,12 @@ def proactive_stalled_analysis(
     if not settings.AI_FEATURES_ENABLED:
         raise HTTPException(status_code=400, detail="AI features not enabled")
 
+    if not settings.ANTHROPIC_API_KEY:
+        raise HTTPException(
+            status_code=400,
+            detail="Anthropic API key not configured. Set ANTHROPIC_API_KEY in .env",
+        )
+
     # Find stalled + declining projects (eager-load tasks+area for AI context)
     active_projects = (
         db.execute(
@@ -1207,6 +1214,12 @@ def decompose_brainstorm_to_tasks(
     if not settings.AI_FEATURES_ENABLED:
         raise HTTPException(status_code=400, detail="AI features not enabled")
 
+    if not settings.ANTHROPIC_API_KEY:
+        raise HTTPException(
+            status_code=400,
+            detail="Anthropic API key not configured. Set ANTHROPIC_API_KEY in .env",
+        )
+
     project = db.get(Project, project_id)
     if not project or project.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -1262,54 +1275,58 @@ Vision: {project.vision_statement or 'Not specified'}
 Existing tasks (avoid duplicates):
 {chr(10).join(f'- {t}' for t in existing_titles[:10]) if existing_titles else '- None'}
 
-Generate 3-8 concrete tasks from these notes. For each task, provide:
-- title: A clear, actionable task title (max 80 chars, start with a verb)
-- estimated_minutes: Estimated time (15, 30, 60, 120, or 240)
-- energy_level: Required energy (high, medium, or low)
-- context: Best context (deep_work, creative, administrative, communication, research, or quick_win)
-
-Format each task as exactly one line:
-TASK: [title] | [minutes] | [energy] | [context]
+Generate 3-8 concrete tasks from these notes. Return a JSON array where each item has:
+- "title": string, actionable task title (max 80 chars, start with a verb)
+- "estimated_minutes": integer, one of 15, 30, 60, 120, or 240
+- "energy_level": string, one of "high", "medium", or "low"
+- "context": string, one of "deep_work", "creative", "administrative", "communication", "research", or "quick_win"
 
 Example:
-TASK: Draft initial outline for chapter 3 | 60 | high | deep_work
-TASK: Send follow-up email to reviewer | 15 | low | communication
+[
+  {{"title": "Draft initial outline for chapter 3", "estimated_minutes": 60, "energy_level": "high", "context": "deep_work"}},
+  {{"title": "Send follow-up email to reviewer", "estimated_minutes": 15, "energy_level": "low", "context": "communication"}}
+]
 
-Return ONLY TASK lines, nothing else."""
+Return ONLY valid JSON, no commentary or markdown."""
 
     try:
         response = ai_service.provider.generate(prompt, max_tokens=800, temperature=0.7)
+        # Strip markdown code fences if present
+        clean = response.strip()
+        if clean.startswith("```"):
+            clean = clean.split("\n", 1)[1] if "\n" in clean else clean
+            clean = clean.rsplit("```", 1)[0]
+        clean = clean.strip()
+
         tasks: list[DecomposedTask] = []
-        for line in response.strip().split("\n"):
-            line = line.strip()
-            if not line.startswith("TASK:"):
+        try:
+            items = json.loads(clean)
+            if not isinstance(items, list):
+                items = []
+        except json.JSONDecodeError:
+            logger.warning(f"Task decomposition JSON parse failed for project {project_id}; response: {clean[:200]}")
+            items = []
+
+        valid_energy = {"high", "medium", "low"}
+        valid_context = {"deep_work", "creative", "administrative", "communication", "research", "quick_win"}
+        valid_minutes = {15, 30, 60, 120, 240}
+
+        for item in items:
+            if not isinstance(item, dict):
                 continue
-            parts = line[5:].strip().split("|")
-            title = parts[0].strip() if len(parts) > 0 else ""
+            title = str(item.get("title") or "").strip()[:80]
             if not title:
                 continue
-            minutes = None
-            energy = None
-            context = None
-            if len(parts) > 1:
-                try:
-                    minutes = int(parts[1].strip())
-                except (ValueError, IndexError):
-                    pass
-            if len(parts) > 2:
-                e = parts[2].strip().lower()
-                if e in ("high", "medium", "low"):
-                    energy = e
-            if len(parts) > 3:
-                c = parts[3].strip().lower()
-                if c in ("deep_work", "creative", "administrative", "communication", "research", "quick_win"):
-                    context = c
+            raw_minutes = item.get("estimated_minutes")
+            minutes = raw_minutes if raw_minutes in valid_minutes else None
+            energy = item.get("energy_level", "").lower()
+            context = item.get("context", "").lower()
             tasks.append(
                 DecomposedTask(
-                    title=title[:80],
+                    title=title,
                     estimated_minutes=minutes,
-                    energy_level=energy,
-                    context=context,
+                    energy_level=energy if energy in valid_energy else None,
+                    context=context if context in valid_context else None,
                 )
             )
 
