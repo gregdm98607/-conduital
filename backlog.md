@@ -169,6 +169,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-130 | Decompose-tasks generic exception handler leaks `str(e)` in detail — should sanitize | `intelligence.py:1319-1321` | **Done** (S14) |
 | DEBT-131 | Rebalance/energy endpoint soft-delete filters — verify subqueries respect `deleted_at` | `intelligence.py:1345-1485` | **Done** (S14) — verified, no changes needed |
 | DEBT-132 | SortableHeader `focus-visible:ring-offset-1` may cause visual overflow in tight table headers | `SortableHeader.tsx:31` | **Done** (S14) |
+| DEBT-133 | `requirements.txt` pins `Pillow==10.2.0` — fails to build on modern pip/Python; consolidate into `pyproject.toml` and delete `requirements.txt` | `requirements.txt:21` | Open |
 
 ---
 
@@ -183,6 +184,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DOC-003 | Area discovery API docs | Low | R2 |
 | DOC-006 | Memory layer API documentation | Medium | R3 |
 | DOC-007 | AI context API documentation | Medium | R3 |
+| DOC-008 | New machine / fresh install setup guide | High | R1 | End-user doc: Python/Node install, `.env` config, first-run DB init, reconnecting sync folder |
 
 ---
 
@@ -272,6 +274,9 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-144 | MomentumHeatmap mobile touch support | Done (S12) — onTouchStart + document touchstart listener |
 | BACKLOG-145 | **AI Features End-to-End Validation** | **Done** (S13) — Shared `aiErrors.ts` utility, 6 components standardized, 13 backend tests added (298 total), browser-tested all 7 AI components |
 | BACKLOG-146 | **Migrate Markdown Sync Files from Old Machine** | Open — See instructions below |
+| BACKLOG-147 | **Scheduled Automatic Database Export** | Open | Complement to BACKLOG-090 (manual JSON import/export); daily/weekly auto-export to configurable path; surface "Backup Now" prominently in Settings |
+| BACKLOG-148 | **Sync Folder Reconnect Wizard** | Open | On startup, if `SECOND_BRAIN_ROOT` is unset or path is missing, prompt user with guided setup rather than silently doing nothing |
+| BACKLOG-149 | **Machine Migration Assistant** | Open | Dedicated UI flow: "Moving to a new machine?" — wraps export (BACKLOG-147) + reconnect (BACKLOG-148) into a coherent wizard; strong differentiator |
 
 ### BACKLOG-146: Migrate Markdown Sync Files from Old Machine
 
@@ -387,11 +392,11 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~63 |
-| Open tech debt | ~12 |
-| Open documentation | 7 |
+| Open backlog items | ~66 |
+| Open tech debt | ~13 |
+| Open documentation | 8 |
 | Completed items (archived) | 200+ |
 | Backend tests | 284 |
 
-*Last updated: 2026-02-14 (Session 11)*
+*Last updated: 2026-02-20 (Session 15)*
 *Full history: `backlog-archive-2026-02-12.md`*
