@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { useAreaMappings, useUpdateAreaMappings, useAreaMappingSuggestions, useScanProjects } from '@/hooks/useDiscovery';
 import { useTheme } from '@/context/ThemeContext';
 import { api } from '@/services/api';
-import type { ImportResult } from '@/types';
+
 
 const SETTINGS_SECTIONS_KEY = 'pt-settings-sections';
 
