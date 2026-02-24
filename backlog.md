@@ -25,7 +25,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 | ID | Description | Status | Notes |
 |----|-------------|--------|-------|
-| BACKLOG-076 | **List View Design Standard** | Done (S12) | SortableHeader/StaticHeader components, wired in Projects + AllTasks pages |
+| BACKLOG-076 | **List View Design Standard** | **Done** (S12) | SortableHeader/StaticHeader components, wired in Projects + AllTasks pages |
 | DOC-005 | **Module System Documentation** | Deferred to R2 | User-facing docs |
 
 ---
@@ -37,7 +37,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | ID | Description | Status | Notes |
 |----|-------------|--------|-------|
 | BACKLOG-087 | Starter Templates by Persona | Open | Writer, Knowledge Worker, etc. |
-| BACKLOG-082 | Session Summary Capture | Done (S18) | End-of-session memory updates |
+| BACKLOG-082 | Session Summary Capture | **Done** (S20) | End-of-session memory updates — structured capture form, Sessions tab, auto-namespace |
 | DOC-006 | Memory Layer API Documentation | Open | Developer docs |
 | DOC-007 | AI Context API Documentation | Open | Developer docs |
 
@@ -45,9 +45,9 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 | ID | Description | Status | Notes |
 |----|-------------|--------|-------|
-| BACKLOG-089 | Memory Namespace Management UI | Open | Power users |
-| BACKLOG-088 | Prefetch Rule Configuration UI | Open | Power users |
-| BACKLOG-083 | Progress Dashboard (Memory) | Open | System health metrics |
+| BACKLOG-089 | Memory Namespace Management UI | **Done** (S18) | Power users |
+| BACKLOG-088 | Prefetch Rule Configuration UI | **Done** (S18) | Power users |
+| BACKLOG-083 | Progress Dashboard (Memory) | **Done** (S19) | System health metrics — `/memory/stats` endpoint + Health tab |
 | BACKLOG-085 | Memory Diff View | Open | Session continuity |
 
 ---
@@ -174,6 +174,10 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-135 | `import_service._import_visions` dedup uses `db.query(Vision).all()` — same soft-delete gap as DEBT-134 | `import_service.py:_import_visions` | **N/A** (S17) — `Vision` has no `deleted_at` |
 | DEBT-136 | After import, TanStack Query caches for projects/tasks/areas not invalidated — stale data until manual refresh | `Settings.tsx:handleImportJSON` | **Done** (S17) |
 | DEBT-137 | No client-side file size validation before import upload — large files cause slow/silent failures | `Settings.tsx:handleImportJSON` | **Done** (S17) — 10 MB client-side guard |
+| DEBT-138 | `get_memory_stats` builds 6+ separate DB queries — could consolidate into fewer round-trips | `memory_layer/routes.py:36-152` | Open |
+| DEBT-139 | `MemoryPage.tsx` is ~1,600 lines — decompose into `HealthView`, `PrefetchView`, `SessionsView` tab components | `MemoryPage.tsx` | Open |
+| DEBT-140 | Session capture `energy_level` uses magic numbers 1-5 — no shared constant/enum between FE and BE | `schemas.py:495`, `MemoryPage.tsx` | Open |
+| DEBT-141 | Health tab has no retry/refresh if `/memory/stats` fails — shows error with no recovery path | `MemoryPage.tsx` (Health tab) | Open |
 
 ---
 
@@ -250,10 +254,6 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-059 | Stuck Task Identification | Beyond stalled projects |
 | BACKLOG-061 | Register Claude Code Skills | Developer tooling |
 | BACKLOG-066 | Automated Urgency Zone (Phase 3) | Zone lock capability |
-| BACKLOG-090 | Data Import from JSON Backup | **Done** (S14) — `POST /export/import`, merge strategy, Settings UI with result summary |
-| BACKLOG-146 | Import: conflict resolution UI — show duplicate list before import, let user choose skip/overwrite | UX Enhancement |
-| BACKLOG-147 | Import: progress indicator for large files — streaming or polling approach | UX Enhancement |
-| BACKLOG-148 | Import: export format version migration — handle older export schemas gracefully | Reliability |
 | BACKLOG-093 | Quick Capture Success Animation | Visual flash/animation feedback |
 | BACKLOG-095 | Collapsible Sections Pattern Extension | **Done** (S17) — Collapsible sections in WeeklyReviewPage (5 sections) + ProjectDetail (3 task sections) with localStorage persistence |
 | BACKLOG-099 | Archive Area Confirmation Dialog | **Done** (Session 1) — Already implemented with Modal + force archive |
@@ -265,21 +265,35 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-118 | Clean Windows VM testing (Win10 + Win11) | Test on VMs with no Python/Node.js |
 | BACKLOG-121 | Area Prefix Mapping UX Redesign | Clarify auto-discovery, progressive disclosure |
 | BACKLOG-128 | Badge Configuration & Today's Focus Layout | Standardize badge pattern, accent-bar style |
-| BACKLOG-130 | Momentum Pulse Ring | **Done** (Session 10) — Animated ring on ProjectDetail with color-coded pulse |
-| BACKLOG-131 | Task Completion Celebration | **Done** (Session 6) — CompleteTaskButton with ripple animation |
-| BACKLOG-132 | Streak Counter on Dashboard | **Done** (Session 10) — Flame icon + day count in dashboard stats |
 | BACKLOG-133 | Smooth Card Reorder Transitions | FLIP / View Transitions API for card sorting |
-| BACKLOG-134 | Momentum Delta Toast | **Done** (Session 9) — Rotating encouraging momentum messages in useCompleteTask hook |
-| BACKLOG-135 | Empty State Illustrations | **Done** (Session 9) — EmptyState component with SVG illustrations for projects/tasks/areas/search |
-| BACKLOG-136 | Keyboard Shortcut Overlay | **Done** (Session 10) — Press `?` for overlay, `g+key` chord navigation |
-| BACKLOG-137 | Momentum Color Glow on Sidebar | **Done** (Session 11) — Active nav item glow matching avg momentum |
-| BACKLOG-138 | Stalled Project Shake | **Done** (Session 11) — CSS shake animation on stalled project cards |
-| BACKLOG-139 | Daily Momentum Heatmap | **Done** (Session 11) — GitHub-style 90-day heatmap on Dashboard |
-| BACKLOG-141 | List View Column Header Sorting | **Done** (S12) — subsumed by BACKLOG-076; SortableHeader component + wiring |
-| BACKLOG-142 | localStorage Key Namespacing | **Done** (Session 6) — all keys use `pt-` prefix |
-| BACKLOG-143 | CompleteTaskButton accessibility (aria-label, focus-visible ring, aria-disabled) | **Done** (Session 8) |
-| BACKLOG-144 | MomentumHeatmap mobile touch support | Done (S12) — onTouchStart + document touchstart listener |
-| BACKLOG-145 | **AI Features End-to-End Validation** | **Done** (S13) — Shared `aiErrors.ts` utility, 6 components standardized, 13 backend tests added (298 total), browser-tested all 7 AI components |
+| BACKLOG-146 | Import: conflict resolution UI — show duplicate list before import, let user choose skip/overwrite | UX Enhancement |
+| BACKLOG-147 | Import: progress indicator for large files — streaming or polling approach | UX Enhancement |
+| BACKLOG-148 | Import: export format version migration — handle older export schemas gracefully | Reliability |
+| BACKLOG-149 | Session Capture: pre-fill accomplishments from git log or task completions | Auto-populate from today's activity |
+| BACKLOG-150 | Health tab: sparkline trend charts for 7d/30d activity | Visual trends beyond raw numbers |
+
+### Parking Lot — Completed (Archived)
+
+*Kept for reference; no longer active*
+
+| ID | Session | Summary |
+|----|---------|---------|
+| BACKLOG-090 | S14 | Data Import from JSON Backup |
+| BACKLOG-099 | S1 | Archive Area Confirmation Dialog |
+| BACKLOG-130 | S10 | Momentum Pulse Ring |
+| BACKLOG-131 | S6 | Task Completion Celebration |
+| BACKLOG-132 | S10 | Streak Counter on Dashboard |
+| BACKLOG-134 | S9 | Momentum Delta Toast |
+| BACKLOG-135 | S9 | Empty State Illustrations |
+| BACKLOG-136 | S10 | Keyboard Shortcut Overlay |
+| BACKLOG-137 | S11 | Momentum Color Glow on Sidebar |
+| BACKLOG-138 | S11 | Stalled Project Shake |
+| BACKLOG-139 | S11 | Daily Momentum Heatmap |
+| BACKLOG-141 | S12 | List View Column Header Sorting |
+| BACKLOG-142 | S6 | localStorage Key Namespacing |
+| BACKLOG-143 | S8 | CompleteTaskButton Accessibility |
+| BACKLOG-144 | S12 | MomentumHeatmap Mobile Touch |
+| BACKLOG-145 | S13 | AI Features End-to-End Validation |
 
 ---
 
@@ -312,11 +326,11 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~63 |
-| Open tech debt | ~9 |
+| Open backlog items | ~65 |
+| Open tech debt | ~13 |
 | Open documentation | 6 |
 | Completed items (archived) | 200+ |
 | Backend tests | 321 |
 
-*Last updated: 2026-02-20 (Session 17)*
+*Last updated: 2026-02-20 (Session 20)*
 *Full history: `backlog-archive-2026-02-12.md`*

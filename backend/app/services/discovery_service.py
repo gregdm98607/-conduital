@@ -75,6 +75,7 @@ class ProjectDiscoveryService:
                     stats["skipped"] += 1
             except Exception as e:
                 logger.error(f"Error processing {folder.name}: {e}")
+                self.db.rollback()  # Reset session so next folder can proceed
                 stats["errors"].append({
                     "folder": folder.name,
                     "error": str(e)

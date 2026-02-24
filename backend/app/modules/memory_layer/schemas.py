@@ -27,12 +27,19 @@ class NamespaceCreate(NamespaceBase):
     pass
 
 
+class NamespaceUpdate(BaseModel):
+    """Schema for updating a namespace (name is immutable)"""
+    description: Optional[str] = Field(None, description="Updated description")
+    default_priority: Optional[int] = Field(None, ge=0, le=100, description="Updated default priority")
+
+
 class NamespaceResponse(NamespaceBase):
     """Schema for namespace response"""
     model_config = ConfigDict(from_attributes=True)
 
     created_at: datetime
     updated_at: datetime
+    object_count: int = Field(0, description="Number of memory objects in this namespace")
 
 
 # =============================================================================
@@ -152,6 +159,15 @@ class PrefetchRuleCreate(BaseModel):
     is_active: bool = Field(True)
 
 
+class PrefetchRuleUpdate(BaseModel):
+    """Schema for updating a prefetch rule (name is immutable)"""
+    trigger: Optional[str] = None
+    lookahead_minutes: Optional[int] = None
+    bundle: Optional[list[str]] = None
+    false_prefetch_decay_minutes: Optional[int] = None
+    is_active: Optional[bool] = None
+
+
 class PrefetchRuleResponse(PrefetchRuleCreate):
     """Schema for prefetch rule response"""
     model_config = ConfigDict(from_attributes=True)
@@ -180,3 +196,61 @@ class MemoryImportRequest(BaseModel):
     overwrite_existing: bool = Field(False, description="Overwrite existing objects with same ID")
     namespaces: Optional[list[NamespaceCreate]] = None
     objects: list[MemoryObjectCreate]
+
+
+# =============================================================================
+# Stats Schema
+# =============================================================================
+
+class MemoryStatsTotals(BaseModel):
+    objects: int
+    namespaces: int
+    quick_keys: int
+    prefetch_rules: int
+    active_prefetch_rules: int
+
+
+class MemoryStatsObjects(BaseModel):
+    active: int
+    inactive: int
+    db_storage: int
+    file_storage: int
+    avg_priority: float
+    high_priority: int
+    medium_priority: int
+    low_priority: int
+
+
+class MemoryStatsNamespaceCount(BaseModel):
+    name: str
+    count: int
+
+
+class MemoryStatsActivity(BaseModel):
+    created_last_7d: int
+    updated_last_7d: int
+    created_last_30d: int
+    updated_last_30d: int
+
+
+class MemoryStats(BaseModel):
+    totals: MemoryStatsTotals
+    objects: MemoryStatsObjects
+    namespaces_by_count: list[MemoryStatsNamespaceCount]
+    recent_activity: MemoryStatsActivity
+
+
+# =============================================================================
+# Session Capture Schemas
+# =============================================================================
+
+class SessionCaptureRequest(BaseModel):
+    """Structured end-of-session summary capture"""
+    session_date: Optional[date] = Field(None, description="Session date (default: today)")
+    accomplishments: list[str] = Field(default_factory=list, description="What was accomplished")
+    blockers: Optional[list[str]] = Field(None, description="Blockers or impediments encountered")
+    next_focus: Optional[str] = Field(None, max_length=500, description="Primary focus for next session")
+    energy_level: Optional[int] = Field(None, ge=1, le=5, description="Energy level 1 (low) to 5 (high)")
+    duration_minutes: Optional[int] = Field(None, ge=1, description="Session duration in minutes")
+    notes: Optional[str] = Field(None, max_length=2000, description="Additional free-form notes")
+    tags: Optional[list[str]] = Field(None, description="Tags for filtering and retrieval")

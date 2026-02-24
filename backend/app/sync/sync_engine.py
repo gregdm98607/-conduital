@@ -99,6 +99,12 @@ class SyncEngine:
                 project = self.db.get(Project, metadata["id"])
 
             if not project:
+                # Try to find by file_path for idempotent re-scans
+                project = self.db.query(Project).filter(
+                    Project.file_path == str(file_path)
+                ).first()
+
+            if not project:
                 # Create new project
                 project = Project()
 
@@ -115,6 +121,10 @@ class SyncEngine:
                 project.momentum_score = metadata["momentum_score"]
             if "target_completion_date" in metadata:
                 project.target_completion_date = metadata["target_completion_date"]
+
+            # Fallback: derive title from filename if frontmatter has no title
+            if not project.title:
+                project.title = file_path.stem.replace("_", " ")
 
             project.file_path = str(file_path)
             project.file_hash = file_hash
@@ -151,10 +161,14 @@ class SyncEngine:
             raise
         except Exception as e:
             logger.error(f"Error syncing file {file_path}: {e}")
-            sync_state = self.get_or_create_sync_state(str(file_path))
-            sync_state.sync_status = "error"
-            sync_state.error_message = str(e)
-            self.db.commit()
+            self.db.rollback()  # Reset broken session before attempting error state update
+            try:
+                sync_state = self.get_or_create_sync_state(str(file_path))
+                sync_state.sync_status = "error"
+                sync_state.error_message = str(e)
+                self.db.commit()
+            except Exception:
+                pass  # Don't cascade if sync state update also fails
             return None
 
     def sync_database_to_file(self, project: Project) -> bool:

@@ -21,7 +21,7 @@
 ; ============================================================================
 
 #define MyAppName "Conduital"
-#define MyAppVersion "1.0.0-beta"
+#define MyAppVersion "1.1.0-beta"
 #define MyAppPublisher "Conduital"
 #define MyAppURL "https://conduital.com"
 #define MyAppExeName "Conduital.exe"
@@ -63,12 +63,12 @@ UninstallDisplayName={#MyAppName}
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 ; Version info embedded in installer exe
-VersionInfoVersion=1.0.0.0
+VersionInfoVersion=1.1.0.0
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppName} Setup
 VersionInfoCopyright=Copyright (c) 2026 Greg Maxfield
 VersionInfoProductName={#MyAppName}
-VersionInfoProductVersion=1.0.0.0
+VersionInfoProductVersion=1.1.0.0
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

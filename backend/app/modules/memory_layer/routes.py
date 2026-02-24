@@ -20,19 +20,150 @@ from app.modules.memory_layer.schemas import (
     MemoryObjectResponse,
     MemoryObjectBrief,
     NamespaceCreate,
+    NamespaceUpdate,
     NamespaceResponse,
     HydrationRequest,
     HydrationResponse,
     QuickKeyCreate,
     QuickKeyResponse,
     PrefetchRuleCreate,
+    PrefetchRuleUpdate,
     PrefetchRuleResponse,
     MemoryExport,
     MemoryImportRequest,
+    MemoryStats,
+    MemoryStatsTotals,
+    MemoryStatsObjects,
+    MemoryStatsNamespaceCount,
+    MemoryStatsActivity,
+    SessionCaptureRequest,
 )
 from app.modules.memory_layer.services import MemoryService, HydrationService
 
 router = APIRouter()
+
+
+# =============================================================================
+# Stats Endpoint
+# =============================================================================
+
+@router.get("/stats", response_model=MemoryStats)
+def get_memory_stats(db: Session = Depends(get_db)):
+    """Return aggregated health metrics for the memory layer."""
+    from sqlalchemy import func, or_
+    from datetime import datetime, timedelta, timezone
+
+    today = date.today()
+    cutoff_7d = datetime.now(timezone.utc) - timedelta(days=7)
+    cutoff_30d = datetime.now(timezone.utc) - timedelta(days=30)
+
+    # Totals
+    total_objects = db.query(func.count(MemoryObject.id)).scalar() or 0
+    total_namespaces = db.query(func.count(MemoryNamespace.id)).scalar() or 0
+    total_quick_keys = db.query(func.count(MemoryIndex.id)).scalar() or 0
+    total_prefetch = db.query(func.count(PrefetchRule.id)).scalar() or 0
+    active_prefetch = (
+        db.query(func.count(PrefetchRule.id))
+        .filter(PrefetchRule.is_active.is_(True))
+        .scalar() or 0
+    )
+
+    # Active/inactive objects (effective date range check)
+    active_objects = (
+        db.query(func.count(MemoryObject.id))
+        .filter(
+            MemoryObject.effective_from <= today,
+            or_(MemoryObject.effective_to.is_(None), MemoryObject.effective_to >= today),
+        )
+        .scalar() or 0
+    )
+
+    # Storage breakdown
+    db_storage = (
+        db.query(func.count(MemoryObject.id))
+        .filter(MemoryObject.storage_type == "db")
+        .scalar() or 0
+    )
+    file_storage = (
+        db.query(func.count(MemoryObject.id))
+        .filter(MemoryObject.storage_type == "file")
+        .scalar() or 0
+    )
+
+    # Priority stats
+    avg_priority_raw = db.query(func.avg(MemoryObject.priority)).scalar()
+    avg_priority = round(float(avg_priority_raw), 1) if avg_priority_raw is not None else 0.0
+    high_priority = (
+        db.query(func.count(MemoryObject.id)).filter(MemoryObject.priority >= 80).scalar() or 0
+    )
+    medium_priority = (
+        db.query(func.count(MemoryObject.id))
+        .filter(MemoryObject.priority >= 40, MemoryObject.priority < 80)
+        .scalar() or 0
+    )
+    low_priority = (
+        db.query(func.count(MemoryObject.id)).filter(MemoryObject.priority < 40).scalar() or 0
+    )
+
+    # Top namespaces by object count
+    ns_rows = (
+        db.query(MemoryObject.namespace, func.count(MemoryObject.id).label("cnt"))
+        .group_by(MemoryObject.namespace)
+        .order_by(func.count(MemoryObject.id).desc())
+        .limit(8)
+        .all()
+    )
+
+    # Recent activity
+    created_7d = (
+        db.query(func.count(MemoryObject.id))
+        .filter(MemoryObject.created_at >= cutoff_7d)
+        .scalar() or 0
+    )
+    updated_7d = (
+        db.query(func.count(MemoryObject.id))
+        .filter(MemoryObject.updated_at >= cutoff_7d)
+        .scalar() or 0
+    )
+    created_30d = (
+        db.query(func.count(MemoryObject.id))
+        .filter(MemoryObject.created_at >= cutoff_30d)
+        .scalar() or 0
+    )
+    updated_30d = (
+        db.query(func.count(MemoryObject.id))
+        .filter(MemoryObject.updated_at >= cutoff_30d)
+        .scalar() or 0
+    )
+
+    return MemoryStats(
+        totals=MemoryStatsTotals(
+            objects=total_objects,
+            namespaces=total_namespaces,
+            quick_keys=total_quick_keys,
+            prefetch_rules=total_prefetch,
+            active_prefetch_rules=active_prefetch,
+        ),
+        objects=MemoryStatsObjects(
+            active=active_objects,
+            inactive=total_objects - active_objects,
+            db_storage=db_storage,
+            file_storage=file_storage,
+            avg_priority=avg_priority,
+            high_priority=high_priority,
+            medium_priority=medium_priority,
+            low_priority=low_priority,
+        ),
+        namespaces_by_count=[
+            MemoryStatsNamespaceCount(name=name, count=cnt) for name, cnt in ns_rows
+        ],
+        recent_activity=MemoryStatsActivity(
+            created_last_7d=created_7d,
+            updated_last_7d=updated_7d,
+            created_last_30d=created_30d,
+            updated_last_30d=updated_30d,
+        ),
+    )
 
 
 # =============================================================================
@@ -150,9 +281,20 @@ def delete_memory_object(
 
 @router.get("/namespaces", response_model=list[NamespaceResponse])
 def list_namespaces(db: Session = Depends(get_db)):
-    """List all namespaces"""
+    """List all namespaces with object counts"""
+    from sqlalchemy import func
     namespaces = db.query(MemoryNamespace).order_by(MemoryNamespace.name).all()
-    return [NamespaceResponse.model_validate(ns) for ns in namespaces]
+    counts = dict(
+        db.query(MemoryObject.namespace, func.count(MemoryObject.id))
+        .group_by(MemoryObject.namespace)
+        .all()
+    )
+    result = []
+    for ns in namespaces:
+        data = NamespaceResponse.model_validate(ns)
+        data.object_count = counts.get(ns.name, 0)
+        result.append(data)
+    return result
 
 
 @router.post("/namespaces", response_model=NamespaceResponse, status_code=status.HTTP_201_CREATED)
@@ -174,7 +316,72 @@ def create_namespace(
         data.description,
         data.default_priority
     )
-    return NamespaceResponse.model_validate(namespace)
+    ns_response = NamespaceResponse.model_validate(namespace)
+    ns_response.object_count = 0
+    return ns_response
+
+
+@router.patch("/namespaces/{name}", response_model=NamespaceResponse)
+def update_namespace(
+    name: str,
+    data: NamespaceUpdate,
+    db: Session = Depends(get_db),
+):
+    """Update a namespace's description or default priority (name is immutable)"""
+    from sqlalchemy import func
+    ns = db.query(MemoryNamespace).filter(MemoryNamespace.name == name).first()
+    if not ns:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Namespace '{name}' not found"
+        )
+
+    if data.description is not None:
+        ns.description = data.description
+    if data.default_priority is not None:
+        ns.default_priority = data.default_priority
+
+    db.commit()
+    db.refresh(ns)
+
+    count = db.query(func.count(MemoryObject.id)).filter(MemoryObject.namespace == name).scalar() or 0
+    ns_response = NamespaceResponse.model_validate(ns)
+    ns_response.object_count = count
+    return ns_response
+
+
+@router.delete("/namespaces/{name}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_namespace(
+    name: str,
+    force: bool = Query(False, description="Delete even if namespace contains objects"),
+    db: Session = Depends(get_db),
+):
+    """
+    Delete a namespace.
+
+    By default, returns 409 if the namespace contains objects.
+    Use force=true to delete the namespace and all its objects.
+    """
+    from sqlalchemy import func
+    ns = db.query(MemoryNamespace).filter(MemoryNamespace.name == name).first()
+    if not ns:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Namespace '{name}' not found"
+        )
+
+    count = db.query(func.count(MemoryObject.id)).filter(MemoryObject.namespace == name).scalar() or 0
+    if count > 0 and not force:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Namespace '{name}' contains {count} object(s). Delete them first or use force=true."
+        )
+
+    if force and count > 0:
+        db.query(MemoryObject).filter(MemoryObject.namespace == name).delete()
+
+    db.delete(ns)
+    db.commit()
 
 
 # =============================================================================
@@ -301,6 +508,52 @@ def create_prefetch_rule(
     db.commit()
     db.refresh(rule)
     return PrefetchRuleResponse.model_validate(rule)
+
+
+@router.patch("/index/prefetch/{name}", response_model=PrefetchRuleResponse)
+def update_prefetch_rule(
+    name: str,
+    data: PrefetchRuleUpdate,
+    db: Session = Depends(get_db),
+):
+    """Update a prefetch rule (name is immutable)"""
+    rule = db.query(PrefetchRule).filter(PrefetchRule.name == name).first()
+    if not rule:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Prefetch rule '{name}' not found"
+        )
+
+    if data.trigger is not None:
+        rule.trigger = data.trigger
+    if data.lookahead_minutes is not None:
+        rule.lookahead_minutes = data.lookahead_minutes
+    if data.bundle is not None:
+        rule.bundle = data.bundle
+    if data.false_prefetch_decay_minutes is not None:
+        rule.false_prefetch_decay_minutes = data.false_prefetch_decay_minutes
+    if data.is_active is not None:
+        rule.is_active = data.is_active
+
+    db.commit()
+    db.refresh(rule)
+    return PrefetchRuleResponse.model_validate(rule)
+
+
+@router.delete("/index/prefetch/{name}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_prefetch_rule(
+    name: str,
+    db: Session = Depends(get_db),
+):
+    """Delete a prefetch rule"""
+    rule = db.query(PrefetchRule).filter(PrefetchRule.name == name).first()
+    if not rule:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Prefetch rule '{name}' not found"
+        )
+    db.delete(rule)
+    db.commit()
 
 
 # =============================================================================
@@ -539,3 +792,88 @@ def complete_onboarding(
         objects_created=len(created_ids),
         object_ids=created_ids,
     )
+
+
+# =============================================================================
+# Session Capture Endpoints
+# =============================================================================
+
+_SESSIONS_NAMESPACE = "sessions"
+
+
+@router.post("/sessions", response_model=MemoryObjectResponse, status_code=status.HTTP_201_CREATED)
+def capture_session(
+    data: SessionCaptureRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Capture an end-of-session summary.
+
+    Creates a structured memory object in the 'sessions' namespace.
+    Object IDs are auto-generated as session-YYYYMMDD-NNN.
+    The sessions namespace is auto-created on first use.
+    """
+    session_date = data.session_date or date.today()
+    date_str = session_date.strftime("%Y%m%d")
+
+    # Auto-create sessions namespace if missing
+    ns = db.query(MemoryNamespace).filter(MemoryNamespace.name == _SESSIONS_NAMESPACE).first()
+    if not ns:
+        MemoryService.create_namespace(
+            db, _SESSIONS_NAMESPACE,
+            "End-of-session summaries",
+            default_priority=65,
+        )
+
+    # Determine next counter for this date
+    prefix = f"session-{date_str}-"
+    existing_count = (
+        db.query(MemoryObject)
+        .filter(
+            MemoryObject.namespace == _SESSIONS_NAMESPACE,
+            MemoryObject.object_id.like(f"{prefix}%"),
+        )
+        .count()
+    )
+    object_id = f"{prefix}{existing_count + 1:03d}"
+
+    # Build structured content
+    content: dict = {"date": str(session_date), "accomplishments": data.accomplishments}
+    if data.blockers:
+        content["blockers"] = data.blockers
+    if data.next_focus:
+        content["next_focus"] = data.next_focus
+    if data.energy_level is not None:
+        content["energy_level"] = data.energy_level
+    if data.duration_minutes is not None:
+        content["duration_minutes"] = data.duration_minutes
+    if data.notes:
+        content["notes"] = data.notes
+
+    obj_data = MemoryObjectCreate(
+        object_id=object_id,
+        namespace=_SESSIONS_NAMESPACE,
+        priority=65,
+        effective_from=session_date,
+        content=content,
+        tags=data.tags or ["session"],
+    )
+
+    obj = MemoryService.create_object(db, obj_data)
+    return MemoryObjectResponse.model_validate(obj)
+
+
+@router.get("/sessions", response_model=list[MemoryObjectResponse])
+def list_sessions(
+    limit: int = Query(30, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    """List session summaries, newest first."""
+    objects = (
+        db.query(MemoryObject)
+        .filter(MemoryObject.namespace == _SESSIONS_NAMESPACE)
+        .order_by(MemoryObject.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [MemoryObjectResponse.model_validate(obj) for obj in objects]
