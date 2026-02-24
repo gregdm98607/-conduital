@@ -174,11 +174,11 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-135 | `import_service._import_visions` dedup uses `db.query(Vision).all()` — same soft-delete gap as DEBT-134 | `import_service.py:_import_visions` | **N/A** (S17) — `Vision` has no `deleted_at` |
 | DEBT-136 | After import, TanStack Query caches for projects/tasks/areas not invalidated — stale data until manual refresh | `Settings.tsx:handleImportJSON` | **Done** (S17) |
 | DEBT-137 | No client-side file size validation before import upload — large files cause slow/silent failures | `Settings.tsx:handleImportJSON` | **Done** (S17) — 10 MB client-side guard |
-| DEBT-138 | `get_memory_stats` builds 6+ separate DB queries — could consolidate into fewer round-trips | `memory_layer/routes.py:36-152` | Open |
+| DEBT-138 | `get_memory_stats` builds 6+ separate DB queries — could consolidate into fewer round-trips | `memory_layer/routes.py:36-152` | **Done** (S23) — Consolidated 12+ queries into 3 using `case()` aggregates |
 | DEBT-139 | `MemoryPage.tsx` is ~1,600 lines — decompose into tab components | `MemoryPage.tsx` | **Done** (S22) — Complete: ObjectsView + 6 modals extracted; MemoryPage.tsx now 75 lines |
 | DEBT-140 | Session capture `energy_level` uses magic numbers 1-5 — no shared constant/enum between FE and BE | `schemas.py:495`, `MemoryPage.tsx` | **Done** (S22) — `ENERGY_LEVELS` constant in shared.tsx, used by SessionsView + EnergyDots |
 | DEBT-141 | Health tab has no retry/refresh if `/memory/stats` fails — shows error with no recovery path | `MemoryPage.tsx` (Health tab) | **Done** (S21) — Added refetch button with spin animation |
-| DEBT-142 | Version strings stale at `1.1.0-beta` — should be `1.2.0` in `pyproject.toml`, `package.json`, `conduital.iss` | Multiple files | Open |
+| DEBT-142 | Version strings stale at `1.1.0-beta` — should be `1.2.0` in `pyproject.toml`, `package.json`, `conduital.iss` | Multiple files | **Done** (S23) — All 5 version locations bumped to 1.2.0 via sync script |
 
 ---
 
@@ -328,10 +328,10 @@ For each release, verify:
 | Metric | Count |
 |--------|-------|
 | Open backlog items | ~65 |
-| Open tech debt | ~9 |
+| Open tech debt | ~7 |
 | Open documentation | 6 |
 | Completed items (archived) | 200+ |
 | Backend tests | 327 |
 
-*Last updated: 2026-02-23 (Session 22)*
+*Last updated: 2026-02-23 (Session 23)*
 *Full history: `backlog-archive-2026-02-12.md`*

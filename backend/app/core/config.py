@@ -36,7 +36,7 @@ def _read_version_from_pyproject() -> str:
     Falls back to a hardcoded default in packaged builds where
     pyproject.toml is not available.
     """
-    _FALLBACK_VERSION = "1.0.0-beta"
+    _FALLBACK_VERSION = "1.2.0"
 
     # In development: pyproject.toml is at backend/pyproject.toml
     candidates = [

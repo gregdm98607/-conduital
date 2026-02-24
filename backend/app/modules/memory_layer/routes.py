@@ -50,90 +50,67 @@ router = APIRouter()
 @router.get("/stats", response_model=MemoryStats)
 def get_memory_stats(db: Session = Depends(get_db)):
     """Return aggregated health metrics for the memory layer."""
-    from sqlalchemy import func, or_
+    from sqlalchemy import func, case, or_
     from datetime import datetime, timedelta, timezone
 
     today = date.today()
     cutoff_7d = datetime.now(timezone.utc) - timedelta(days=7)
     cutoff_30d = datetime.now(timezone.utc) - timedelta(days=30)
 
-    # Totals
-    total_objects = db.query(func.count(MemoryObject.id)).scalar() or 0
+    # Query 1: All MemoryObject aggregates in a single pass
+    is_active = case(
+        (
+            (MemoryObject.effective_from <= today)
+            & or_(MemoryObject.effective_to.is_(None), MemoryObject.effective_to >= today),
+            1,
+        ),
+        else_=0,
+    )
+    row = db.query(
+        func.count(MemoryObject.id),
+        func.sum(is_active),
+        func.count(case((MemoryObject.storage_type == "db", 1))),
+        func.count(case((MemoryObject.storage_type == "file", 1))),
+        func.avg(MemoryObject.priority),
+        func.count(case((MemoryObject.priority >= 80, 1))),
+        func.count(case(((MemoryObject.priority >= 40) & (MemoryObject.priority < 80), 1))),
+        func.count(case((MemoryObject.priority < 40, 1))),
+        func.count(case((MemoryObject.created_at >= cutoff_7d, 1))),
+        func.count(case((MemoryObject.updated_at >= cutoff_7d, 1))),
+        func.count(case((MemoryObject.created_at >= cutoff_30d, 1))),
+        func.count(case((MemoryObject.updated_at >= cutoff_30d, 1))),
+    ).one()
+
+    total_objects = row[0] or 0
+    active_objects = int(row[1] or 0)
+    db_storage = row[2] or 0
+    file_storage = row[3] or 0
+    avg_priority = round(float(row[4]), 1) if row[4] is not None else 0.0
+    high_priority = row[5] or 0
+    medium_priority = row[6] or 0
+    low_priority = row[7] or 0
+    created_7d = row[8] or 0
+    updated_7d = row[9] or 0
+    created_30d = row[10] or 0
+    updated_30d = row[11] or 0
+
+    # Query 2: Counts from other tables (namespaces, quick keys, prefetch rules)
     total_namespaces = db.query(func.count(MemoryNamespace.id)).scalar() or 0
     total_quick_keys = db.query(func.count(MemoryIndex.id)).scalar() or 0
-    total_prefetch = db.query(func.count(PrefetchRule.id)).scalar() or 0
-    active_prefetch = (
-        db.query(func.count(PrefetchRule.id))
-        .filter(PrefetchRule.is_active.is_(True))
-        .scalar() or 0
-    )
+    prefetch_row = db.query(
+        func.count(PrefetchRule.id),
+        func.count(case((PrefetchRule.is_active.is_(True), 1))),
+    ).one()
+    total_prefetch = prefetch_row[0] or 0
+    active_prefetch = prefetch_row[1] or 0
 
-    # Active/inactive objects (effective date range check)
-    active_objects = (
-        db.query(func.count(MemoryObject.id))
-        .filter(
-            MemoryObject.effective_from <= today,
-            or_(MemoryObject.effective_to.is_(None), MemoryObject.effective_to >= today),
-        )
-        .scalar() or 0
-    )
-
-    # Storage breakdown
-    db_storage = (
-        db.query(func.count(MemoryObject.id))
-        .filter(MemoryObject.storage_type == "db")
-        .scalar() or 0
-    )
-    file_storage = (
-        db.query(func.count(MemoryObject.id))
-        .filter(MemoryObject.storage_type == "file")
-        .scalar() or 0
-    )
-
-    # Priority stats
-    avg_priority_raw = db.query(func.avg(MemoryObject.priority)).scalar()
-    avg_priority = round(float(avg_priority_raw), 1) if avg_priority_raw is not None else 0.0
-    high_priority = (
-        db.query(func.count(MemoryObject.id)).filter(MemoryObject.priority >= 80).scalar() or 0
-    )
-    medium_priority = (
-        db.query(func.count(MemoryObject.id))
-        .filter(MemoryObject.priority >= 40, MemoryObject.priority < 80)
-        .scalar() or 0
-    )
-    low_priority = (
-        db.query(func.count(MemoryObject.id)).filter(MemoryObject.priority < 40).scalar() or 0
-    )
-
-    # Top namespaces by object count
+    # Query 3: Top namespaces by object count
     ns_rows = (
         db.query(MemoryObject.namespace, func.count(MemoryObject.id).label("cnt"))
         .group_by(MemoryObject.namespace)
         .order_by(func.count(MemoryObject.id).desc())
         .limit(8)
         .all()
-    )
-
-    # Recent activity
-    created_7d = (
-        db.query(func.count(MemoryObject.id))
-        .filter(MemoryObject.created_at >= cutoff_7d)
-        .scalar() or 0
-    )
-    updated_7d = (
-        db.query(func.count(MemoryObject.id))
-        .filter(MemoryObject.updated_at >= cutoff_7d)
-        .scalar() or 0
-    )
-    created_30d = (
-        db.query(func.count(MemoryObject.id))
-        .filter(MemoryObject.created_at >= cutoff_30d)
-        .scalar() or 0
-    )
-    updated_30d = (
-        db.query(func.count(MemoryObject.id))
-        .filter(MemoryObject.updated_at >= cutoff_30d)
-        .scalar() or 0
     )
 
     return MemoryStats(

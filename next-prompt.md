@@ -1,64 +1,56 @@
-# Session 23 — Version Bump, DEBT-138, Clean VM Testing Prep
-
-## Skill
-
-Use `/planning-with-files` — Session 23
+# Session 24 — Clean VM Testing, Installer Compilation, Distribution Prep
 
 ## Context
 
-Session 22 completed the MemoryPage.tsx decomposition (DEBT-139 fully done) and DEBT-140 (energy level constant). MemoryPage.tsx is now a 75-line thin shell with ObjectsView, modals, HealthView, PrefetchView, SessionsView all in `pages/memory/`. Pre-release checklist review identified version mismatch (DEBT-142) and several distribution gaps. Backend tests pass (327), frontend builds clean.
+Session 23 completed version bump (DEBT-142) and stats query consolidation (DEBT-138). All version strings now at `1.2.0` across pyproject.toml, package.json, conduital.iss, and config.py fallback. The `get_memory_stats` endpoint was consolidated from 12+ separate DB queries into 3 using SQLAlchemy `case()` aggregates — identical response shape, fewer round-trips. Frontend builds clean, exe builds at ~62 MB. Inno Setup not installed in dev environment — needs installation before installer can be compiled. VM test plan written at `tasks/vm-test-plan.md`.
 
-**Session 22 shipped:**
-- DEBT-139 complete: ObjectsView.tsx (~320 lines), components/modals.tsx (~430 lines) extracted; MemoryPage.tsx → 75 lines
-- DEBT-140: `ENERGY_LEVELS` constant in shared.tsx, used by SessionsView + EnergyDots
-- Pre-release checklist review: identified version mismatch, missing icon, no VM testing
-- Logged DEBT-142 (version string mismatch)
+**Session 23 shipped:**
+- DEBT-142: Version bump to 1.2.0 (5 files via sync_version.py + manual VersionInfo fix)
+- DEBT-138: `get_memory_stats` consolidated — 12+ queries → 3 queries (case() aggregates)
+- Frontend build clean, PyInstaller exe build clean (~62 MB)
+- VM test plan: `tasks/vm-test-plan.md` (9 test sections, 40+ test cases)
 
-**Open debt (small):** DEBT-138 (stats query consolidation), DEBT-142 (version bump to 1.2.0)
+**Open debt (small):** DEBT-008 (file watcher), DEBT-013 (mobile), DEBT-015 (overlapping docs), DEBT-016 (WebSocket), DEBT-017 (debounce), DEBT-018 (network), DEBT-019 (silent failures), DEBT-075 (settings mutation), DEBT-078 (venv python)
+
+Backend tests: 327 passing. Frontend: TypeScript clean, Vite build clean.
 
 ## Read First (verified paths)
 
 ```
-backlog.md                                               # Updated S22 — DEBT-139/140 done, DEBT-142 logged
-distribution-checklist.md                                # Full pre-release checklist (reviewed S22)
-frontend/src/pages/MemoryPage.tsx                        # 75 lines — thin shell (verified S22)
-frontend/src/pages/memory/ObjectsView.tsx                # ~320 lines — new S22
-frontend/src/pages/memory/components/modals.tsx          # ~430 lines — new S22
-backend/app/modules/memory_layer/routes.py               # DEBT-138 target: get_memory_stats
-backend/pyproject.toml                                   # Version: 1.1.0-beta (needs bump)
-frontend/package.json                                    # Version: 1.1.0-beta (needs bump)
-installer/conduital.iss                                  # Version: 1.1.0-beta (needs bump)
+backlog.md                                               # Updated S23 — DEBT-138/142 done
+tasks/vm-test-plan.md                                    # 40+ test cases for clean VM testing
+distribution-checklist.md                                # Full pre-release checklist
+installer/conduital.iss                                  # Version 1.2.0 (ready for Inno Setup compilation)
+backend/app/modules/memory_layer/routes.py               # Consolidated stats endpoint
+backend/pyproject.toml                                   # Version: 1.2.0
 ```
 
 ## Priority-Ordered Task List
 
-### Phase 1: Version Bump (DEBT-142) (~10 min)
+### Phase 1: Install Inno Setup + Compile Installer (~15 min)
 
-Bump all version strings from `1.1.0-beta` to `1.2.0`:
-1. `backend/pyproject.toml` — version field
-2. `frontend/package.json` — version field
-3. `installer/conduital.iss` — `#define MyAppVersion`
-4. Verify backend config reads from pyproject.toml correctly
-5. Run tests to confirm nothing breaks
+1. Install Inno Setup 6.x: `winget install JRSoftware.InnoSetup` (or download from jrsoftware.org)
+2. Compile installer: `iscc installer\conduital.iss`
+3. Verify output: `installer/Output/ConduitalSetup-1.2.0.exe`
+4. Test installer on dev machine (install → launch → verify version → uninstall)
 
-### Phase 2: DEBT-138 — Consolidate get_memory_stats Queries (~30 min)
+### Phase 2: Clean VM Testing (~60 min)
 
-The `/memory/stats` endpoint runs 6+ separate DB queries. Consolidate into fewer round-trips:
-- Review `memory_layer/routes.py` lines 36-152
-- Identify queries that can be combined (e.g., object counts by status, storage type, priority band)
-- Use SQLAlchemy `func.count`, `case()`, or subqueries to batch
-- Maintain identical response shape
-- Backend tests must still pass
+Follow the test plan in `tasks/vm-test-plan.md`:
+1. Set up Windows 10 evaluation VM (download from Microsoft)
+2. Set up Windows 11 evaluation VM
+3. Copy `ConduitalSetup-1.2.0.exe` to each VM
+4. Execute all 9 test sections on each VM
+5. Record results in test plan tables
+6. Log any issues found as new DEBT/BACKLOG items
 
-### Phase 3: Clean VM Testing Preparation (~30 min)
+### Phase 3: Distribution Gaps (~30 min)
 
-1. Build the frontend: `cd frontend && npm run build`
-2. Build the exe: `cd backend && build.bat`
-3. Build the installer: compile `installer/conduital.iss` with Inno Setup
-4. Document exact steps for clean VM testing in a `tasks/vm-test-plan.md`:
-   - What to test (install, first-run setup, all pages, AI degradation, uninstall)
-   - Expected results for each test
-   - How to capture and report issues
+Address remaining distribution checklist items:
+1. Review `distribution-checklist.md` for outstanding blockers
+2. App icon: design or source a proper `.ico` file (currently using generated placeholder)
+3. Privacy policy draft (lightweight — local-first, no telemetry)
+4. Consider code signing certificate options
 
 ### Phase 4: Session Closeout
 
@@ -67,7 +59,7 @@ The `/memory/stats` endpoint runs 6+ separate DB queries. Consolidate into fewer
 3. Update `backlog.md` — mark completed items, log new debt
 4. Commit with descriptive message
 5. Push to origin
-6. **Write Session 24 prompt → `next-prompt.md`** (do not skip this step)
+6. **Write Session 25 prompt → `next-prompt.md`** (do not skip this step)
 
 ## End-of-Session Protocol
 
