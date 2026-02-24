@@ -2,6 +2,9 @@
  * Shared helper components and utilities for the Memory page tabs.
  */
 
+/** Energy level scale used by session capture (1 = low, 5 = high) */
+export const ENERGY_LEVELS = [1, 2, 3, 4, 5] as const;
+
 export function getPriorityColor(priority: number): string {
   if (priority >= 80) return 'text-red-600 dark:text-red-400';
   if (priority >= 60) return 'text-orange-600 dark:text-orange-400';
@@ -68,7 +71,7 @@ export function MiniBar({
 export function EnergyDots({ level }: { level: number }) {
   return (
     <span className="flex items-center gap-0.5" title={`Energy: ${level}/5`}>
-      {[1, 2, 3, 4, 5].map((n) => (
+      {ENERGY_LEVELS.map((n) => (
         <span
           key={n}
           className={`w-2 h-2 rounded-full ${

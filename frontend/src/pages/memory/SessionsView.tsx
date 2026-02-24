@@ -7,7 +7,7 @@ import {
   useCaptureSession,
   type SessionCapture,
 } from '@/hooks/useMemory';
-import { EnergyDots } from './components/shared';
+import { EnergyDots, ENERGY_LEVELS } from './components/shared';
 
 export function SessionCaptureButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -314,7 +314,7 @@ function CaptureSessionModal({ onClose }: { onClose: () => void }) {
           <div>
             <label className="label">Energy Level (optional)</label>
             <div className="flex gap-2 mt-1">
-              {[1, 2, 3, 4, 5].map((n) => (
+              {ENERGY_LEVELS.map((n) => (
                 <button
                   key={n}
                   onClick={() => setEnergyLevel(energyLevel === n ? null : n)}
