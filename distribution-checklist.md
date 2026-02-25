@@ -298,17 +298,18 @@
 - [x] Embed EULA in the installer (displayed during installation) *(installer/conduital.iss LicenseFile=..\LICENSE)*
 - [x] Make EULA accessible within the app (About/Legal section) *(/api/v1/legal/eula + /api/v1/legal/third-party endpoints added to main.py)*
 
-### 4.3 Privacy Policy
-- [ ] Draft a privacy policy covering:
-  - [ ] What data the app collects (local database contents)
-  - [ ] What data is transmitted externally:
+### 4.3 Privacy Policy *(drafted 2026-02-25)*
+- [x] Draft a privacy policy covering: *(`PRIVACY_POLICY.md` — 8 sections)*
+  - [x] What data the app collects (local database contents)
+  - [x] What data is transmitted externally:
     - Gumroad license validation (license key sent to Gumroad)
     - Anthropic API calls (user's data sent to Anthropic when using AI features, under user's own API key)
-    - Any analytics or telemetry (if implemented; recommend none for MVP)
-  - [ ] Data storage: all local, user controls their own data
-  - [ ] Third-party services and their privacy policies (link to Anthropic's, Gumroad's)
+    - Any analytics or telemetry (none — documented as no telemetry)
+  - [x] Data storage: all local, user controls their own data
+  - [x] Third-party services and their privacy policies (link to Anthropic's, Gumroad's)
+- [x] Link to it from within the app *(`/api/v1/legal/privacy` endpoint added)*
 - [ ] Host the privacy policy on a webpage (can be a simple GitHub Pages site)
-- [ ] Link to it from the Gumroad listing and from within the app
+- [ ] Link to it from the Gumroad listing
 
 ### 4.4 Trademark Compliance
 - [x] Audit all instances of "GTD" in: *(done 2026-02-07, Round 2 completed 2026-02-07)*

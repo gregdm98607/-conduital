@@ -331,6 +331,23 @@ async def get_third_party_licenses():
     return PlainTextResponse("Third-party licenses file not found.", status_code=404)
 
 
+@app.get("/api/v1/legal/privacy")
+async def get_privacy_policy():
+    """Return the privacy policy text for display in the app."""
+    from app.core.paths import is_packaged
+
+    if is_packaged():
+        exe_dir = Path(sys.executable).parent
+        pp_path = exe_dir / "PRIVACY_POLICY.md"
+    else:
+        pp_path = Path(__file__).resolve().parent.parent.parent / "PRIVACY_POLICY.md"
+
+    if pp_path.is_file():
+        return PlainTextResponse(pp_path.read_text(encoding="utf-8"))
+
+    return PlainTextResponse("Privacy policy file not found.", status_code=404)
+
+
 @app.post("/api/v1/shutdown")
 async def request_shutdown(request: Request):
     """Request graceful server shutdown.

@@ -89,6 +89,9 @@ Source: "..\THIRD_PARTY_LICENSES.txt"; DestDir: "{app}"; Flags: ignoreversion
 ; License file
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 
+; Privacy policy
+Source: "..\PRIVACY_POLICY.md"; DestDir: "{app}"; Flags: ignoreversion
+
 [Icons]
 ; Start Menu shortcuts
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Comment: "{#MyAppDescription}"

@@ -272,6 +272,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-148 | Import: export format version migration — handle older export schemas gracefully | Reliability |
 | BACKLOG-149 | Session Capture: pre-fill accomplishments from git log or task completions | Auto-populate from today's activity |
 | BACKLOG-150 | Health tab: sparkline trend charts for 7d/30d activity | Visual trends beyond raw numbers |
+| BACKLOG-151 | Display app version number in sidebar | Read from config/package; helps support + user awareness |
 
 ### Parking Lot — Completed (Archived)
 
@@ -333,5 +334,5 @@ For each release, verify:
 | Completed items (archived) | 200+ |
 | Backend tests | 327 |
 
-*Last updated: 2026-02-23 (Session 23)*
+*Last updated: 2026-02-25 (Session 24)*
 *Full history: `backlog-archive-2026-02-12.md`*
