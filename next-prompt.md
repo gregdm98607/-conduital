@@ -1,14 +1,19 @@
-# Session 24 — Clean VM Testing, Installer Compilation, Distribution Prep
+# Session 25 — Clean VM Testing + Code Signing Decision
 
 ## Context
 
-Session 23 completed version bump (DEBT-142) and stats query consolidation (DEBT-138). All version strings now at `1.2.0` across pyproject.toml, package.json, conduital.iss, and config.py fallback. The `get_memory_stats` endpoint was consolidated from 12+ separate DB queries into 3 using SQLAlchemy `case()` aggregates — identical response shape, fewer round-trips. Frontend builds clean, exe builds at ~62 MB. Inno Setup not installed in dev environment — needs installation before installer can be compiled. VM test plan written at `tasks/vm-test-plan.md`.
+Session 24 completed the installer compilation pipeline and distribution prep. Inno Setup 6.7.1 installed, `ConduitalSetup-1.2.0.exe` compiled successfully (27.4 MB). Privacy policy drafted and served via `/api/v1/legal/privacy`. Full clean build verified: frontend clean, PyInstaller ~62 MB, 327 backend tests passing.
 
-**Session 23 shipped:**
-- DEBT-142: Version bump to 1.2.0 (5 files via sync_version.py + manual VersionInfo fix)
-- DEBT-138: `get_memory_stats` consolidated — 12+ queries → 3 queries (case() aggregates)
-- Frontend build clean, PyInstaller exe build clean (~62 MB)
-- VM test plan: `tasks/vm-test-plan.md` (9 test sections, 40+ test cases)
+**Session 24 shipped:**
+- Inno Setup 6.7.1 installed (user-local: `%LOCALAPPDATA%\Programs\Inno Setup 6\`)
+- `ConduitalSetup-1.2.0.exe` compiled (27.4 MB) at `installer/Output/`
+- Full clean PyInstaller build (~62 MB)
+- Privacy policy (`PRIVACY_POLICY.md` — 8 sections, local-first focused)
+- `/api/v1/legal/privacy` endpoint added to main.py
+- `PRIVACY_POLICY.md` bundled in installer .iss
+- Distribution checklist Phase 4.3 marked done
+
+**Installer ready for testing but NOT yet tested on clean VMs.**
 
 **Open debt (small):** DEBT-008 (file watcher), DEBT-013 (mobile), DEBT-015 (overlapping docs), DEBT-016 (WebSocket), DEBT-017 (debounce), DEBT-018 (network), DEBT-019 (silent failures), DEBT-075 (settings mutation), DEBT-078 (venv python)
 
@@ -17,40 +22,54 @@ Backend tests: 327 passing. Frontend: TypeScript clean, Vite build clean.
 ## Read First (verified paths)
 
 ```
-backlog.md                                               # Updated S23 — DEBT-138/142 done
-tasks/vm-test-plan.md                                    # 40+ test cases for clean VM testing
-distribution-checklist.md                                # Full pre-release checklist
-installer/conduital.iss                                  # Version 1.2.0 (ready for Inno Setup compilation)
-backend/app/modules/memory_layer/routes.py               # Consolidated stats endpoint
-backend/pyproject.toml                                   # Version: 1.2.0
+tasks/vm-test-plan.md                                    # 40+ test cases — execute this plan
+distribution-checklist.md                                # Phase 3.1 (code signing) is next decision
+installer/conduital.iss                                  # Includes PRIVACY_POLICY.md now
+installer/Output/ConduitalSetup-1.2.0.exe                # Ready for VM testing
+PRIVACY_POLICY.md                                        # Drafted S24
+backend/app/main.py                                      # Privacy endpoint at line ~317
 ```
 
 ## Priority-Ordered Task List
 
-### Phase 1: Install Inno Setup + Compile Installer (~15 min)
-
-1. Install Inno Setup 6.x: `winget install JRSoftware.InnoSetup` (or download from jrsoftware.org)
-2. Compile installer: `iscc installer\conduital.iss`
-3. Verify output: `installer/Output/ConduitalSetup-1.2.0.exe`
-4. Test installer on dev machine (install → launch → verify version → uninstall)
-
-### Phase 2: Clean VM Testing (~60 min)
+### Phase 1: Clean VM Testing (~60 min)
 
 Follow the test plan in `tasks/vm-test-plan.md`:
-1. Set up Windows 10 evaluation VM (download from Microsoft)
+1. Set up Windows 10 evaluation VM (download from Microsoft if not already available)
 2. Set up Windows 11 evaluation VM
-3. Copy `ConduitalSetup-1.2.0.exe` to each VM
+3. Copy `installer/Output/ConduitalSetup-1.2.0.exe` to each VM
 4. Execute all 9 test sections on each VM
-5. Record results in test plan tables
+5. Record results in `tasks/vm-test-plan.md` test tables
 6. Log any issues found as new DEBT/BACKLOG items
 
-### Phase 3: Distribution Gaps (~30 min)
+**VM download links:**
+- Windows 10: https://www.microsoft.com/en-us/software-download/windows10ISO
+- Windows 11: https://www.microsoft.com/en-us/software-download/windows11
 
-Address remaining distribution checklist items:
-1. Review `distribution-checklist.md` for outstanding blockers
-2. App icon: design or source a proper `.ico` file (currently using generated placeholder)
-3. Privacy policy draft (lightweight — local-first, no telemetry)
-4. Consider code signing certificate options
+**Note:** VMs need at least 4 GB RAM, 64 GB disk. Use Hyper-V (built into Win11 Pro) or VirtualBox.
+
+### Phase 2: Code Signing Decision (~15 min)
+
+Review options and decide:
+1. **Standard certificate** (~$70-200/yr from SSL.com, Sectigo, or Certum)
+   - Requires SmartScreen reputation building (first installs still warn)
+   - Cheaper, simpler
+2. **EV certificate** (~$350-500/yr)
+   - Immediate SmartScreen trust, no "Unknown Publisher" warning
+   - More expensive, requires hardware token
+3. **Defer** — ship alpha without signing
+   - Users must click through SmartScreen warnings
+   - Acceptable for early adopters / testers
+
+Reference: `distribution-checklist.md` Phase 3.1
+
+### Phase 3: Fix VM Test Issues (if any)
+
+Based on VM testing results:
+1. Fix any blocker/major issues
+2. Rebuild exe + installer if code changes needed
+3. Retest on affected VM
+4. Log minor issues as new DEBT items
 
 ### Phase 4: Session Closeout
 
@@ -59,7 +78,7 @@ Address remaining distribution checklist items:
 3. Update `backlog.md` — mark completed items, log new debt
 4. Commit with descriptive message
 5. Push to origin
-6. **Write Session 25 prompt → `next-prompt.md`** (do not skip this step)
+6. **Write Session 26 prompt → `next-prompt.md`** (do not skip this step)
 
 ## End-of-Session Protocol
 
@@ -75,4 +94,5 @@ Address remaining distribution checklist items:
 
 - Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -x -q`
 - npm/vite: use `cmd` shell with `cd X && npm ...` pattern
+- Inno Setup: `"$LOCALAPPDATA/Programs/Inno Setup 6/ISCC.exe" installer/conduital.iss`
 - git commit with special chars: write message to temp file, use `git commit -F file.txt`
