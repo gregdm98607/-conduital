@@ -70,6 +70,7 @@ class SyncSettingsResponse(BaseModel):
     watch_directories: list[str]
     sync_interval: int
     conflict_strategy: str
+    auto_discovery_enabled: bool
 
 
 class SyncSettingsUpdate(BaseModel):
@@ -78,6 +79,7 @@ class SyncSettingsUpdate(BaseModel):
     watch_directories: Optional[list[str]] = None
     sync_interval: Optional[int] = Field(None, ge=5, le=600)
     conflict_strategy: Optional[str] = Field(None, pattern=r"^(prompt|file_wins|db_wins|merge)$")
+    auto_discovery_enabled: Optional[bool] = None
 
     @model_validator(mode="after")
     def validate_watch_dirs(self) -> "SyncSettingsUpdate":
@@ -371,6 +373,38 @@ def update_momentum_settings(update: MomentumSettingsUpdate):
     )
 
 
+def _apply_auto_discovery(enabled: bool) -> None:
+    """Start or stop the folder watcher based on the auto_discovery_enabled setting."""
+    if enabled and settings.SECOND_BRAIN_ROOT:
+        from app.sync.folder_watcher import get_folder_watcher, start_folder_watcher
+        watcher = get_folder_watcher()
+        if not watcher.is_running:
+            from app.services.auto_discovery_service import (
+                on_new_folder_created,
+                on_folder_renamed,
+                on_folder_moved,
+                on_area_created,
+                on_area_renamed,
+                on_area_moved,
+            )
+            start_folder_watcher(
+                on_folder_created=on_new_folder_created,
+                on_folder_renamed=on_folder_renamed,
+                on_folder_moved=on_folder_moved,
+                on_area_created=on_area_created,
+                on_area_renamed=on_area_renamed,
+                on_area_moved=on_area_moved,
+            )
+            logger.info("Auto-discovery started via Settings toggle")
+    else:
+        from app.sync.folder_watcher import get_folder_watcher
+        watcher = get_folder_watcher()
+        if watcher.is_running:
+            from app.sync.folder_watcher import stop_folder_watcher
+            stop_folder_watcher()
+            logger.info("Auto-discovery stopped via Settings toggle")
+
+
 @router.get("/sync", response_model=SyncSettingsResponse)
 def get_sync_settings():
     """Get current file sync settings"""
@@ -379,6 +413,7 @@ def get_sync_settings():
         watch_directories=settings.watch_directories,
         sync_interval=settings.SYNC_INTERVAL,
         conflict_strategy=settings.CONFLICT_STRATEGY,
+        auto_discovery_enabled=settings.AUTO_DISCOVERY_ENABLED,
     )
 
 
@@ -424,6 +459,10 @@ def update_sync_settings(update: SyncSettingsUpdate):
         env_updates["CONFLICT_STRATEGY"] = update.conflict_strategy
         memory_updates.append(("CONFLICT_STRATEGY", update.conflict_strategy))
 
+    if update.auto_discovery_enabled is not None:
+        env_updates["AUTO_DISCOVERY_ENABLED"] = str(update.auto_discovery_enabled).lower()
+        memory_updates.append(("AUTO_DISCOVERY_ENABLED", update.auto_discovery_enabled))
+
     # Persist to disk FIRST — only mutate in-memory if this succeeds
     if env_updates:
         try:
@@ -433,5 +472,9 @@ def update_sync_settings(update: SyncSettingsUpdate):
             raise HTTPException(status_code=500, detail="Failed to save settings to disk")
         for attr, value in memory_updates:
             setattr(settings, attr, value)
+
+    # Start/stop folder watcher based on new auto_discovery_enabled value
+    if update.auto_discovery_enabled is not None:
+        _apply_auto_discovery(settings.AUTO_DISCOVERY_ENABLED)
 
     return get_sync_settings()

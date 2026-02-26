@@ -743,6 +743,7 @@ class APIClient {
     watch_directories: string[];
     sync_interval: number;
     conflict_strategy: string;
+    auto_discovery_enabled: boolean;
   }> {
     const response = await this.client.get('/settings/sync', { signal });
     return response.data;
@@ -753,11 +754,13 @@ class APIClient {
     watch_directories?: string[];
     sync_interval?: number;
     conflict_strategy?: string;
+    auto_discovery_enabled?: boolean;
   }): Promise<{
     sync_folder_root: string | null;
     watch_directories: string[];
     sync_interval: number;
     conflict_strategy: string;
+    auto_discovery_enabled: boolean;
   }> {
     const response = await this.client.put('/settings/sync', settings);
     return response.data;
@@ -884,6 +887,22 @@ class APIClient {
     errors: Array<{ folder: string; error: string }>;
   }> {
     const response = await this.client.post('/discovery/scan-areas');
+    return response.data;
+  }
+
+  async getDiscoveryStatus(signal?: AbortSignal): Promise<{
+    total_events: number;
+    error_count: number;
+    events: Array<{
+      timestamp: string;
+      action: string;
+      folder: string;
+      success: boolean;
+      error?: string;
+      detail?: string;
+    }>;
+  }> {
+    const response = await this.client.get('/discovery/status', { signal });
     return response.data;
   }
 

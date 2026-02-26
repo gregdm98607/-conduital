@@ -1,28 +1,19 @@
-# Session 26 — Clean VM Testing + Distribution Prep
+# Session 27 — Clean VM Testing + Distribution Prep
 
 ## Context
 
-Session 25 focused on code quality and technical debt cleanup. Key fixes:
+Session 26 rebuilt the installer and shipped two feature items:
 
-**Session 25 shipped:**
-- **DEBT-075 (Critical):** Settings mutation now uses persist-first pattern — .env written before in-memory state changes. If disk write fails, singleton stays consistent. All 3 PUT endpoints refactored (`/settings/ai`, `/settings/momentum`, `/settings/sync`).
-- **DEBT-019:** Auto-discovery failures now surfaced via `/api/v1/discovery/status` endpoint. In-memory ring buffer (50 events) records all discovery callbacks. No more silent failures.
-- **DEBT-017:** Closed as already implemented (debounce via `threading.Timer` + `threading.Lock`).
-- **DEBT-018:** Closed as N/A (Google Drive sync deferred to BYOS roadmap).
-- **Exception narrowing:** Replaced broad `except Exception` with `(OSError, SQLAlchemyError, ValueError)` in `auto_discovery_service.py`, `discovery_service.py`, `area_discovery_service.py`. Folder watcher keeps broad catch (protects thread) but now logs `exc_info=True`.
-- **19 new tests** in `test_settings_api.py` covering GET/PUT round-trips, validation, persist-failure rollback (DEBT-075 proof), and `_persist_to_env` utility.
-
-**Also in Session 25 (prod testing follow-up):**
-- **BUG FIX: AI AttributeError** — `_build_project_context()` used `project.area.name` (should be `.title`) and `current_phase.name` (should be `.phase_name`). This broke Proactive Analysis and AI Insights on every project. Fixed in `ai_service.py`.
-- **BUG FIX: Missing eager loads** — `joinedload(Project.phases)` added to 4 AI endpoints in `intelligence.py` (analyze, suggest-next-action, proactive-analysis, review-insight). Without this, `project.phases` triggered lazy-load failures.
-- **UX FIX: Energy Match collapse** — clicking the active energy button now toggles collapse (was expand-only).
-- **New backlog items:** BACKLOG-152 (ship at "Full" module mode), BACKLOG-153 (File Sync UX design), BACKLOG-154 (wire `/discovery/status` into Settings UI).
+**Session 26 shipped:**
+- **Installer rebuilt:** `ConduitalSetup-1.2.0.exe` (27.4 MB) — fresh build including all S25+S26 changes. Frontend + PyInstaller + Inno Setup all clean.
+- **DEBT-008 (File watcher toggle):** Auto-discovery can now be enabled/disabled from Settings UI. Toggle persists to .env (persist-first pattern). Toggling ON starts the folder watcher at runtime with all 6 callbacks; toggling OFF stops it. New `_apply_auto_discovery()` helper in `settings.py`.
+- **BACKLOG-154 (Discovery status in Settings):** `/discovery/status` endpoint now wired into Settings page. "Recent Discovery Activity" panel shows event log with success/error badges, timestamps, action names, folder paths. Auto-refreshes every 30s via `useDiscoveryStatus()` hook. Only renders when events exist.
 
 Backend tests: 346 passing. Frontend: TypeScript clean, Vite build clean.
 
-**Open debt (small):** DEBT-008 (file watcher UI toggle), DEBT-013 (mobile), DEBT-015 (overlapping docs), DEBT-016 (WebSocket), DEBT-078 (venv python)
+**Open debt (small):** DEBT-013 (mobile), DEBT-015 (overlapping docs), DEBT-016 (WebSocket), DEBT-078 (venv python)
 
-**Installer:** `ConduitalSetup-1.2.0.exe` (27.4 MB) at `installer/Output/` — **STALE: must rebuild** before VM testing. Code changes since last build: AI bug fixes, Energy Match UX, persist-first settings, discovery status endpoint.
+**Installer:** `ConduitalSetup-1.2.0.exe` (27.4 MB) at `installer/Output/` — **FRESH BUILD** from S26. Ready for VM testing.
 
 ## Read First (verified paths)
 
@@ -30,41 +21,26 @@ Backend tests: 346 passing. Frontend: TypeScript clean, Vite build clean.
 tasks/vm-test-plan.md                                    # 40+ test cases — execute this plan
 distribution-checklist.md                                # Phase 3.1 (code signing) is next decision
 installer/conduital.iss                                  # Inno Setup script
-installer/Output/ConduitalSetup-1.2.0.exe                # STALE — rebuild before testing
-backend/app/api/intelligence.py                          # Fixed: joinedload(Project.phases) on 4 AI endpoints
-backend/app/services/ai_service.py                       # Fixed: area.name→title, phase.name→phase_name
-frontend/src/components/intelligence/AIEnergyRecommendations.tsx  # Fixed: collapse toggle
-backend/app/api/settings.py                              # Refactored persist-first (DEBT-075)
-backend/app/services/auto_discovery_service.py            # Event log + narrowed exceptions (DEBT-019)
-backend/app/api/discovery.py                             # New /discovery/status endpoint
-backend/tests/test_settings_api.py                       # 19 new tests
+installer/Output/ConduitalSetup-1.2.0.exe                # FRESH — built S26
+backend/app/api/settings.py                              # DEBT-008: auto_discovery_enabled + _apply_auto_discovery()
+frontend/src/pages/Settings.tsx                           # BACKLOG-154: Discovery Activity panel
+frontend/src/hooks/useDiscovery.ts                       # useDiscoveryStatus() hook
+frontend/src/services/api.ts                             # getDiscoveryStatus() + updated sync types
 ```
 
 ## Priority-Ordered Task List
-
-### Phase 0: Rebuild Installer (~10 min)
-
-Code has changed since last build — must rebuild before testing:
-1. Frontend build: `cd frontend && npm run build`
-2. PyInstaller build: `build.bat` (or `build.bat --skip-fe` if frontend already built)
-3. Inno Setup compile: `"$LOCALAPPDATA/Programs/Inno Setup 6/ISCC.exe" installer/conduital.iss`
-4. Verify `installer/Output/ConduitalSetup-1.2.0.exe` is updated
 
 ### Phase 1: Clean VM Testing (~60 min)
 
 Follow the test plan in `tasks/vm-test-plan.md`:
 1. Set up Windows 10 evaluation VM (Hyper-V or VirtualBox)
 2. Set up Windows 11 evaluation VM
-3. Copy freshly-built `installer/Output/ConduitalSetup-1.2.0.exe` to each VM
+3. Copy `installer/Output/ConduitalSetup-1.2.0.exe` to each VM
 4. Execute all 9 test sections on each VM
 5. Record results in `tasks/vm-test-plan.md` test tables
 6. Log any issues found as new DEBT/BACKLOG items
 
 **Note:** This is a manual GUI task. Claude can guide through setup and record results interactively.
-
-**VM download links:**
-- Windows 10: https://www.microsoft.com/en-us/software-download/windows10ISO
-- Windows 11: https://www.microsoft.com/en-us/software-download/windows11
 
 ### Phase 2: Code Signing Decision (~15 min)
 
@@ -88,9 +64,9 @@ Based on VM testing results:
 
 ### Phase 4: Remaining Debt (if time permits)
 
-- DEBT-008: Add Settings UI toggle for file watcher
-- DEBT-013: Mobile responsive improvements
-- Frontend: Hook `/discovery/status` into Settings page to show recent events
+- DEBT-013: Mobile responsive improvements (medium effort — sidebar drawer needed)
+- DEBT-015: Overlapping setup docs cleanup
+- BACKLOG-152: Ship at "Full" module mode
 
 ### Phase 5: Session Closeout
 
@@ -98,7 +74,7 @@ Based on VM testing results:
 2. Frontend build: `cd frontend && npm run build`
 3. Update `backlog.md`
 4. Commit + push
-5. **Write Session 27 prompt -> `next-prompt.md`**
+5. **Write Session 28 prompt -> `next-prompt.md`**
 
 ## End-of-Session Protocol
 

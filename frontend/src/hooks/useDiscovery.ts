@@ -54,3 +54,12 @@ export function useScanAreas() {
     },
   });
 }
+
+export function useDiscoveryStatus(enabled: boolean = true) {
+  return useQuery({
+    queryKey: ['discovery', 'status'],
+    queryFn: ({ signal }) => api.getDiscoveryStatus(signal),
+    refetchInterval: 30_000,
+    enabled,
+  });
+}

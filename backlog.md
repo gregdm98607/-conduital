@@ -142,7 +142,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 | ID | Description | Location | Status |
 |----|-------------|----------|--------|
-| DEBT-008 | File watcher disabled by default | `main.py` | Open |
+| DEBT-008 | File watcher disabled by default | `main.py` | **Done** (S26) — Auto-discovery toggle in Settings UI + runtime start/stop of folder watcher |
 | DEBT-013 | Mobile views not optimized | Frontend | Open |
 | DEBT-015 | Overlapping setup docs | Multiple MD files | Open |
 | DEBT-016 | WebSocket updates not integrated | Frontend/Backend | Open |
@@ -275,7 +275,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-151 | Display app version number in sidebar | Read from config/package; helps support + user awareness |
 | BACKLOG-152 | **Ship all releases at "Full" commercial mode** — v1.2.0 shipped with limited module preset; future releases should enable all modules | Release config |
 | BACKLOG-153 | **File Sync UX design** — sync is happening but not apparent to user; needs visual indicator, status, user+technical design doc | UX + Architecture |
-| BACKLOG-154 | **File Sync auto-discovery UX** — projects/areas auto-discovered from Sync Folder Root but user can't see what happened; wire `/discovery/status` into Settings UI | UX — DEBT-019 backend done |
+| BACKLOG-154 | **File Sync auto-discovery UX** — projects/areas auto-discovered from Sync Folder Root but user can't see what happened; wire `/discovery/status` into Settings UI | **Done** (S26) — Discovery Activity panel in Settings with event log, error badges, auto-refresh |
 
 ### Parking Lot — Completed (Archived)
 
@@ -332,10 +332,10 @@ For each release, verify:
 | Metric | Count |
 |--------|-------|
 | Open backlog items | ~65 |
-| Open tech debt | ~4 |
+| Open tech debt | ~3 |
 | Open documentation | 6 |
 | Completed items (archived) | 200+ |
 | Backend tests | 346 |
 
-*Last updated: 2026-02-25 (Session 25)*
+*Last updated: 2026-02-25 (Session 26)*
 *Full history: `backlog-archive-2026-02-12.md`*

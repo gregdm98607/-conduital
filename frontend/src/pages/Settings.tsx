@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight, Download, HardDrive, Activity, Rocket } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAreaMappings, useUpdateAreaMappings, useAreaMappingSuggestions, useScanProjects } from '@/hooks/useDiscovery';
+import { useAreaMappings, useUpdateAreaMappings, useAreaMappingSuggestions, useScanProjects, useDiscoveryStatus } from '@/hooks/useDiscovery';
 import { useTheme } from '@/context/ThemeContext';
 import { api } from '@/services/api';
 
@@ -76,6 +76,7 @@ export function Settings() {
   const [watchDirectories, setWatchDirectories] = useState('');
   const [syncInterval, setSyncInterval] = useState(30);
   const [conflictStrategy, setConflictStrategy] = useState('prompt');
+  const [autoDiscoveryEnabled, setAutoDiscoveryEnabled] = useState(false);
   const [syncLoading, setSyncLoading] = useState(true);
   const [syncSaving, setSyncSaving] = useState(false);
 
@@ -111,6 +112,7 @@ export function Settings() {
         setWatchDirectories(data.watch_directories.join(', '));
         setSyncInterval(data.sync_interval);
         setConflictStrategy(data.conflict_strategy);
+        setAutoDiscoveryEnabled(data.auto_discovery_enabled);
         setSyncLoading(false);
       })
       .catch(() => setSyncLoading(false));
@@ -239,6 +241,7 @@ export function Settings() {
   const { data: suggestions } = useAreaMappingSuggestions();
   const updateMappings = useUpdateAreaMappings();
   const scanProjects = useScanProjects();
+  const { data: discoveryStatus, refetch: refetchDiscoveryStatus } = useDiscoveryStatus();
 
   const handleStartEdit = (prefix: string, currentValue: string) => {
     setEditingPrefix(prefix);
@@ -350,11 +353,13 @@ export function Settings() {
         watch_directories: dirs,
         sync_interval: syncInterval,
         conflict_strategy: conflictStrategy,
+        auto_discovery_enabled: autoDiscoveryEnabled,
       });
       setSyncFolderRoot(result.sync_folder_root || '');
       setWatchDirectories(result.watch_directories.join(', '));
       setSyncInterval(result.sync_interval);
       setConflictStrategy(result.conflict_strategy);
+      setAutoDiscoveryEnabled(result.auto_discovery_enabled);
       toast.success('Sync settings saved');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
@@ -804,6 +809,23 @@ export function Settings() {
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Configure where Conduital syncs markdown files for your projects and areas.
               </p>
+              {/* Auto-Discovery Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">Auto-Discovery</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Automatically detect new projects and areas from folder changes</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={autoDiscoveryEnabled}
+                    onChange={(e) => setAutoDiscoveryEnabled(e.target.checked)}
+                    disabled={syncSaving}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-500 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                </label>
+              </div>
               <div>
                 <label className="label">Sync Folder Root</label>
                 <input
@@ -875,6 +897,56 @@ export function Settings() {
                   {syncSaving ? 'Saving...' : 'Save Sync Settings'}
                 </button>
               </div>
+
+              {/* Discovery Activity */}
+              {discoveryStatus && discoveryStatus.total_events > 0 && (
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Discovery Activity</h3>
+                      <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
+                        {discoveryStatus.total_events}
+                      </span>
+                      {discoveryStatus.error_count > 0 && (
+                        <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">
+                          {discoveryStatus.error_count} error{discoveryStatus.error_count !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => refetchDiscoveryStatus()}
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      title="Refresh"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {discoveryStatus.events.map((event, i) => (
+                      <div
+                        key={i}
+                        className={`flex items-start gap-2 text-xs px-2 py-1.5 rounded ${
+                          event.success
+                            ? 'bg-green-50 dark:bg-green-900/10 text-green-800 dark:text-green-300'
+                            : 'bg-red-50 dark:bg-red-900/10 text-red-800 dark:text-red-300'
+                        }`}
+                      >
+                        <span className="shrink-0 mt-0.5">{event.success ? <Check className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}</span>
+                        <div className="min-w-0">
+                          <span className="font-medium">{event.action.replace(/_/g, ' ')}</span>
+                          <span className="text-gray-500 dark:text-gray-400 mx-1">&middot;</span>
+                          <span className="break-all">{event.folder}</span>
+                          {event.error && <p className="text-red-600 dark:text-red-400 mt-0.5">{event.error}</p>}
+                        </div>
+                        <span className="shrink-0 text-gray-400 dark:text-gray-500 ml-auto">
+                          {new Date(event.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </section>
