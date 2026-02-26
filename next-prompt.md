@@ -12,11 +12,17 @@ Session 25 focused on code quality and technical debt cleanup. Key fixes:
 - **Exception narrowing:** Replaced broad `except Exception` with `(OSError, SQLAlchemyError, ValueError)` in `auto_discovery_service.py`, `discovery_service.py`, `area_discovery_service.py`. Folder watcher keeps broad catch (protects thread) but now logs `exc_info=True`.
 - **19 new tests** in `test_settings_api.py` covering GET/PUT round-trips, validation, persist-failure rollback (DEBT-075 proof), and `_persist_to_env` utility.
 
+**Also in Session 25 (prod testing follow-up):**
+- **BUG FIX: AI AttributeError** — `_build_project_context()` used `project.area.name` (should be `.title`) and `current_phase.name` (should be `.phase_name`). This broke Proactive Analysis and AI Insights on every project. Fixed in `ai_service.py`.
+- **BUG FIX: Missing eager loads** — `joinedload(Project.phases)` added to 4 AI endpoints in `intelligence.py` (analyze, suggest-next-action, proactive-analysis, review-insight). Without this, `project.phases` triggered lazy-load failures.
+- **UX FIX: Energy Match collapse** — clicking the active energy button now toggles collapse (was expand-only).
+- **New backlog items:** BACKLOG-152 (ship at "Full" module mode), BACKLOG-153 (File Sync UX design), BACKLOG-154 (wire `/discovery/status` into Settings UI).
+
 Backend tests: 346 passing. Frontend: TypeScript clean, Vite build clean.
 
 **Open debt (small):** DEBT-008 (file watcher UI toggle), DEBT-013 (mobile), DEBT-015 (overlapping docs), DEBT-016 (WebSocket), DEBT-078 (venv python)
 
-**Installer:** `ConduitalSetup-1.2.0.exe` (27.4 MB) at `installer/Output/` — still NOT tested on clean VMs.
+**Installer:** `ConduitalSetup-1.2.0.exe` (27.4 MB) at `installer/Output/` — **STALE: must rebuild** before VM testing. Code changes since last build: AI bug fixes, Energy Match UX, persist-first settings, discovery status endpoint.
 
 ## Read First (verified paths)
 
@@ -24,7 +30,10 @@ Backend tests: 346 passing. Frontend: TypeScript clean, Vite build clean.
 tasks/vm-test-plan.md                                    # 40+ test cases — execute this plan
 distribution-checklist.md                                # Phase 3.1 (code signing) is next decision
 installer/conduital.iss                                  # Inno Setup script
-installer/Output/ConduitalSetup-1.2.0.exe                # Ready for VM testing
+installer/Output/ConduitalSetup-1.2.0.exe                # STALE — rebuild before testing
+backend/app/api/intelligence.py                          # Fixed: joinedload(Project.phases) on 4 AI endpoints
+backend/app/services/ai_service.py                       # Fixed: area.name→title, phase.name→phase_name
+frontend/src/components/intelligence/AIEnergyRecommendations.tsx  # Fixed: collapse toggle
 backend/app/api/settings.py                              # Refactored persist-first (DEBT-075)
 backend/app/services/auto_discovery_service.py            # Event log + narrowed exceptions (DEBT-019)
 backend/app/api/discovery.py                             # New /discovery/status endpoint
@@ -33,12 +42,20 @@ backend/tests/test_settings_api.py                       # 19 new tests
 
 ## Priority-Ordered Task List
 
+### Phase 0: Rebuild Installer (~10 min)
+
+Code has changed since last build — must rebuild before testing:
+1. Frontend build: `cd frontend && npm run build`
+2. PyInstaller build: `build.bat` (or `build.bat --skip-fe` if frontend already built)
+3. Inno Setup compile: `"$LOCALAPPDATA/Programs/Inno Setup 6/ISCC.exe" installer/conduital.iss`
+4. Verify `installer/Output/ConduitalSetup-1.2.0.exe` is updated
+
 ### Phase 1: Clean VM Testing (~60 min)
 
 Follow the test plan in `tasks/vm-test-plan.md`:
 1. Set up Windows 10 evaluation VM (Hyper-V or VirtualBox)
 2. Set up Windows 11 evaluation VM
-3. Copy `installer/Output/ConduitalSetup-1.2.0.exe` to each VM
+3. Copy freshly-built `installer/Output/ConduitalSetup-1.2.0.exe` to each VM
 4. Execute all 9 test sections on each VM
 5. Record results in `tasks/vm-test-plan.md` test tables
 6. Log any issues found as new DEBT/BACKLOG items
