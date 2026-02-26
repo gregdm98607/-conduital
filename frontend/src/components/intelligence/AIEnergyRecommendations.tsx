@@ -30,7 +30,14 @@ export function AIEnergyRecommendations() {
               return (
                 <button
                   key={opt.value}
-                  onClick={() => { setSelectedEnergy(opt.value); setIsExpanded(true); }}
+                  onClick={() => {
+                    if (selectedEnergy === opt.value && isExpanded) {
+                      setIsExpanded(false);
+                    } else {
+                      setSelectedEnergy(opt.value);
+                      setIsExpanded(true);
+                    }
+                  }}
                   className={`text-xs px-2.5 py-1 rounded-md flex items-center gap-1 transition-colors ${
                     selectedEnergy === opt.value && isExpanded
                       ? `${opt.bg} ${opt.color} font-medium`

@@ -273,6 +273,9 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-149 | Session Capture: pre-fill accomplishments from git log or task completions | Auto-populate from today's activity |
 | BACKLOG-150 | Health tab: sparkline trend charts for 7d/30d activity | Visual trends beyond raw numbers |
 | BACKLOG-151 | Display app version number in sidebar | Read from config/package; helps support + user awareness |
+| BACKLOG-152 | **Ship all releases at "Full" commercial mode** — v1.2.0 shipped with limited module preset; future releases should enable all modules | Release config |
+| BACKLOG-153 | **File Sync UX design** — sync is happening but not apparent to user; needs visual indicator, status, user+technical design doc | UX + Architecture |
+| BACKLOG-154 | **File Sync auto-discovery UX** — projects/areas auto-discovered from Sync Folder Root but user can't see what happened; wire `/discovery/status` into Settings UI | UX — DEBT-019 backend done |
 
 ### Parking Lot — Completed (Archived)
 

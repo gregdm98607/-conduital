@@ -269,11 +269,11 @@ class AIService:
             "vision_statement": project.vision_statement or "",
             "brainstorm_notes": project.brainstorm_notes or "",
             "organizing_notes": project.organizing_notes or "",
-            "area": project.area.name if project.area else None,
+            "area": project.area.title if project.area else None,
             "status": project.status,
             "days_stalled": days_stalled,
             "momentum_score": project.momentum_score,
-            "current_phase": current_phase.name if current_phase else None,
+            "current_phase": current_phase.phase_name if current_phase else None,
             "recent_activity": [
                 {"action": a.action_type, "timestamp": a.timestamp.isoformat()}
                 for a in recent_activity

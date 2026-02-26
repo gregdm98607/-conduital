@@ -972,7 +972,7 @@ def get_project_review_insight(project_id: int, db: Session = Depends(get_db)):
     project = db.execute(
         select(Project)
         .where(Project.id == project_id, Project.deleted_at.is_(None))
-        .options(joinedload(Project.tasks), joinedload(Project.area))
+        .options(joinedload(Project.tasks), joinedload(Project.area), joinedload(Project.phases))
     ).unique().scalars().first()
 
     if not project:
@@ -1029,7 +1029,7 @@ def analyze_project_with_ai(project_id: int, db: Session = Depends(get_db)):
     project = db.execute(
         select(Project)
         .where(Project.id == project_id, Project.deleted_at.is_(None))
-        .options(joinedload(Project.tasks), joinedload(Project.area))
+        .options(joinedload(Project.tasks), joinedload(Project.area), joinedload(Project.phases))
     ).unique().scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -1072,7 +1072,7 @@ def suggest_next_action_with_ai(project_id: int, db: Session = Depends(get_db)):
     project = db.execute(
         select(Project)
         .where(Project.id == project_id, Project.deleted_at.is_(None))
-        .options(joinedload(Project.tasks), joinedload(Project.area))
+        .options(joinedload(Project.tasks), joinedload(Project.area), joinedload(Project.phases))
     ).unique().scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -1117,7 +1117,7 @@ def proactive_stalled_analysis(
         db.execute(
             select(Project)
             .where(Project.status == "active", Project.deleted_at.is_(None))
-            .options(joinedload(Project.tasks), joinedload(Project.area))
+            .options(joinedload(Project.tasks), joinedload(Project.area), joinedload(Project.phases))
         )
         .unique()
         .scalars()
