@@ -146,10 +146,10 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-013 | Mobile views not optimized | Frontend | Open |
 | DEBT-015 | Overlapping setup docs | Multiple MD files | Open |
 | DEBT-016 | WebSocket updates not integrated | Frontend/Backend | Open |
-| DEBT-017 | Auto-discovery debounce | `folder_watcher.py` | Open |
-| DEBT-018 | Google Drive network interruptions | `folder_watcher.py` | Open |
-| DEBT-019 | Silent auto-discovery failures | Auto-discovery service | Open |
-| DEBT-075 | Momentum PUT endpoint mutates singleton `settings` object in-memory | `settings.py:282-292` | Documented |
+| DEBT-017 | Auto-discovery debounce | `folder_watcher.py` | **Done** (S25) — Already implemented: `threading.Timer` + `threading.Lock` debounce in `folder_watcher.py` |
+| DEBT-018 | Google Drive network interruptions | `folder_watcher.py` | **N/A** (S25) — App is local-first; cloud sync deferred to ROADMAP-010 (BYOS) |
+| DEBT-019 | Silent auto-discovery failures | Auto-discovery service | **Done** (S25) — In-memory event log + `/discovery/status` endpoint |
+| DEBT-075 | Momentum PUT endpoint mutates singleton `settings` object in-memory | `settings.py:282-292` | **Done** (S25) — Persist-first pattern: .env written before in-memory mutation; 19 tests added |
 | DEBT-078 | Test run requires explicit venv python | `backend/venv` | Open |
 | DEBT-081 | No app icon (.ico) — installer and exe use default icons | Need `assets/conduital.ico` | **Done** (Session 1) |
 | DEBT-108 | `AIReviewSummary` loading spinner missing `aria-label` / `role="status"` | `AIReviewSummary.tsx:48` | **Done** (Session 6) |
@@ -329,10 +329,10 @@ For each release, verify:
 | Metric | Count |
 |--------|-------|
 | Open backlog items | ~65 |
-| Open tech debt | ~7 |
+| Open tech debt | ~4 |
 | Open documentation | 6 |
 | Completed items (archived) | 200+ |
-| Backend tests | 327 |
+| Backend tests | 346 |
 
-*Last updated: 2026-02-25 (Session 24)*
+*Last updated: 2026-02-25 (Session 25)*
 *Full history: `backlog-archive-2026-02-12.md`*

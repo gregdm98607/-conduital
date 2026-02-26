@@ -11,6 +11,7 @@ from typing import Optional
 from datetime import datetime, timezone
 import logging
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -72,7 +73,7 @@ class AreaDiscoveryService:
                     stats["imported"] += 1
                 else:
                     stats["skipped"] += 1
-            except Exception as e:
+            except (OSError, SQLAlchemyError, ValueError) as e:
                 logger.error(f"Error processing {folder.name}: {e}")
                 stats["errors"].append({
                     "folder": folder.name,
@@ -141,7 +142,7 @@ class AreaDiscoveryService:
             # Try to sync markdown file to get area metadata
             try:
                 area_data = self._parse_area_markdown(md_file)
-            except Exception as e:
+            except (OSError, ValueError, UnicodeDecodeError) as e:
                 logger.warning(f"Error parsing area markdown {md_file}: {e}")
                 area_data = {}
         else:
@@ -283,7 +284,7 @@ class AreaDiscoveryService:
                 if first_para and not first_para.startswith('#'):
                     area_data['description'] = first_para
 
-        except Exception as e:
+        except (OSError, ValueError, UnicodeDecodeError) as e:
             logger.warning(f"Error parsing markdown file {md_file}: {e}")
 
         return area_data

@@ -243,6 +243,26 @@ def scan_specific_area_folder(
         )
 
 
+@router.get("/status")
+def get_discovery_status():
+    """
+    Get recent auto-discovery events (DEBT-019).
+
+    Returns the last 20 discovery events from the in-memory log,
+    including both successes and failures. Useful for diagnosing
+    silent discovery failures from the Settings page.
+    """
+    from app.services.auto_discovery_service import get_recent_events
+
+    events = get_recent_events(limit=20)
+    errors = [e for e in events if not e["success"]]
+    return {
+        "total_events": len(events),
+        "error_count": len(errors),
+        "events": events,
+    }
+
+
 @router.get("/area-suggestions", response_model=SuggestionResult)
 def suggest_unmapped_areas(db: Session = Depends(get_db)):
     """

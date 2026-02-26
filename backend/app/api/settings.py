@@ -147,7 +147,7 @@ def _sanitize_env_value(value: str) -> str:
     return sanitized
 
 
-def _persist_to_env(updates: dict[str, str]) -> bool:
+def _persist_to_env(updates: dict[str, str]) -> None:
     """Persist key-value pairs to the .env file.
 
     Updates existing keys in-place. Appends new keys at the end.
@@ -156,34 +156,30 @@ def _persist_to_env(updates: dict[str, str]) -> bool:
     Thread-safe via _env_write_lock (DEBT-042).
     Values are sanitized to prevent injection (DEBT-043).
 
-    Returns True on success, False on failure.
+    Raises OSError on failure (callers should NOT mutate in-memory
+    settings until this succeeds — see DEBT-075).
     """
     env_path = _get_env_file_path()
 
     with _env_write_lock:
-        try:
-            if env_path.exists():
-                content = env_path.read_text(encoding="utf-8")
+        if env_path.exists():
+            content = env_path.read_text(encoding="utf-8")
+        else:
+            content = ""
+
+        for key, value in updates.items():
+            sanitized_value = _sanitize_env_value(value)
+            pattern = rf"^{re.escape(key)}\s*=.*$"
+            replacement = f"{key}={sanitized_value}"
+            if re.search(pattern, content, re.MULTILINE):
+                content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
             else:
-                content = ""
+                if content and not content.endswith("\n"):
+                    content += "\n"
+                content += f"{replacement}\n"
 
-            for key, value in updates.items():
-                sanitized_value = _sanitize_env_value(value)
-                pattern = rf"^{re.escape(key)}\s*=.*$"
-                replacement = f"{key}={sanitized_value}"
-                if re.search(pattern, content, re.MULTILINE):
-                    content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
-                else:
-                    if content and not content.endswith("\n"):
-                        content += "\n"
-                    content += f"{replacement}\n"
-
-            env_path.write_text(content, encoding="utf-8")
-            logger.info(f"Persisted {len(updates)} setting(s) to {env_path}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to persist settings to .env: {e}")
-            return False
+        env_path.write_text(content, encoding="utf-8")
+        logger.info(f"Persisted {len(updates)} setting(s) to {env_path}")
 
 
 @router.get("/ai", response_model=AISettingsResponse)
@@ -218,45 +214,49 @@ def get_ai_settings():
 def update_ai_settings(update: AISettingsUpdate):
     """Update AI settings and persist to .env file.
 
-    Changes are applied immediately to runtime AND written to .env
-    so they survive server restarts.
+    Persist-first: writes to .env before mutating in-memory settings,
+    so a disk failure never leaves the singleton in a diverged state.
     """
     env_updates: dict[str, str] = {}
+    memory_updates: list[tuple[str, object]] = []
 
     if update.ai_provider is not None:
-        settings.AI_PROVIDER = update.ai_provider
         env_updates["AI_PROVIDER"] = update.ai_provider
+        memory_updates.append(("AI_PROVIDER", update.ai_provider))
 
     if update.ai_features_enabled is not None:
-        settings.AI_FEATURES_ENABLED = update.ai_features_enabled
         env_updates["AI_FEATURES_ENABLED"] = str(update.ai_features_enabled).lower()
+        memory_updates.append(("AI_FEATURES_ENABLED", update.ai_features_enabled))
 
     if update.ai_model is not None:
-        settings.AI_MODEL = update.ai_model
         env_updates["AI_MODEL"] = update.ai_model
+        memory_updates.append(("AI_MODEL", update.ai_model))
 
     if update.ai_max_tokens is not None:
-        settings.AI_MAX_TOKENS = update.ai_max_tokens
         env_updates["AI_MAX_TOKENS"] = str(update.ai_max_tokens)
+        memory_updates.append(("AI_MAX_TOKENS", update.ai_max_tokens))
 
-    # Anthropic key
     if update.api_key is not None and update.api_key.strip():
-        settings.ANTHROPIC_API_KEY = update.api_key.strip()
         env_updates["ANTHROPIC_API_KEY"] = update.api_key.strip()
+        memory_updates.append(("ANTHROPIC_API_KEY", update.api_key.strip()))
 
-    # OpenAI key
     if update.openai_api_key is not None and update.openai_api_key.strip():
-        settings.OPENAI_API_KEY = update.openai_api_key.strip()
         env_updates["OPENAI_API_KEY"] = update.openai_api_key.strip()
+        memory_updates.append(("OPENAI_API_KEY", update.openai_api_key.strip()))
 
-    # Google key
     if update.google_api_key is not None and update.google_api_key.strip():
-        settings.GOOGLE_API_KEY = update.google_api_key.strip()
         env_updates["GOOGLE_API_KEY"] = update.google_api_key.strip()
+        memory_updates.append(("GOOGLE_API_KEY", update.google_api_key.strip()))
 
-    # Persist all changes to .env
+    # Persist to disk FIRST — only mutate in-memory if this succeeds
     if env_updates:
-        _persist_to_env(env_updates)
+        try:
+            _persist_to_env(env_updates)
+        except OSError as e:
+            logger.error(f"Failed to persist AI settings: {e}")
+            raise HTTPException(status_code=500, detail="Failed to save settings to disk")
+        for attr, value in memory_updates:
+            setattr(settings, attr, value)
 
     return get_ai_settings()
 
@@ -311,8 +311,12 @@ def get_momentum_settings():
 
 @router.put("/momentum", response_model=MomentumSettingsResponse)
 def update_momentum_settings(update: MomentumSettingsUpdate):
-    """Update momentum threshold settings and persist to .env"""
+    """Update momentum threshold settings.
+
+    Persist-first: writes to .env before mutating in-memory settings.
+    """
     env_updates: dict[str, str] = {}
+    memory_updates: list[tuple[str, object]] = []
 
     # Compute effective values (new value if provided, else current setting)
     effective_stalled = (
@@ -336,22 +340,28 @@ def update_momentum_settings(update: MomentumSettingsUpdate):
             ),
         )
 
-    # Apply mutations only after validation passes
     if update.stalled_threshold_days is not None:
-        settings.MOMENTUM_STALLED_THRESHOLD_DAYS = update.stalled_threshold_days
         env_updates["MOMENTUM_STALLED_THRESHOLD_DAYS"] = str(update.stalled_threshold_days)
+        memory_updates.append(("MOMENTUM_STALLED_THRESHOLD_DAYS", update.stalled_threshold_days))
     if update.at_risk_threshold_days is not None:
-        settings.MOMENTUM_AT_RISK_THRESHOLD_DAYS = update.at_risk_threshold_days
         env_updates["MOMENTUM_AT_RISK_THRESHOLD_DAYS"] = str(update.at_risk_threshold_days)
+        memory_updates.append(("MOMENTUM_AT_RISK_THRESHOLD_DAYS", update.at_risk_threshold_days))
     if update.activity_decay_days is not None:
-        settings.MOMENTUM_ACTIVITY_DECAY_DAYS = update.activity_decay_days
         env_updates["MOMENTUM_ACTIVITY_DECAY_DAYS"] = str(update.activity_decay_days)
+        memory_updates.append(("MOMENTUM_ACTIVITY_DECAY_DAYS", update.activity_decay_days))
     if update.recalculate_interval is not None:
-        settings.MOMENTUM_RECALCULATE_INTERVAL = update.recalculate_interval
         env_updates["MOMENTUM_RECALCULATE_INTERVAL"] = str(update.recalculate_interval)
+        memory_updates.append(("MOMENTUM_RECALCULATE_INTERVAL", update.recalculate_interval))
 
+    # Persist to disk FIRST — only mutate in-memory if this succeeds
     if env_updates:
-        _persist_to_env(env_updates)
+        try:
+            _persist_to_env(env_updates)
+        except OSError as e:
+            logger.error(f"Failed to persist momentum settings: {e}")
+            raise HTTPException(status_code=500, detail="Failed to save settings to disk")
+        for attr, value in memory_updates:
+            setattr(settings, attr, value)
 
     return MomentumSettingsResponse(
         stalled_threshold_days=settings.MOMENTUM_STALLED_THRESHOLD_DAYS,
@@ -374,8 +384,12 @@ def get_sync_settings():
 
 @router.put("/sync", response_model=SyncSettingsResponse)
 def update_sync_settings(update: SyncSettingsUpdate):
-    """Update file sync settings and persist to .env"""
+    """Update file sync settings.
+
+    Persist-first: writes to .env before mutating in-memory settings.
+    """
     env_updates: dict[str, str] = {}
+    memory_updates: list[tuple[str, object]] = []
 
     if update.sync_folder_root is not None:
         path_value = update.sync_folder_root.strip()
@@ -391,26 +405,33 @@ def update_sync_settings(update: SyncSettingsUpdate):
                     status_code=422,
                     detail=f"Path is not a directory: {path_value}",
                 )
-            settings.SECOND_BRAIN_ROOT = str(resolved)
             env_updates["SECOND_BRAIN_ROOT"] = str(resolved)
+            memory_updates.append(("SECOND_BRAIN_ROOT", str(resolved)))
         else:
-            settings.SECOND_BRAIN_ROOT = None
             env_updates["SECOND_BRAIN_ROOT"] = ""
+            memory_updates.append(("SECOND_BRAIN_ROOT", None))
 
     if update.watch_directories is not None:
         cleaned = [d.strip() for d in update.watch_directories if d.strip()]
-        settings.WATCH_DIRECTORIES = ",".join(cleaned)
         env_updates["WATCH_DIRECTORIES"] = ",".join(cleaned)
+        memory_updates.append(("WATCH_DIRECTORIES", ",".join(cleaned)))
 
     if update.sync_interval is not None:
-        settings.SYNC_INTERVAL = update.sync_interval
         env_updates["SYNC_INTERVAL"] = str(update.sync_interval)
+        memory_updates.append(("SYNC_INTERVAL", update.sync_interval))
 
     if update.conflict_strategy is not None:
-        settings.CONFLICT_STRATEGY = update.conflict_strategy
         env_updates["CONFLICT_STRATEGY"] = update.conflict_strategy
+        memory_updates.append(("CONFLICT_STRATEGY", update.conflict_strategy))
 
+    # Persist to disk FIRST — only mutate in-memory if this succeeds
     if env_updates:
-        _persist_to_env(env_updates)
+        try:
+            _persist_to_env(env_updates)
+        except OSError as e:
+            logger.error(f"Failed to persist sync settings: {e}")
+            raise HTTPException(status_code=500, detail="Failed to save settings to disk")
+        for attr, value in memory_updates:
+            setattr(settings, attr, value)
 
     return get_sync_settings()

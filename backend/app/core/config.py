@@ -125,10 +125,10 @@ class Settings(BaseSettings):
     Application settings loaded from environment variables
     """
 
-    # NOTE: Settings is intentionally NOT frozen. The AI and Momentum settings
-    # endpoints mutate this singleton at runtime (see api/settings.py).
-    # If frozen=True is ever added, those endpoints will need a RuntimeConfig layer.
-    # See DEBT-075 in backlog.md.
+    # NOTE: Settings is intentionally NOT frozen. The AI, Momentum, and Sync
+    # settings endpoints mutate this singleton at runtime (see api/settings.py).
+    # DEBT-075 resolved: mutations now use persist-first pattern — .env is written
+    # before in-memory state changes, so disk failures can't cause state divergence.
     model_config = SettingsConfigDict(
         env_file=_env_file_path,
         env_file_encoding="utf-8",

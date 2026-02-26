@@ -180,8 +180,8 @@ class FolderEventHandler(FileSystemEventHandler):
                 self.on_folder_renamed(old_path, folder_path)
             elif event_type == "moved":
                 self.on_folder_moved(old_path, folder_path)
-        except Exception as e:
-            logger.error(f"Error processing {event_type} event for {folder_path}: {e}")
+        except Exception as e:  # Broad catch intentional: protect watcher thread
+            logger.error(f"Error processing {event_type} event for {folder_path}: {e}", exc_info=True)
 
 
 class FolderWatcher:

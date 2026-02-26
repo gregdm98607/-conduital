@@ -2,14 +2,20 @@
 Auto-Discovery Service
 
 Coordinates automatic project and area discovery triggered by folder changes.
+Maintains an in-memory event log so failures are surfaceable via API (DEBT-019).
 """
 
 import logging
 import re
+import threading
+from collections import deque
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 from sqlalchemy.orm import Session
+
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.database import SessionLocal
 from app.services.discovery_service import ProjectDiscoveryService
@@ -18,6 +24,41 @@ from app.models.project import Project
 from app.models.area import Area
 
 logger = logging.getLogger(__name__)
+
+# ---------- In-memory event log (DEBT-019) ----------
+# Thread-safe ring buffer of recent discovery events for the /discovery/status endpoint.
+_MAX_EVENTS = 50
+_event_log: deque[dict] = deque(maxlen=_MAX_EVENTS)
+_event_lock = threading.Lock()
+
+
+def _record_event(
+    action: str,
+    folder: str,
+    success: bool,
+    error: str | None = None,
+    detail: str | None = None,
+) -> None:
+    """Append a discovery event to the in-memory log."""
+    event = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "action": action,
+        "folder": folder,
+        "success": success,
+    }
+    if error:
+        event["error"] = error
+    if detail:
+        event["detail"] = detail
+    with _event_lock:
+        _event_log.append(event)
+
+
+def get_recent_events(limit: int = 20) -> list[dict]:
+    """Return the most recent discovery events (newest first)."""
+    with _event_lock:
+        events = list(_event_log)
+    return list(reversed(events[-limit:]))
 
 
 class AutoDiscoveryService:
@@ -75,7 +116,7 @@ class AutoDiscoveryService:
                 "result": result,
             }
 
-        except Exception as e:
+        except (OSError, SQLAlchemyError, ValueError) as e:
             logger.error(f"Error auto-discovering {folder_path.name}: {e}")
             return {
                 "success": False,
@@ -141,7 +182,7 @@ class AutoDiscoveryService:
                     "error": "New folder name doesn't match pattern",
                 }
 
-        except Exception as e:
+        except (OSError, SQLAlchemyError, ValueError) as e:
             logger.error(f"Error handling rename: {e}")
             return {
                 "success": False,
@@ -165,7 +206,7 @@ class AutoDiscoveryService:
         try:
             return self.discover_folder(new_path)
 
-        except Exception as e:
+        except (OSError, SQLAlchemyError, ValueError) as e:
             logger.error(f"Error handling move: {e}")
             return {
                 "success": False,
@@ -208,7 +249,7 @@ class AutoDiscoveryService:
                 "result": result,
             }
 
-        except Exception as e:
+        except (OSError, SQLAlchemyError, ValueError) as e:
             logger.error(f"Error auto-discovering area {folder_path.name}: {e}")
             return {
                 "success": False,
@@ -284,7 +325,7 @@ class AutoDiscoveryService:
                     "error": "New folder name doesn't match area pattern",
                 }
 
-        except Exception as e:
+        except (OSError, SQLAlchemyError, ValueError) as e:
             logger.error(f"Error handling area rename: {e}")
             return {
                 "success": False,
@@ -307,7 +348,7 @@ class AutoDiscoveryService:
 
         try:
             return self.discover_area_folder(new_path)
-        except Exception as e:
+        except (OSError, SQLAlchemyError, ValueError) as e:
             logger.error(f"Error handling area move: {e}")
             return {
                 "success": False,
@@ -326,10 +367,13 @@ def on_new_folder_created(folder_path: Path):
     result = service.discover_folder(folder_path)
 
     if result["success"] and result["result"].get("imported"):
-        project_info = result["result"]
-        logger.info(f"Project imported: {project_info.get('title')}")
+        title = result["result"].get("title", folder_path.name)
+        logger.info(f"Project imported: {title}")
+        _record_event("project_created", folder_path.name, True, detail=title)
     else:
-        logger.warning(f"Could not import folder: {result.get('error', 'Unknown reason')}")
+        error = result.get("error", "Unknown reason")
+        logger.warning(f"Could not import folder: {error}")
+        _record_event("project_created", folder_path.name, False, error=error)
 
 
 def on_folder_renamed(old_path: Path, new_path: Path):
@@ -339,9 +383,13 @@ def on_folder_renamed(old_path: Path, new_path: Path):
     result = service.handle_folder_renamed(old_path, new_path)
 
     if result["success"]:
-        logger.info(f"Project updated: {result.get('new_title', result.get('result', {}).get('title'))}")
+        title = result.get("new_title", result.get("result", {}).get("title"))
+        logger.info(f"Project updated: {title}")
+        _record_event("project_renamed", new_path.name, True, detail=title)
     else:
-        logger.warning(f"Update failed: {result.get('error')}")
+        error = result.get("error", "Unknown")
+        logger.warning(f"Update failed: {error}")
+        _record_event("project_renamed", new_path.name, False, error=error)
 
 
 def on_folder_moved(old_path: Path, new_path: Path):
@@ -352,8 +400,11 @@ def on_folder_moved(old_path: Path, new_path: Path):
 
     if result["success"]:
         logger.info("Project re-discovered at new location")
+        _record_event("project_moved", new_path.name, True)
     else:
-        logger.warning(f"Re-discovery failed: {result.get('error')}")
+        error = result.get("error", "Unknown")
+        logger.warning(f"Re-discovery failed: {error}")
+        _record_event("project_moved", new_path.name, False, error=error)
 
 
 def on_area_created(folder_path: Path):
@@ -363,10 +414,13 @@ def on_area_created(folder_path: Path):
     result = service.discover_area_folder(folder_path)
 
     if result["success"] and result["result"].get("imported"):
-        area_info = result["result"]
-        logger.info(f"Area imported: {area_info.get('title')}")
+        title = result["result"].get("title", folder_path.name)
+        logger.info(f"Area imported: {title}")
+        _record_event("area_created", folder_path.name, True, detail=title)
     else:
-        logger.warning(f"Could not import area: {result.get('error', 'Unknown reason')}")
+        error = result.get("error", "Unknown reason")
+        logger.warning(f"Could not import area: {error}")
+        _record_event("area_created", folder_path.name, False, error=error)
 
 
 def on_area_renamed(old_path: Path, new_path: Path):
@@ -376,9 +430,13 @@ def on_area_renamed(old_path: Path, new_path: Path):
     result = service.handle_area_renamed(old_path, new_path)
 
     if result["success"]:
-        logger.info(f"Area updated: {result.get('new_title')}")
+        title = result.get("new_title")
+        logger.info(f"Area updated: {title}")
+        _record_event("area_renamed", new_path.name, True, detail=title)
     else:
-        logger.warning(f"Area update failed: {result.get('error')}")
+        error = result.get("error", "Unknown")
+        logger.warning(f"Area update failed: {error}")
+        _record_event("area_renamed", new_path.name, False, error=error)
 
 
 def on_area_moved(old_path: Path, new_path: Path):
@@ -389,5 +447,8 @@ def on_area_moved(old_path: Path, new_path: Path):
 
     if result["success"]:
         logger.info("Area re-discovered at new location")
+        _record_event("area_moved", new_path.name, True)
     else:
-        logger.warning(f"Area re-discovery failed: {result.get('error')}")
+        error = result.get("error", "Unknown")
+        logger.warning(f"Area re-discovery failed: {error}")
+        _record_event("area_moved", new_path.name, False, error=error)

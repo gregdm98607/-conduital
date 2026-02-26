@@ -11,6 +11,7 @@ from typing import Optional
 from datetime import datetime, timezone
 import logging
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -73,7 +74,7 @@ class ProjectDiscoveryService:
                     stats["imported"] += 1
                 else:
                     stats["skipped"] += 1
-            except Exception as e:
+            except (OSError, SQLAlchemyError, ValueError) as e:
                 logger.error(f"Error processing {folder.name}: {e}")
                 self.db.rollback()  # Reset session so next folder can proceed
                 stats["errors"].append({
@@ -148,7 +149,7 @@ class ProjectDiscoveryService:
                     "area": area.title if area else None
                 }
 
-        except Exception as e:
+        except (OSError, SQLAlchemyError, ValueError) as e:
             logger.error(f"Error syncing file {md_file}: {e}")
             raise
 
