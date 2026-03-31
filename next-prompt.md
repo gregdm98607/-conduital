@@ -1,15 +1,12 @@
-# Session 28 — Pre-Beta Hardening + VM Testing
+# Session 29 — VM Testing + User-Facing Polish
 
 ## Context
 
-Session 27 was a housekeeping session:
+Session 28 was a lightweight session:
 
-**Session 27 shipped:**
-- **Removed stale Astro scaffold** — `conduital/conduital/` was an untouched `astro create` template accidentally nested inside the app repo. Deleted. The real website lives at `c:\Dev\conduital-site\` (deployed to conduital.com via Vercel).
-- **Fixed 2 flaky AI test assertions** — `test_weekly_review_ai_summary_no_ai` and `test_project_review_insight_no_ai` were hardcoded to expect 400, but the dev `.env` has `AI_FEATURES_ENABLED=true` with a valid key. Now accept 200 or 400 depending on environment.
-- **Confirmed installer is current** — `ConduitalSetup-1.2.0.exe` (27.4 MB) has no code changes since S26 build. No rebuild needed.
-- **Confirmed website links** — All download CTAs on conduital.com point to `https://conduital.gumroad.com/l/conduital`.
-- **Code signing decision: deferred** — Ship unsigned alpha. Early adopters expect SmartScreen warnings. Revisit before paid beta.
+**Session 28 shipped:**
+- **Gumroad upload verified** — `ConduitalSetup-1.2.0.exe` confirmed uploaded and downloadable from Gumroad product page.
+- **No code changes** — Session focused on verification; codebase unchanged.
 
 Backend tests: 346 passing. Frontend: TypeScript clean, Vite build clean.
 
@@ -24,19 +21,13 @@ tasks/vm-test-plan.md                                    # 40+ test cases — ex
 distribution-checklist.md                                # Phase 3.1 (code signing) deferred
 backlog.md                                               # Central task/debt tracking
 installer/Output/ConduitalSetup-1.2.0.exe                # Current installer
-backend/tests/test_api_basic.py                          # Fixed AI test assertions (S27)
 ```
 
 ## Priority-Ordered Task List
 
-### Phase 1: Gumroad Upload Verification (~10 min)
+### Phase 1: Clean VM Testing (~60 min, manual)
 
-Ensure early adopters get the right file:
-1. Verify `ConduitalSetup-1.2.0.exe` is uploaded to Gumroad product page
-2. Test the download flow end-to-end (purchase/download link → file)
-3. Confirm file size matches local (`~27.4 MB`)
-
-### Phase 2: Clean VM Testing (~60 min, manual)
+**This is the highest-priority remaining pre-beta gate.**
 
 Follow the test plan in `tasks/vm-test-plan.md`:
 1. Set up Windows 10 evaluation VM (Hyper-V or VirtualBox)
@@ -48,7 +39,7 @@ Follow the test plan in `tasks/vm-test-plan.md`:
 
 **Note:** This is a manual GUI task. Claude can guide through setup and record results interactively.
 
-### Phase 3: Fix VM Test Issues (if any)
+### Phase 2: Fix VM Test Issues (if any)
 
 Based on VM testing results:
 1. Fix any blocker/major issues
@@ -56,19 +47,19 @@ Based on VM testing results:
 3. Retest on affected VM
 4. Log minor issues as new DEBT items
 
-### Phase 4: User-Facing Polish (if time permits)
+### Phase 3: User-Facing Polish
 
-- BACKLOG-152: Ship at "Full" module mode (enable all modules for alpha users)
-- BACKLOG-151: Display app version in sidebar
-- DEBT-013: Mobile responsive improvements
+- **BACKLOG-152**: Ship at "Full" module mode (enable all modules for alpha users)
+- **BACKLOG-151**: Display app version in sidebar
+- **DEBT-013**: Mobile responsive improvements
 
-### Phase 5: Session Closeout
+### Phase 4: Session Closeout
 
 1. Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -x -q`
 2. Frontend build: `cd frontend && npm run build`
 3. Update `backlog.md`
 4. Commit + push
-5. **Write Session 29 prompt -> `next-prompt.md`**
+5. **Write Session 30 prompt -> `next-prompt.md`**
 
 ## End-of-Session Protocol
 
