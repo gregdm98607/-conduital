@@ -12,7 +12,7 @@ export function getAIErrorStatus(err: unknown): number | undefined {
 export function getAIErrorMessage(err: unknown, fallback: string = 'AI service unavailable'): string {
   const status = getAIErrorStatus(err);
   if (status === 400 || status === 403) {
-    return 'AI not configured — add your Anthropic API key in Settings.';
+    return 'AI not configured — add your API key in Settings.';
   }
   if (status === 429) {
     return 'AI service is busy — please try again shortly.';

@@ -42,19 +42,44 @@ class AISettingsResponse(BaseModel):
     openai_key_masked: Optional[str] = None
     google_key_configured: bool = False
     google_key_masked: Optional[str] = None
-    available_providers: list[str] = ["anthropic", "openai", "google"]
+    mistral_key_configured: bool = False
+    mistral_key_masked: Optional[str] = None
+    groq_key_configured: bool = False
+    groq_key_masked: Optional[str] = None
+    deepseek_key_configured: bool = False
+    deepseek_key_masked: Optional[str] = None
+    ollama_key_configured: bool = False
+    ollama_key_masked: Optional[str] = None
+    ollama_base_url: Optional[str] = "http://localhost:11434/v1"
+    openai_compatible_key_configured: bool = False
+    openai_compatible_key_masked: Optional[str] = None
+    openai_compatible_base_url: Optional[str] = None
+    available_providers: list[str] = [
+        "anthropic", "openai", "google", "mistral", "groq",
+        "deepseek", "ollama", "openai_compatible",
+    ]
     provider_models: dict[str, list[ProviderModelInfo]] = {}
 
 
 class AISettingsUpdate(BaseModel):
     """AI settings update request"""
-    ai_provider: Optional[str] = Field(None, pattern=r"^(anthropic|openai|google)$")
+    ai_provider: Optional[str] = Field(
+        None,
+        pattern=r"^(anthropic|openai|google|mistral|groq|deepseek|ollama|openai_compatible)$",
+    )
     ai_features_enabled: Optional[bool] = None
     ai_model: Optional[str] = Field(None, max_length=100)
     ai_max_tokens: Optional[int] = Field(None, ge=100, le=8000)
     api_key: Optional[str] = Field(None, max_length=500)
     openai_api_key: Optional[str] = Field(None, max_length=500)
     google_api_key: Optional[str] = Field(None, max_length=500)
+    mistral_api_key: Optional[str] = Field(None, max_length=500)
+    groq_api_key: Optional[str] = Field(None, max_length=500)
+    deepseek_api_key: Optional[str] = Field(None, max_length=500)
+    ollama_api_key: Optional[str] = Field(None, max_length=500)
+    ollama_base_url: Optional[str] = Field(None, max_length=500)
+    openai_compatible_api_key: Optional[str] = Field(None, max_length=500)
+    openai_compatible_base_url: Optional[str] = Field(None, max_length=500)
 
 
 class AITestResponse(BaseModel):
@@ -187,11 +212,16 @@ def _persist_to_env(updates: dict[str, str]) -> None:
 @router.get("/ai", response_model=AISettingsResponse)
 def get_ai_settings():
     """Get current AI settings (API keys masked)"""
-    from app.services.ai_service import PROVIDER_MODELS
+    from app.services.ai_service import PROVIDER_MODELS, VALID_PROVIDERS
 
     anthropic_configured, anthropic_masked = _mask_key(settings.ANTHROPIC_API_KEY)
     openai_configured, openai_masked = _mask_key(settings.OPENAI_API_KEY)
     google_configured, google_masked = _mask_key(settings.GOOGLE_API_KEY)
+    mistral_configured, mistral_masked = _mask_key(settings.MISTRAL_API_KEY)
+    groq_configured, groq_masked = _mask_key(settings.GROQ_API_KEY)
+    deepseek_configured, deepseek_masked = _mask_key(settings.DEEPSEEK_API_KEY)
+    ollama_configured, ollama_masked = _mask_key(settings.OLLAMA_API_KEY)
+    compat_configured, compat_masked = _mask_key(settings.OPENAI_COMPATIBLE_API_KEY)
 
     return AISettingsResponse(
         ai_provider=settings.AI_PROVIDER,
@@ -204,7 +234,19 @@ def get_ai_settings():
         openai_key_masked=openai_masked,
         google_key_configured=google_configured,
         google_key_masked=google_masked,
-        available_providers=["anthropic", "openai", "google"],
+        mistral_key_configured=mistral_configured,
+        mistral_key_masked=mistral_masked,
+        groq_key_configured=groq_configured,
+        groq_key_masked=groq_masked,
+        deepseek_key_configured=deepseek_configured,
+        deepseek_key_masked=deepseek_masked,
+        ollama_key_configured=ollama_configured,
+        ollama_key_masked=ollama_masked,
+        ollama_base_url=settings.OLLAMA_BASE_URL,
+        openai_compatible_key_configured=compat_configured,
+        openai_compatible_key_masked=compat_masked,
+        openai_compatible_base_url=settings.OPENAI_COMPATIBLE_BASE_URL,
+        available_providers=VALID_PROVIDERS,
         provider_models={
             provider: [ProviderModelInfo(**m) for m in models]
             for provider, models in PROVIDER_MODELS.items()
@@ -250,6 +292,34 @@ def update_ai_settings(update: AISettingsUpdate):
         env_updates["GOOGLE_API_KEY"] = update.google_api_key.strip()
         memory_updates.append(("GOOGLE_API_KEY", update.google_api_key.strip()))
 
+    if update.mistral_api_key is not None and update.mistral_api_key.strip():
+        env_updates["MISTRAL_API_KEY"] = update.mistral_api_key.strip()
+        memory_updates.append(("MISTRAL_API_KEY", update.mistral_api_key.strip()))
+
+    if update.groq_api_key is not None and update.groq_api_key.strip():
+        env_updates["GROQ_API_KEY"] = update.groq_api_key.strip()
+        memory_updates.append(("GROQ_API_KEY", update.groq_api_key.strip()))
+
+    if update.deepseek_api_key is not None and update.deepseek_api_key.strip():
+        env_updates["DEEPSEEK_API_KEY"] = update.deepseek_api_key.strip()
+        memory_updates.append(("DEEPSEEK_API_KEY", update.deepseek_api_key.strip()))
+
+    if update.ollama_api_key is not None and update.ollama_api_key.strip():
+        env_updates["OLLAMA_API_KEY"] = update.ollama_api_key.strip()
+        memory_updates.append(("OLLAMA_API_KEY", update.ollama_api_key.strip()))
+
+    if update.ollama_base_url is not None and update.ollama_base_url.strip():
+        env_updates["OLLAMA_BASE_URL"] = update.ollama_base_url.strip()
+        memory_updates.append(("OLLAMA_BASE_URL", update.ollama_base_url.strip()))
+
+    if update.openai_compatible_api_key is not None and update.openai_compatible_api_key.strip():
+        env_updates["OPENAI_COMPATIBLE_API_KEY"] = update.openai_compatible_api_key.strip()
+        memory_updates.append(("OPENAI_COMPATIBLE_API_KEY", update.openai_compatible_api_key.strip()))
+
+    if update.openai_compatible_base_url is not None and update.openai_compatible_base_url.strip():
+        env_updates["OPENAI_COMPATIBLE_BASE_URL"] = update.openai_compatible_base_url.strip()
+        memory_updates.append(("OPENAI_COMPATIBLE_BASE_URL", update.openai_compatible_base_url.strip()))
+
     # Persist to disk FIRST — only mutate in-memory if this succeeds
     if env_updates:
         try:
@@ -290,6 +360,11 @@ def test_ai_connection():
             "anthropic": "anthropic",
             "openai": "openai",
             "google": "google-generativeai",
+            "mistral": "openai",
+            "groq": "openai",
+            "deepseek": "openai",
+            "ollama": "openai",
+            "openai_compatible": "openai",
         }
         pkg = package_map.get(provider_name, provider_name)
         return AITestResponse(

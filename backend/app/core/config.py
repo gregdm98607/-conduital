@@ -190,6 +190,10 @@ class Settings(BaseSettings):
     SYNC_INTERVAL: int = 30  # seconds
     CONFLICT_STRATEGY: str = "prompt"  # prompt, file_wins, db_wins, merge
 
+    # Storage Provider (Phase 1 — data repo agnostic abstraction)
+    STORAGE_PROVIDER: str = "local_folder"  # local_folder (more backends in future)
+    STORAGE_PATH: Optional[str] = None  # Defaults to SECOND_BRAIN_ROOT when None
+
     # Project Discovery
     # Map project folder prefixes (xx.xx) to area names
     # Stored as comma-separated key:value pairs to avoid pydantic-settings JSON parsing.
@@ -222,10 +226,17 @@ class Settings(BaseSettings):
     AUTO_DISCOVERY_DEBOUNCE: float = 2.0  # Seconds to wait before processing folder events
 
     # AI Integration
-    AI_PROVIDER: str = "anthropic"  # anthropic, openai, google
+    AI_PROVIDER: str = "anthropic"  # anthropic, openai, google, mistral, groq, deepseek, ollama, openai_compatible
     ANTHROPIC_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
     GOOGLE_API_KEY: Optional[str] = None
+    MISTRAL_API_KEY: Optional[str] = None
+    GROQ_API_KEY: Optional[str] = None
+    DEEPSEEK_API_KEY: Optional[str] = None
+    OLLAMA_API_KEY: Optional[str] = None  # Optional - Ollama doesn't require a key
+    OLLAMA_BASE_URL: Optional[str] = "http://localhost:11434/v1"
+    OPENAI_COMPATIBLE_API_KEY: Optional[str] = None
+    OPENAI_COMPATIBLE_BASE_URL: Optional[str] = None
     AI_MODEL: str = "claude-sonnet-4-5-20250929"
     AI_MAX_TOKENS: int = 2000
     AI_FEATURES_ENABLED: bool = False

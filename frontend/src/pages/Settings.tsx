@@ -62,9 +62,26 @@ export function Settings() {
   const [openaiKeyMasked, setOpenaiKeyMasked] = useState<string | null>(null);
   const [googleKeyConfigured, setGoogleKeyConfigured] = useState(false);
   const [googleKeyMasked, setGoogleKeyMasked] = useState<string | null>(null);
+  const [mistralKeyConfigured, setMistralKeyConfigured] = useState(false);
+  const [mistralKeyMasked, setMistralKeyMasked] = useState<string | null>(null);
+  const [groqKeyConfigured, setGroqKeyConfigured] = useState(false);
+  const [groqKeyMasked, setGroqKeyMasked] = useState<string | null>(null);
+  const [deepseekKeyConfigured, setDeepseekKeyConfigured] = useState(false);
+  const [deepseekKeyMasked, setDeepseekKeyMasked] = useState<string | null>(null);
+  const [ollamaKeyConfigured, setOllamaKeyConfigured] = useState(false);
+  const [ollamaKeyMasked, setOllamaKeyMasked] = useState<string | null>(null);
+  const [ollamaBaseUrl, setOllamaBaseUrl] = useState('http://localhost:11434/v1');
+  const [compatKeyConfigured, setCompatKeyConfigured] = useState(false);
+  const [compatKeyMasked, setCompatKeyMasked] = useState<string | null>(null);
+  const [compatBaseUrl, setCompatBaseUrl] = useState('');
   const [newApiKey, setNewApiKey] = useState('');
   const [newOpenaiKey, setNewOpenaiKey] = useState('');
   const [newGoogleKey, setNewGoogleKey] = useState('');
+  const [newMistralKey, setNewMistralKey] = useState('');
+  const [newGroqKey, setNewGroqKey] = useState('');
+  const [newDeepseekKey, setNewDeepseekKey] = useState('');
+  const [newOllamaKey, setNewOllamaKey] = useState('');
+  const [newCompatKey, setNewCompatKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
   const [aiLoading, setAiLoading] = useState(true);
   const [aiSaving, setAiSaving] = useState(false);
@@ -155,6 +172,18 @@ export function Settings() {
         setOpenaiKeyMasked(data.openai_key_masked);
         setGoogleKeyConfigured(data.google_key_configured);
         setGoogleKeyMasked(data.google_key_masked);
+        setMistralKeyConfigured(data.mistral_key_configured);
+        setMistralKeyMasked(data.mistral_key_masked);
+        setGroqKeyConfigured(data.groq_key_configured);
+        setGroqKeyMasked(data.groq_key_masked);
+        setDeepseekKeyConfigured(data.deepseek_key_configured);
+        setDeepseekKeyMasked(data.deepseek_key_masked);
+        setOllamaKeyConfigured(data.ollama_key_configured);
+        setOllamaKeyMasked(data.ollama_key_masked);
+        if (data.ollama_base_url) setOllamaBaseUrl(data.ollama_base_url);
+        setCompatKeyConfigured(data.openai_compatible_key_configured);
+        setCompatKeyMasked(data.openai_compatible_key_masked);
+        if (data.openai_compatible_base_url) setCompatBaseUrl(data.openai_compatible_base_url);
         setProviderModels(data.provider_models);
         setAiLoading(false);
       })
@@ -181,6 +210,27 @@ export function Settings() {
       if (newGoogleKey.trim()) {
         update.google_api_key = newGoogleKey.trim();
       }
+      if (newMistralKey.trim()) {
+        update.mistral_api_key = newMistralKey.trim();
+      }
+      if (newGroqKey.trim()) {
+        update.groq_api_key = newGroqKey.trim();
+      }
+      if (newDeepseekKey.trim()) {
+        update.deepseek_api_key = newDeepseekKey.trim();
+      }
+      if (newOllamaKey.trim()) {
+        update.ollama_api_key = newOllamaKey.trim();
+      }
+      if (aiProvider === 'ollama') {
+        update.ollama_base_url = ollamaBaseUrl.trim();
+      }
+      if (newCompatKey.trim()) {
+        update.openai_compatible_api_key = newCompatKey.trim();
+      }
+      if (aiProvider === 'openai_compatible') {
+        update.openai_compatible_base_url = compatBaseUrl.trim();
+      }
       const result = await api.updateAISettings(update);
       setApiKeyConfigured(result.api_key_configured);
       setApiKeyMasked(result.api_key_masked);
@@ -188,10 +238,27 @@ export function Settings() {
       setOpenaiKeyMasked(result.openai_key_masked);
       setGoogleKeyConfigured(result.google_key_configured);
       setGoogleKeyMasked(result.google_key_masked);
+      setMistralKeyConfigured(result.mistral_key_configured);
+      setMistralKeyMasked(result.mistral_key_masked);
+      setGroqKeyConfigured(result.groq_key_configured);
+      setGroqKeyMasked(result.groq_key_masked);
+      setDeepseekKeyConfigured(result.deepseek_key_configured);
+      setDeepseekKeyMasked(result.deepseek_key_masked);
+      setOllamaKeyConfigured(result.ollama_key_configured);
+      setOllamaKeyMasked(result.ollama_key_masked);
+      if (result.ollama_base_url) setOllamaBaseUrl(result.ollama_base_url);
+      setCompatKeyConfigured(result.openai_compatible_key_configured);
+      setCompatKeyMasked(result.openai_compatible_key_masked);
+      if (result.openai_compatible_base_url) setCompatBaseUrl(result.openai_compatible_base_url);
       setProviderModels(result.provider_models);
       setNewApiKey('');
       setNewOpenaiKey('');
       setNewGoogleKey('');
+      setNewMistralKey('');
+      setNewGroqKey('');
+      setNewDeepseekKey('');
+      setNewOllamaKey('');
+      setNewCompatKey('');
       toast.success('AI settings saved');
     } catch {
       toast.error('Failed to update AI settings');
@@ -223,19 +290,55 @@ export function Settings() {
     anthropic: 'Anthropic (Claude)',
     openai: 'OpenAI (GPT)',
     google: 'Google (Gemini)',
+    mistral: 'Mistral AI',
+    groq: 'Groq',
+    deepseek: 'DeepSeek',
+    ollama: 'Ollama (Local)',
+    openai_compatible: 'OpenAI-Compatible',
   };
 
   const providerKeyPlaceholders: Record<string, string> = {
     anthropic: 'Enter Anthropic API key (sk-ant-...)',
     openai: 'Enter OpenAI API key (sk-...)',
     google: 'Enter Google API key',
+    mistral: 'Enter Mistral API key',
+    groq: 'Enter Groq API key (gsk_...)',
+    deepseek: 'Enter DeepSeek API key (sk-...)',
+    ollama: 'Optional — Ollama usually needs no key',
+    openai_compatible: 'Enter API key for your provider',
   };
 
+  // Provider descriptions for the settings UI
+  const providerDescriptions: Record<string, string> = {
+    anthropic: 'Claude models from Anthropic',
+    openai: 'GPT models from OpenAI',
+    google: 'Gemini models from Google',
+    mistral: 'Open-weight and proprietary models from Mistral AI',
+    groq: 'Ultra-fast inference on open models',
+    deepseek: 'DeepSeek V3 and R1 reasoning models',
+    ollama: 'Run models locally on your machine — no API key required',
+    openai_compatible: 'Any provider with an OpenAI-compatible API (LM Studio, vLLM, Together AI, etc.)',
+  };
+
+  // Whether provider needs a base URL field
+  const providerNeedsBaseUrl = aiProvider === 'ollama' || aiProvider === 'openai_compatible';
+
   // Current provider's key state
-  const currentKeyConfigured = aiProvider === 'anthropic' ? apiKeyConfigured : aiProvider === 'openai' ? openaiKeyConfigured : googleKeyConfigured;
-  const currentKeyMasked = aiProvider === 'anthropic' ? apiKeyMasked : aiProvider === 'openai' ? openaiKeyMasked : googleKeyMasked;
-  const currentNewKey = aiProvider === 'anthropic' ? newApiKey : aiProvider === 'openai' ? newOpenaiKey : newGoogleKey;
-  const setCurrentNewKey = aiProvider === 'anthropic' ? setNewApiKey : aiProvider === 'openai' ? setNewOpenaiKey : setNewGoogleKey;
+  const keyStateMap: Record<string, { configured: boolean; masked: string | null; newKey: string; setNewKey: (v: string) => void }> = {
+    anthropic: { configured: apiKeyConfigured, masked: apiKeyMasked, newKey: newApiKey, setNewKey: setNewApiKey },
+    openai: { configured: openaiKeyConfigured, masked: openaiKeyMasked, newKey: newOpenaiKey, setNewKey: setNewOpenaiKey },
+    google: { configured: googleKeyConfigured, masked: googleKeyMasked, newKey: newGoogleKey, setNewKey: setNewGoogleKey },
+    mistral: { configured: mistralKeyConfigured, masked: mistralKeyMasked, newKey: newMistralKey, setNewKey: setNewMistralKey },
+    groq: { configured: groqKeyConfigured, masked: groqKeyMasked, newKey: newGroqKey, setNewKey: setNewGroqKey },
+    deepseek: { configured: deepseekKeyConfigured, masked: deepseekKeyMasked, newKey: newDeepseekKey, setNewKey: setNewDeepseekKey },
+    ollama: { configured: ollamaKeyConfigured, masked: ollamaKeyMasked, newKey: newOllamaKey, setNewKey: setNewOllamaKey },
+    openai_compatible: { configured: compatKeyConfigured, masked: compatKeyMasked, newKey: newCompatKey, setNewKey: setNewCompatKey },
+  };
+  const currentKeyState = keyStateMap[aiProvider] || keyStateMap.anthropic;
+  const currentKeyConfigured = currentKeyState.configured;
+  const currentKeyMasked = currentKeyState.masked;
+  const currentNewKey = currentKeyState.newKey;
+  const setCurrentNewKey = currentKeyState.setNewKey;
 
   const { data: mappings, isLoading: mappingsLoading } = useAreaMappings();
   const { data: suggestions } = useAreaMappingSuggestions();
@@ -1001,18 +1104,54 @@ export function Settings() {
                     }
                   }}
                 >
-                  <option value="anthropic">Anthropic (Claude)</option>
-                  <option value="openai">OpenAI (GPT)</option>
-                  <option value="google">Google (Gemini)</option>
+                  <optgroup label="Cloud Providers">
+                    <option value="anthropic">Anthropic (Claude)</option>
+                    <option value="openai">OpenAI (GPT)</option>
+                    <option value="google">Google (Gemini)</option>
+                    <option value="mistral">Mistral AI</option>
+                    <option value="groq">Groq (Fast Inference)</option>
+                    <option value="deepseek">DeepSeek</option>
+                  </optgroup>
+                  <optgroup label="Local / Self-Hosted">
+                    <option value="ollama">Ollama (Local)</option>
+                    <option value="openai_compatible">OpenAI-Compatible (Custom)</option>
+                  </optgroup>
                 </select>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Choose your AI provider
+                  {providerDescriptions[aiProvider] || 'Choose your AI provider'}
                 </p>
               </div>
 
+              {/* Base URL for providers that need it */}
+              {providerNeedsBaseUrl && (
+                <div>
+                  <label className="label">
+                    {aiProvider === 'ollama' ? 'Ollama Server URL' : 'API Base URL'}
+                  </label>
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder={aiProvider === 'ollama' ? 'http://localhost:11434/v1' : 'https://your-provider.com/v1'}
+                    value={aiProvider === 'ollama' ? ollamaBaseUrl : compatBaseUrl}
+                    onChange={(e) => {
+                      if (aiProvider === 'ollama') {
+                        setOllamaBaseUrl(e.target.value);
+                      } else {
+                        setCompatBaseUrl(e.target.value);
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {aiProvider === 'ollama'
+                      ? 'URL of your local Ollama server'
+                      : 'Base URL of the OpenAI-compatible API endpoint'}
+                  </p>
+                </div>
+              )}
+
               {/* API Key for Current Provider */}
               <div>
-                <label className="label">{providerLabels[aiProvider]} API Key</label>
+                <label className="label">{providerLabels[aiProvider]} API Key{aiProvider === 'ollama' ? ' (Optional)' : ''}</label>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 relative">
                     <input

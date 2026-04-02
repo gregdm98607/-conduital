@@ -5,6 +5,11 @@ Supports:
 - Anthropic Claude (default)
 - OpenAI GPT
 - Google Gemini
+- Mistral AI
+- Groq (fast inference)
+- DeepSeek
+- Ollama (local)
+- Any OpenAI-compatible API (LM Studio, vLLM, Together AI, etc.)
 """
 
 import logging
@@ -129,6 +134,67 @@ class GoogleProvider(AIProvider):
             return {"success": False, "message": str(e), "model": self.model_name}
 
 
+class OpenAICompatibleProvider(AIProvider):
+    """Provider for any OpenAI-compatible API (Mistral, Groq, DeepSeek, Ollama, LM Studio, etc.)."""
+
+    def __init__(self, api_key: str, model: str, base_url: str, provider_name: str = "OpenAI-Compatible"):
+        from openai import OpenAI
+        self.client = OpenAI(api_key=api_key, base_url=base_url)
+        self.model = model
+        self.provider_name = provider_name
+
+    def generate(self, prompt: str, max_tokens: int = 200, temperature: float = 0.7) -> str:
+        response = self.client.chat.completions.create(
+            model=self.model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.choices[0].message.content.strip()
+
+    def test_connection(self) -> dict:
+        try:
+            self.client.chat.completions.create(
+                model=self.model,
+                max_tokens=1,
+                messages=[{"role": "user", "content": "hi"}],
+            )
+            return {"success": True, "message": f"Connection successful. Model: {self.model} ({self.provider_name})", "model": self.model}
+        except Exception as e:
+            return {"success": False, "message": str(e), "model": self.model}
+
+
+class MistralProvider(OpenAICompatibleProvider):
+    """Mistral AI provider (uses OpenAI-compatible API)."""
+
+    def __init__(self, api_key: str, model: str):
+        super().__init__(api_key=api_key, model=model, base_url="https://api.mistral.ai/v1", provider_name="Mistral")
+
+
+class GroqProvider(OpenAICompatibleProvider):
+    """Groq provider (uses OpenAI-compatible API)."""
+
+    def __init__(self, api_key: str, model: str):
+        super().__init__(api_key=api_key, model=model, base_url="https://api.groq.com/openai/v1", provider_name="Groq")
+
+
+class DeepSeekProvider(OpenAICompatibleProvider):
+    """DeepSeek provider (uses OpenAI-compatible API)."""
+
+    def __init__(self, api_key: str, model: str):
+        super().__init__(api_key=api_key, model=model, base_url="https://api.deepseek.com", provider_name="DeepSeek")
+
+
+class OllamaProvider(OpenAICompatibleProvider):
+    """Ollama local provider (uses OpenAI-compatible API)."""
+
+    def __init__(self, api_key: str, model: str, base_url: Optional[str] = None):
+        # Ollama doesn't require an API key; use a dummy value for the OpenAI client
+        effective_key = api_key or "ollama"
+        effective_url = base_url or "http://localhost:11434/v1"
+        super().__init__(api_key=effective_key, model=model, base_url=effective_url, provider_name="Ollama")
+
+
 # Provider model catalogs
 PROVIDER_MODELS = {
     "anthropic": [
@@ -145,12 +211,43 @@ PROVIDER_MODELS = {
         {"id": "gemini-1.5-pro", "name": "Gemini 1.5 Pro (Recommended)"},
         {"id": "gemini-1.5-flash", "name": "Gemini 1.5 Flash (Fast)"},
     ],
+    "mistral": [
+        {"id": "mistral-large-latest", "name": "Mistral Large (Recommended)"},
+        {"id": "mistral-medium-latest", "name": "Mistral Medium"},
+        {"id": "mistral-small-latest", "name": "Mistral Small (Fast)"},
+        {"id": "open-mistral-nemo", "name": "Mistral Nemo (Open)"},
+    ],
+    "groq": [
+        {"id": "llama-3.3-70b-versatile", "name": "Llama 3.3 70B (Recommended)"},
+        {"id": "llama-3.1-8b-instant", "name": "Llama 3.1 8B (Fast)"},
+        {"id": "mixtral-8x7b-32768", "name": "Mixtral 8x7B"},
+        {"id": "gemma2-9b-it", "name": "Gemma 2 9B"},
+    ],
+    "deepseek": [
+        {"id": "deepseek-chat", "name": "DeepSeek V3 (Recommended)"},
+        {"id": "deepseek-reasoner", "name": "DeepSeek R1 (Reasoning)"},
+    ],
+    "ollama": [
+        {"id": "llama3.2", "name": "Llama 3.2 (Recommended)"},
+        {"id": "mistral", "name": "Mistral 7B"},
+        {"id": "phi3", "name": "Phi-3"},
+        {"id": "gemma2", "name": "Gemma 2"},
+        {"id": "qwen2.5", "name": "Qwen 2.5"},
+    ],
+    "openai_compatible": [
+        {"id": "custom-model", "name": "Custom Model (enter ID below)"},
+    ],
 }
 
 DEFAULT_MODELS = {
     "anthropic": "claude-sonnet-4-5-20250929",
     "openai": "gpt-4o",
     "google": "gemini-1.5-pro",
+    "mistral": "mistral-large-latest",
+    "groq": "llama-3.3-70b-versatile",
+    "deepseek": "deepseek-chat",
+    "ollama": "llama3.2",
+    "openai_compatible": "custom-model",
 }
 
 
@@ -162,7 +259,21 @@ def get_api_key_for_provider(provider: str) -> Optional[str]:
         return settings.OPENAI_API_KEY
     elif provider == "google":
         return settings.GOOGLE_API_KEY
+    elif provider == "mistral":
+        return settings.MISTRAL_API_KEY
+    elif provider == "groq":
+        return settings.GROQ_API_KEY
+    elif provider == "deepseek":
+        return settings.DEEPSEEK_API_KEY
+    elif provider == "ollama":
+        return settings.OLLAMA_API_KEY or "ollama"  # Ollama doesn't require a key
+    elif provider == "openai_compatible":
+        return settings.OPENAI_COMPATIBLE_API_KEY
     return None
+
+
+# All valid provider identifiers
+VALID_PROVIDERS = list(PROVIDER_MODELS.keys())
 
 
 def create_provider(provider: Optional[str] = None, api_key: Optional[str] = None, model: Optional[str] = None) -> AIProvider:
@@ -171,7 +282,7 @@ def create_provider(provider: Optional[str] = None, api_key: Optional[str] = Non
     model = model or settings.AI_MODEL
     key = api_key or get_api_key_for_provider(provider)
 
-    if not key:
+    if not key and provider != "ollama":
         raise ValueError(f"No API key configured for provider: {provider}")
 
     if provider == "anthropic":
@@ -180,6 +291,19 @@ def create_provider(provider: Optional[str] = None, api_key: Optional[str] = Non
         return OpenAIProvider(api_key=key, model=model)
     elif provider == "google":
         return GoogleProvider(api_key=key, model=model)
+    elif provider == "mistral":
+        return MistralProvider(api_key=key, model=model)
+    elif provider == "groq":
+        return GroqProvider(api_key=key, model=model)
+    elif provider == "deepseek":
+        return DeepSeekProvider(api_key=key, model=model)
+    elif provider == "ollama":
+        return OllamaProvider(api_key=key or "ollama", model=model, base_url=settings.OLLAMA_BASE_URL)
+    elif provider == "openai_compatible":
+        base_url = settings.OPENAI_COMPATIBLE_BASE_URL
+        if not base_url:
+            raise ValueError("No base URL configured for OpenAI-Compatible provider. Set OPENAI_COMPATIBLE_BASE_URL.")
+        return OpenAICompatibleProvider(api_key=key, model=model, base_url=base_url, provider_name="OpenAI-Compatible")
     else:
         raise ValueError(f"Unknown AI provider: {provider}")
 

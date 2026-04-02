@@ -663,6 +663,18 @@ class APIClient {
     openai_key_masked: string | null;
     google_key_configured: boolean;
     google_key_masked: string | null;
+    mistral_key_configured: boolean;
+    mistral_key_masked: string | null;
+    groq_key_configured: boolean;
+    groq_key_masked: string | null;
+    deepseek_key_configured: boolean;
+    deepseek_key_masked: string | null;
+    ollama_key_configured: boolean;
+    ollama_key_masked: string | null;
+    ollama_base_url: string | null;
+    openai_compatible_key_configured: boolean;
+    openai_compatible_key_masked: string | null;
+    openai_compatible_base_url: string | null;
     available_providers: string[];
     provider_models: Record<string, Array<{ id: string; name: string }>>;
   }> {
@@ -678,6 +690,13 @@ class APIClient {
     api_key?: string;
     openai_api_key?: string;
     google_api_key?: string;
+    mistral_api_key?: string;
+    groq_api_key?: string;
+    deepseek_api_key?: string;
+    ollama_api_key?: string;
+    ollama_base_url?: string;
+    openai_compatible_api_key?: string;
+    openai_compatible_base_url?: string;
   }): Promise<{
     ai_provider: string;
     ai_features_enabled: boolean;
@@ -689,6 +708,18 @@ class APIClient {
     openai_key_masked: string | null;
     google_key_configured: boolean;
     google_key_masked: string | null;
+    mistral_key_configured: boolean;
+    mistral_key_masked: string | null;
+    groq_key_configured: boolean;
+    groq_key_masked: string | null;
+    deepseek_key_configured: boolean;
+    deepseek_key_masked: string | null;
+    ollama_key_configured: boolean;
+    ollama_key_masked: string | null;
+    ollama_base_url: string | null;
+    openai_compatible_key_configured: boolean;
+    openai_compatible_key_masked: string | null;
+    openai_compatible_base_url: string | null;
     available_providers: string[];
     provider_models: Record<string, Array<{ id: string; name: string }>>;
   }> {
