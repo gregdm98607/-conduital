@@ -194,6 +194,11 @@ class Settings(BaseSettings):
     STORAGE_PROVIDER: str = "local_folder"  # local_folder (more backends in future)
     STORAGE_PATH: Optional[str] = None  # Defaults to SECOND_BRAIN_ROOT when None
 
+    # Storage Mode (Phase 3 — invert SQLite from source of truth to cache)
+    # "legacy"        — SQLite is the source of truth (default, backward compatible)
+    # "storage_first" — Markdown files are the source of truth, SQLite is a read cache
+    STORAGE_MODE: str = "legacy"
+
     # Project Discovery
     # Map project folder prefixes (xx.xx) to area names
     # Stored as comma-separated key:value pairs to avoid pydantic-settings JSON parsing.

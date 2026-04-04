@@ -21,6 +21,7 @@ from app.models.inbox import InboxItem
 from app.models.momentum_snapshot import MomentumSnapshot
 from app.models.project import Project
 from app.models.task import Task
+from app.services.storage_service import StorageService
 
 
 # Local alias for backward compat with all call sites
@@ -454,6 +455,15 @@ class IntelligenceService:
                         source="system",
                     )
 
+        # Phase 3: Persist updated momentum scores to storage
+        storage = StorageService(db)
+        if storage.storage_first:
+            for project in projects:
+                try:
+                    storage.persist_project(project)
+                except Exception:
+                    logger.warning("Failed to persist momentum for project %d", project.id)
+
         db.commit()
         return stats
 
@@ -636,6 +646,10 @@ class IntelligenceService:
             details={"auto_generated": True, "unstuck_task": True, "ai_generated": use_ai},
             source="system",
         )
+
+        # Phase 3: Write parent project to storage (if storage_first mode)
+        storage = StorageService(db)
+        storage.persist_task(task)
 
         # Note: caller is responsible for db.commit()
         return task

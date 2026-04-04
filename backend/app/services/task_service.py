@@ -1,5 +1,8 @@
 """
 Task service - business logic for tasks
+
+Phase 3: Write paths go through StorageService when STORAGE_MODE == "storage_first".
+Task mutations re-write the parent project's markdown file.
 """
 
 from datetime import date, datetime, timezone
@@ -12,6 +15,7 @@ from app.core.db_utils import ensure_unique_file_marker, log_activity, soft_dele
 from app.models.task import Task
 from app.schemas.common import UrgencyZoneEnum
 from app.schemas.task import TaskCreate, TaskUpdate
+from app.services.storage_service import StorageService
 
 # Default priority threshold for Critical Now auto-designation
 # Priority 1-3 are high priority (CRITICAL, VERY_HIGH, HIGH)
@@ -264,6 +268,10 @@ class TaskService:
             details={"title": task.title, "project_id": task.project_id},
         )
 
+        # Phase 3: Write parent project to storage (if storage_first mode)
+        storage = StorageService(db)
+        storage.persist_task(task)
+
         db.commit()
         db.refresh(task)
         return task
@@ -322,6 +330,10 @@ class TaskService:
                 details=changes,
             )
 
+        # Phase 3: Write parent project to storage (if storage_first mode)
+        storage = StorageService(db)
+        storage.persist_task(task)
+
         db.commit()
         db.refresh(task)
         return task
@@ -357,6 +369,10 @@ class TaskService:
 
         # Update project activity
         update_project_activity(db, project_id)
+
+        # Phase 3: Write parent project to storage (if storage_first mode)
+        storage = StorageService(db)
+        storage.persist_task(task)
 
         db.commit()
         return True
@@ -399,6 +415,10 @@ class TaskService:
             },
         )
 
+        # Phase 3: Write parent project to storage (if storage_first mode)
+        storage = StorageService(db)
+        storage.persist_task(task)
+
         db.commit()
         db.refresh(task)
         return task
@@ -433,6 +453,10 @@ class TaskService:
             action_type="started",
             details={"title": task.title},
         )
+
+        # Phase 3: Write parent project to storage (if storage_first mode)
+        storage = StorageService(db)
+        storage.persist_task(task)
 
         db.commit()
         db.refresh(task)

@@ -17,11 +17,12 @@ import frontmatter
 
 from app.storage.base import Change, ChangeType, StorageProvider
 from app.sync.markdown_parser import MarkdownParser
+from app.sync.entity_markdown import ENTITY_HANDLERS
 
 logger = logging.getLogger(__name__)
 
 # Entity types this provider knows how to handle
-SUPPORTED_ENTITY_TYPES = {"project"}
+SUPPORTED_ENTITY_TYPES = {"project"} | set(ENTITY_HANDLERS.keys())
 
 
 class LocalFolderProvider(StorageProvider):
@@ -98,7 +99,13 @@ class LocalFolderProvider(StorageProvider):
                 f"{entity_type} not found: {entity_id}"
             )
 
-        parsed = MarkdownParser.parse_file(abs_path)
+        # Dispatch to entity-specific handler if available
+        handler = ENTITY_HANDLERS.get(entity_type)
+        if handler:
+            parsed = handler.parse(abs_path)
+        else:
+            parsed = MarkdownParser.parse_file(abs_path)
+
         parsed["entity_id"] = entity_id
         parsed["file_hash"] = self._file_hash(abs_path)
         return parsed
@@ -107,18 +114,31 @@ class LocalFolderProvider(StorageProvider):
         self._validate_entity_type(entity_type)
         return self._resolve_path(entity_id).exists()
 
+    def _get_entity_directories(self, entity_type: str) -> list[str]:
+        """Return the directories to scan for the given entity type."""
+        handler = ENTITY_HANDLERS.get(entity_type)
+        if handler:
+            return [handler.DIRECTORY]
+        # Default: use configured watch_directories (for projects)
+        return self.watch_directories
+
     def list_entities(self, entity_type: str) -> list[dict]:
         self._validate_entity_type(entity_type)
         results: list[dict] = []
+        handler = ENTITY_HANDLERS.get(entity_type)
+        scan_dirs = self._get_entity_directories(entity_type)
 
-        for watch_dir in self.watch_directories:
+        for watch_dir in scan_dirs:
             dir_path = self.root_path / watch_dir
             if not dir_path.exists():
                 continue
             for md_file in sorted(dir_path.rglob("*.md")):
                 rel_id = self._relative_id(md_file)
                 try:
-                    parsed = MarkdownParser.parse_file(md_file)
+                    if handler:
+                        parsed = handler.parse(md_file)
+                    else:
+                        parsed = MarkdownParser.parse_file(md_file)
                     results.append({
                         "entity_id": rel_id,
                         "metadata": parsed["metadata"],
@@ -136,6 +156,13 @@ class LocalFolderProvider(StorageProvider):
         self, entity_type: str, entity_id: str, data: dict
     ) -> str:
         self._validate_entity_type(entity_type)
+
+        # Dispatch to entity-specific handler if available
+        handler = ENTITY_HANDLERS.get(entity_type)
+        if handler:
+            return self._write_entity_via_handler(handler, entity_type, entity_id, data)
+
+        # --- Original project write logic ---
 
         # Determine file path
         if entity_id:
@@ -161,6 +188,20 @@ class LocalFolderProvider(StorageProvider):
         with abs_path.open("w", encoding="utf-8") as f:
             f.write(frontmatter.dumps(post))
 
+        logger.info("Wrote %s to %s", entity_type, abs_path.name)
+        return entity_id
+
+    def _write_entity_via_handler(self, handler, entity_type: str, entity_id: str, data: dict) -> str:
+        """Write an entity using its entity-specific markdown handler."""
+        if entity_id:
+            abs_path = self._resolve_path(entity_id)
+        else:
+            filename = handler.make_filename(data)
+            folder = self.root_path / handler.DIRECTORY
+            abs_path = folder / filename
+            entity_id = self._relative_id(abs_path)
+
+        handler.write(data, abs_path)
         logger.info("Wrote %s to %s", entity_type, abs_path.name)
         return entity_id
 
@@ -322,7 +363,11 @@ class LocalFolderProvider(StorageProvider):
         created / modified / deleted changes.
         """
         current: dict[str, str] = {}
-        for watch_dir in self.watch_directories:
+        # Scan project watch dirs + all entity handler dirs
+        all_dirs = set(self.watch_directories)
+        for h in ENTITY_HANDLERS.values():
+            all_dirs.add(h.DIRECTORY)
+        for watch_dir in sorted(all_dirs):
             dir_path = self.root_path / watch_dir
             if not dir_path.exists():
                 continue

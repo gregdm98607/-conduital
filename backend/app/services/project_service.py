@@ -1,5 +1,8 @@
 """
 Project service - business logic for projects
+
+Phase 3: Write paths go through StorageService when STORAGE_MODE == "storage_first".
+SQLite reads are unchanged — SQLite remains the query layer.
 """
 
 from datetime import date, datetime, timedelta, timezone
@@ -13,6 +16,7 @@ from app.models.area import Area
 from app.models.project import Project
 from app.models.task import Task
 from app.schemas.project import ProjectCreate, ProjectHealth, ProjectUpdate
+from app.services.storage_service import StorageService
 
 
 REVIEW_FREQ_DAYS = {"daily": 1, "weekly": 7, "monthly": 30}
@@ -151,6 +155,8 @@ class ProjectService:
         Returns:
             Created project
         """
+        storage = StorageService(db)
+
         project = Project(**project_data.model_dump())
         project.last_activity_at = datetime.now(timezone.utc)
         # Auto-set initial next_review_date from review_frequency
@@ -167,6 +173,9 @@ class ProjectService:
             action_type="created",
             details={"title": project.title, "status": project.status},
         )
+
+        # Phase 3: Write to storage provider first (if storage_first mode)
+        storage.persist_project(project)
 
         db.commit()
         db.refresh(project)
@@ -216,6 +225,10 @@ class ProjectService:
                 details=changes,
             )
 
+        # Phase 3: Write to storage provider (if storage_first mode)
+        storage = StorageService(db)
+        storage.persist_project(project)
+
         db.commit()
         db.refresh(project)
         return project
@@ -235,6 +248,10 @@ class ProjectService:
         project = db.get(Project, project_id)
         if not project or project.deleted_at is not None:
             return False
+
+        # Phase 3: Delete from storage provider (if storage_first mode)
+        storage = StorageService(db)
+        storage.delete_project_from_storage(project)
 
         # Log activity before soft deletion
         log_activity(
@@ -288,6 +305,10 @@ class ProjectService:
             action_type="status_changed",
             details={"old_status": old_status, "new_status": new_status},
         )
+
+        # Phase 3: Write to storage provider (if storage_first mode)
+        storage = StorageService(db)
+        storage.persist_project(project)
 
         db.commit()
         db.refresh(project)

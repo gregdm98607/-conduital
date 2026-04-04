@@ -92,6 +92,35 @@ async def momentum_recalculation_job():
         db.close()
 
 
+async def storage_change_detection_job():
+    """
+    Background job to detect external file changes (e.g. user edited in Obsidian)
+    and update the SQLite cache accordingly.
+
+    Only runs when STORAGE_MODE == "storage_first".
+    """
+    from app.services.storage_service import _is_storage_first
+
+    if not _is_storage_first():
+        return
+
+    logger.debug("Checking for external storage changes")
+
+    db: Session = SessionLocal()
+    try:
+        from app.services.storage_service import StorageService
+
+        service = StorageService(db)
+        stats = service.sync_external_changes()
+        if stats.get("changes", 0) > 0:
+            logger.info(f"External change sync: {stats}")
+    except Exception as e:
+        logger.error(f"External change detection failed: {e}", exc_info=True)
+        db.rollback()
+    finally:
+        db.close()
+
+
 async def urgency_zone_recalculation_job():
     """
     Background job to recalculate urgency zones for all active tasks.
@@ -157,6 +186,17 @@ def start_scheduler():
             logger.info(f"Scheduled momentum recalculation: every {recalc_interval} seconds")
     else:
         logger.info("Momentum recalculation scheduling disabled (interval=0)")
+
+    # Schedule external storage change detection (Phase 3)
+    # Only meaningful in storage_first mode; the job self-checks and no-ops in legacy mode
+    _scheduler.add_job(
+        storage_change_detection_job,
+        IntervalTrigger(seconds=settings.SYNC_INTERVAL),
+        id="storage_change_detection",
+        name="Storage Change Detection",
+        replace_existing=True,
+    )
+    logger.info(f"Scheduled storage change detection: every {settings.SYNC_INTERVAL}s")
 
     # Schedule urgency zone recalculation daily at 12:05 AM
     # This ensures tasks due today get promoted to Critical Now at the start of each day

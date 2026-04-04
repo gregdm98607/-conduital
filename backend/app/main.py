@@ -139,6 +139,10 @@ async def lifespan(app: FastAPI):
         except StopIteration:
             pass
 
+    # Phase 3: Rebuild SQLite cache from storage files (if storage_first mode)
+    from app.services.storage_service import rebuild_sqlite_cache_on_startup
+    rebuild_sqlite_cache_on_startup(db)
+
     enabled_modules = register_modules()
 
     logger.info(f"{settings.APP_NAME} v{settings.VERSION} started")
