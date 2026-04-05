@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight, Download, HardDrive, Activity, Rocket } from 'lucide-react';
+import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight, Download, HardDrive, Activity, Rocket, FolderOpen, CheckCircle, XCircle, Loader2, FolderInput, Upload, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAreaMappings, useUpdateAreaMappings, useAreaMappingSuggestions, useScanProjects, useDiscoveryStatus } from '@/hooks/useDiscovery';
 import { useTheme } from '@/context/ThemeContext';
@@ -11,7 +11,7 @@ import { api } from '@/services/api';
 
 const SETTINGS_SECTIONS_KEY = 'pt-settings-sections';
 
-type SectionId = 'appearance' | 'area-mappings' | 'database' | 'sync' | 'ai' | 'momentum' | 'export' | 'setup';
+type SectionId = 'appearance' | 'data-storage' | 'area-mappings' | 'database' | 'sync' | 'ai' | 'momentum' | 'export' | 'setup';
 
 function loadCollapsedSections(): Set<SectionId> {
   try {
@@ -22,7 +22,7 @@ function loadCollapsedSections(): Set<SectionId> {
   } catch {
     localStorage.removeItem(SETTINGS_SECTIONS_KEY);
   }
-  return new Set<SectionId>(['appearance', 'area-mappings', 'database', 'sync', 'ai', 'momentum', 'export', 'setup']);
+  return new Set<SectionId>(['appearance', 'data-storage', 'area-mappings', 'database', 'sync', 'ai', 'momentum', 'export', 'setup']);
 }
 
 export function Settings() {
@@ -97,6 +97,20 @@ export function Settings() {
   const [syncLoading, setSyncLoading] = useState(true);
   const [syncSaving, setSyncSaving] = useState(false);
 
+  // Storage Settings state (Phase 4)
+  const [storageProvider, setStorageProvider] = useState('local_folder');
+  const [storagePath, setStoragePath] = useState('');
+  const [storageMode, setStorageMode] = useState('legacy');
+  const [syncHealth, setSyncHealth] = useState('not_configured');
+  const [entityCounts, setEntityCounts] = useState<Record<string, number>>({});
+  const [storageLoading, setStorageLoading] = useState(true);
+  const [storageSaving, setStorageSaving] = useState(false);
+  const [storageTestResult, setStorageTestResult] = useState<{ valid: boolean; message: string } | null>(null);
+  const [storageTesting, setStorageTesting] = useState(false);
+  const [rebuildingCache, setRebuildingCache] = useState(false);
+  const [migrationAction, setMigrationAction] = useState<string | null>(null);
+  const [migrating, setMigrating] = useState(false);
+
   // Momentum Settings state
   const [stalledThreshold, setStalledThreshold] = useState(14);
   const [atRiskThreshold, setAtRiskThreshold] = useState(7);
@@ -158,6 +172,20 @@ export function Settings() {
       .catch(() => { /* ignore */ });
   }, []);
 
+  // Load Storage settings on mount
+  useEffect(() => {
+    api.getStorageSettings()
+      .then((data) => {
+        setStorageProvider(data.storage_provider);
+        setStoragePath(data.storage_path || '');
+        setStorageMode(data.storage_mode);
+        setSyncHealth(data.sync_health);
+        setEntityCounts(data.entity_counts);
+        setStorageLoading(false);
+      })
+      .catch(() => setStorageLoading(false));
+  }, []);
+
   // Load AI settings on mount
   useEffect(() => {
     api.getAISettings()
@@ -191,6 +219,87 @@ export function Settings() {
         setAiLoading(false);
       });
   }, []);
+
+  // Storage settings handlers
+  const handleTestStorageFolder = async () => {
+    if (!storagePath.trim()) return;
+    setStorageTesting(true);
+    setStorageTestResult(null);
+    try {
+      const result = await api.testStorageFolder(storagePath.trim());
+      setStorageTestResult({ valid: result.valid, message: result.message });
+      if (result.valid) {
+        setStoragePath(result.path);
+      }
+    } catch {
+      setStorageTestResult({ valid: false, message: 'Test failed' });
+    }
+    setStorageTesting(false);
+  };
+
+  const handleSaveStorageSettings = async () => {
+    setStorageSaving(true);
+    try {
+      const result = await api.updateStorageSettings({
+        storage_provider: storageProvider,
+        storage_path: storagePath.trim(),
+        storage_mode: storageMode,
+      });
+      setStorageProvider(result.storage_provider);
+      setStoragePath(result.storage_path || '');
+      setStorageMode(result.storage_mode);
+      setSyncHealth(result.sync_health);
+      setEntityCounts(result.entity_counts);
+      toast.success('Storage settings saved');
+    } catch {
+      toast.error('Failed to save storage settings');
+    }
+    setStorageSaving(false);
+  };
+
+  const handleRebuildCache = async () => {
+    setRebuildingCache(true);
+    try {
+      const result = await api.rebuildStorageCache();
+      if (result.success) {
+        toast.success(result.message);
+        // Refresh entity counts
+        const updated = await api.getStorageSettings();
+        setEntityCounts(updated.entity_counts);
+        setSyncHealth(updated.sync_health);
+      } else {
+        toast.error(result.message);
+      }
+    } catch {
+      toast.error('Cache rebuild failed');
+    }
+    setRebuildingCache(false);
+  };
+
+  const handleMigration = async (action: string) => {
+    if (!storagePath.trim()) {
+      toast.error('Please set a storage folder path first');
+      return;
+    }
+    setMigrating(true);
+    setMigrationAction(action);
+    try {
+      const result = await api.migrateStorage(action, storagePath.trim());
+      if (result.success) {
+        toast.success(result.message);
+        // Refresh storage settings
+        const updated = await api.getStorageSettings();
+        setEntityCounts(updated.entity_counts);
+        setSyncHealth(updated.sync_health);
+      } else {
+        toast.error(result.message);
+      }
+    } catch {
+      toast.error('Migration failed');
+    }
+    setMigrating(false);
+    setMigrationAction(null);
+  };
 
   const handleSaveAISettings = async () => {
     setAiSaving(true);
@@ -640,6 +749,210 @@ export function Settings() {
               </div>
             </div>
           )}
+        </section>
+
+        {/* Data Storage Section (Phase 4) */}
+        <section className="card">
+          <button
+            type="button"
+            onClick={() => toggleSection('data-storage')}
+            aria-expanded={!collapsedSections.has('data-storage')}
+            className="flex items-center gap-3 w-full text-left"
+          >
+            {collapsedSections.has('data-storage') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            <FolderOpen className="w-6 h-6 text-primary-600" />
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Your Data, Your Way</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5">
+                Conduital works with any folder — Obsidian, Google Drive, Dropbox, iCloud, or just a local directory
+              </p>
+            </div>
+          </button>
+
+          {!collapsedSections.has('data-storage') && (storageLoading ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading storage settings...</div>
+          ) : (
+            <div className="space-y-5 mt-4">
+              {/* Sync Health Indicator */}
+              <div className="flex items-center gap-3">
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+                  syncHealth === 'healthy'
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                    : syncHealth === 'degraded'
+                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                }`}>
+                  {syncHealth === 'healthy' ? (
+                    <><CheckCircle className="w-4 h-4" /> Storage Healthy</>
+                  ) : syncHealth === 'degraded' ? (
+                    <><AlertTriangle className="w-4 h-4" /> Storage Degraded</>
+                  ) : (
+                    <><XCircle className="w-4 h-4" /> Not Configured</>
+                  )}
+                </div>
+                {Object.keys(entityCounts).length > 0 && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {Object.entries(entityCounts).map(([k, v]) => `${v} ${k}`).join(' · ')}
+                  </span>
+                )}
+              </div>
+
+              {/* Storage Provider */}
+              <div>
+                <label className="label">Storage Provider</label>
+                <select
+                  className="input w-64"
+                  value={storageProvider}
+                  onChange={(e) => setStorageProvider(e.target.value)}
+                >
+                  <option value="local_folder">Local Folder</option>
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Your data is stored as plain markdown files — readable by any editor, syncable by any cloud service.
+                </p>
+              </div>
+
+              {/* Folder Path */}
+              <div>
+                <label className="label">Data Folder Path</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    className="input flex-1"
+                    placeholder="e.g. C:\Users\You\Documents\Conduital"
+                    value={storagePath}
+                    onChange={(e) => {
+                      setStoragePath(e.target.value);
+                      setStorageTestResult(null);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleTestStorageFolder}
+                    disabled={!storagePath.trim() || storageTesting}
+                    className="btn btn-secondary flex items-center gap-2"
+                  >
+                    {storageTesting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Wifi className="w-4 h-4" />
+                    )}
+                    Test Connection
+                  </button>
+                </div>
+                {storageTestResult && (
+                  <p className={`text-sm mt-1 flex items-center gap-1 ${
+                    storageTestResult.valid
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {storageTestResult.valid ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                    {storageTestResult.message}
+                  </p>
+                )}
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Point this at an Obsidian vault, a Dropbox-synced folder, or any directory you like.
+                </p>
+              </div>
+
+              {/* Storage Mode */}
+              <div>
+                <label className="label">Storage Mode</label>
+                <select
+                  className="input w-64"
+                  value={storageMode}
+                  onChange={(e) => setStorageMode(e.target.value)}
+                >
+                  <option value="legacy">Legacy (SQLite is source of truth)</option>
+                  <option value="storage_first">Storage First (markdown files are source of truth)</option>
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {storageMode === 'storage_first'
+                    ? 'Markdown files are the source of truth. SQLite serves as a fast query cache.'
+                    : 'SQLite is the source of truth. Markdown files are synced as a secondary copy.'}
+                </p>
+              </div>
+
+              {/* Save Button */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSaveStorageSettings}
+                  disabled={storageSaving}
+                  className="btn btn-primary flex items-center gap-2"
+                >
+                  {storageSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  Save Storage Settings
+                </button>
+              </div>
+
+              {/* Rebuild Cache */}
+              <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+                <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Cache Management</h3>
+                <button
+                  onClick={handleRebuildCache}
+                  disabled={rebuildingCache || syncHealth === 'not_configured'}
+                  className="btn btn-secondary flex items-center gap-2"
+                >
+                  {rebuildingCache ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                  Rebuild Cache
+                </button>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Force a full re-scan of your data folder and rebuild the SQLite query cache from scratch.
+                </p>
+              </div>
+
+              {/* Migration / First-Run Actions */}
+              <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+                <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Migration & Setup</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Choose how to initialize your data folder:
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => handleMigration('export_to_folder')}
+                    disabled={migrating || !storagePath.trim()}
+                    className="btn btn-secondary flex items-center gap-2"
+                  >
+                    {migrating && migrationAction === 'export_to_folder' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    Export Data to Folder
+                  </button>
+                  <button
+                    onClick={() => handleMigration('import_from_folder')}
+                    disabled={migrating || !storagePath.trim()}
+                    className="btn btn-secondary flex items-center gap-2"
+                  >
+                    {migrating && migrationAction === 'import_from_folder' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FolderInput className="w-4 h-4" />
+                    )}
+                    Import from Folder
+                  </button>
+                  <button
+                    onClick={() => handleMigration('start_fresh')}
+                    disabled={migrating || !storagePath.trim()}
+                    className="btn btn-secondary flex items-center gap-2"
+                  >
+                    {migrating && migrationAction === 'start_fresh' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4" />
+                    )}
+                    Start Fresh
+                  </button>
+                </div>
+                <div className="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                  <p><strong>Export:</strong> Writes all current app data as markdown files to the folder.</p>
+                  <p><strong>Import:</strong> Reads an existing markdown folder (e.g., an Obsidian vault) and populates the app.</p>
+                  <p><strong>Start Fresh:</strong> Creates an empty folder structure — clean slate.</p>
+                </div>
+              </div>
+            </div>
+          ))}
         </section>
 
         {/* Area Mapping Section */}

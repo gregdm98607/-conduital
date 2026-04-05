@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Rocket,
   FolderSync,
+  FolderOpen,
   Brain,
   CheckCircle,
   ArrowRight,
@@ -43,7 +44,7 @@ interface SetupStatusData {
 
 const STEPS = [
   { id: 'welcome', label: 'Welcome', icon: Rocket },
-  { id: 'sync', label: 'File Sync', icon: FolderSync },
+  { id: 'storage', label: 'Data Storage', icon: FolderOpen },
   { id: 'ai', label: 'AI Setup', icon: Brain },
   { id: 'ready', label: 'Ready', icon: CheckCircle },
 ];
@@ -244,8 +245,8 @@ export function SetupWizard() {
               </p>
               <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
                 <li>
-                  <strong>File sync</strong> (optional) &mdash; Connect a folder
-                  of markdown notes for bidirectional sync
+                  <strong>Data storage</strong> (optional) &mdash; Choose a folder
+                  for your data — works with Obsidian, Dropbox, iCloud, or any directory
                 </li>
                 <li>
                   <strong>AI features</strong> (optional) &mdash; Add your
@@ -303,24 +304,24 @@ export function SetupWizard() {
           </div>
         )}
 
-        {/* Step 1: File Sync */}
+        {/* Step 1: Data Storage */}
         {step === 1 && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-              File Sync (Optional)
+              Your Data, Your Way
             </h2>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
-              Connect a folder of markdown files for bidirectional sync.
-              Conduital will discover projects and areas from your file
-              structure and keep them in sync with the database.
+              Choose a folder where Conduital stores your data as plain markdown files.
+              Point it at an Obsidian vault, a Dropbox-synced folder, Google Drive,
+              iCloud, or just a local directory — your data stays yours.
             </p>
             <div>
-              <label className="label">Sync Folder Path</label>
+              <label className="label">Data Folder Path</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   className="input flex-1"
-                  placeholder="e.g. C:\Users\You\Documents\Notes"
+                  placeholder="e.g. C:\Users\You\Documents\Conduital"
                   value={config.sync_folder}
                   onChange={(e) => {
                     setConfig((prev) => ({
@@ -354,8 +355,12 @@ export function SetupWizard() {
                 </p>
               )}
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Leave empty to skip. You can configure this later in Settings.
+                Leave empty to skip — you can configure this later in Settings → Data Storage.
               </p>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-sm text-gray-600 dark:text-gray-400 space-y-1">
+              <p><strong>Obsidian users:</strong> point to your vault root and Conduital will read/write project markdown files alongside your notes.</p>
+              <p><strong>Cloud sync users:</strong> choose a folder inside Dropbox, Google Drive, or iCloud to sync your data across devices automatically.</p>
             </div>
           </div>
         )}
@@ -472,10 +477,10 @@ export function SetupWizard() {
             </p>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-3">
-                <FolderSync className="w-5 h-5 text-gray-400" />
+                <FolderOpen className="w-5 h-5 text-gray-400" />
                 <div>
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    File Sync
+                    Data Storage
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {config.sync_folder.trim()

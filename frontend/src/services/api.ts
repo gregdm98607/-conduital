@@ -766,6 +766,71 @@ class APIClient {
   }
 
   // ============================================================================
+  // Storage Settings (Phase 4 — Data Storage UI)
+  // ============================================================================
+
+  async getStorageSettings(signal?: AbortSignal): Promise<{
+    storage_provider: string;
+    storage_path: string | null;
+    storage_mode: string;
+    sync_health: string;
+    entity_counts: Record<string, number>;
+  }> {
+    const response = await this.client.get('/settings/storage', { signal });
+    return response.data;
+  }
+
+  async updateStorageSettings(settings: {
+    storage_provider?: string;
+    storage_path?: string;
+    storage_mode?: string;
+  }): Promise<{
+    storage_provider: string;
+    storage_path: string | null;
+    storage_mode: string;
+    sync_health: string;
+    entity_counts: Record<string, number>;
+  }> {
+    const response = await this.client.put('/settings/storage', settings);
+    return response.data;
+  }
+
+  async testStorageFolder(path: string): Promise<{
+    valid: boolean;
+    exists: boolean;
+    is_directory: boolean;
+    is_writable: boolean;
+    path: string;
+    message: string;
+  }> {
+    const response = await this.client.post('/settings/storage/test', null, {
+      params: { path },
+    });
+    return response.data;
+  }
+
+  async rebuildStorageCache(): Promise<{
+    success: boolean;
+    message: string;
+    stats: Record<string, number>;
+  }> {
+    const response = await this.client.post('/settings/storage/rebuild');
+    return response.data;
+  }
+
+  async migrateStorage(action: string, folderPath: string): Promise<{
+    success: boolean;
+    message: string;
+    stats: Record<string, number>;
+  }> {
+    const response = await this.client.post('/settings/storage/migrate', {
+      action,
+      folder_path: folderPath,
+    });
+    return response.data;
+  }
+
+  // ============================================================================
   // Sync Settings
   // ============================================================================
 

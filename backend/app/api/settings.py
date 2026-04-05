@@ -448,6 +448,410 @@ def update_momentum_settings(update: MomentumSettingsUpdate):
     )
 
 
+# =========================================================================
+# Storage Settings (Phase 4 — Data Storage UI)
+# =========================================================================
+
+
+class StorageSettingsResponse(BaseModel):
+    """Current data-storage configuration."""
+    storage_provider: str
+    storage_path: Optional[str] = None
+    storage_mode: str
+    sync_health: str  # "healthy", "degraded", "not_configured"
+    entity_counts: dict[str, int] = {}
+
+
+class StorageSettingsUpdate(BaseModel):
+    """Schema for updating storage settings."""
+    storage_provider: Optional[str] = Field(
+        None, pattern=r"^(local_folder)$",
+    )
+    storage_path: Optional[str] = Field(None, max_length=2000)
+    storage_mode: Optional[str] = Field(
+        None, pattern=r"^(legacy|storage_first)$",
+    )
+
+
+class StorageTestResponse(BaseModel):
+    """Response from storage folder validation."""
+    valid: bool
+    exists: bool
+    is_directory: bool
+    is_writable: bool
+    path: str
+    message: str
+
+
+class StorageRebuildResponse(BaseModel):
+    """Response from cache rebuild."""
+    success: bool
+    message: str
+    stats: dict = {}
+
+
+class StorageMigrationRequest(BaseModel):
+    """Request to export existing SQLite data to a storage folder."""
+    action: str = Field(
+        ..., pattern=r"^(export_to_folder|import_from_folder|start_fresh)$",
+    )
+    folder_path: str = Field(..., max_length=2000)
+
+
+class StorageMigrationResponse(BaseModel):
+    """Response from migration action."""
+    success: bool
+    message: str
+    stats: dict = {}
+
+
+def _get_entity_counts() -> dict[str, int]:
+    """Count entities in the current storage folder."""
+    try:
+        from app.storage.factory import get_storage_provider
+        provider = get_storage_provider()
+        counts: dict[str, int] = {}
+        for entity_type in ["project", "task", "area", "goal", "vision"]:
+            try:
+                entities = provider.list_entities(entity_type)
+                counts[entity_type + "s"] = len(entities)
+            except (ValueError, Exception):
+                pass
+        return counts
+    except Exception:
+        return {}
+
+
+def _check_sync_health() -> str:
+    """Check overall sync/storage health."""
+    storage_path = getattr(settings, "STORAGE_PATH", None) or settings.SECOND_BRAIN_ROOT
+    if not storage_path:
+        return "not_configured"
+    p = Path(storage_path)
+    if not p.exists() or not p.is_dir():
+        return "degraded"
+    # Quick write test
+    try:
+        test_file = p / ".conduital_health_check"
+        test_file.write_text("ok", encoding="utf-8")
+        test_file.unlink()
+        return "healthy"
+    except Exception:
+        return "degraded"
+
+
+@router.get("/storage", response_model=StorageSettingsResponse)
+def get_storage_settings():
+    """Get current data storage configuration."""
+    storage_path = getattr(settings, "STORAGE_PATH", None) or settings.SECOND_BRAIN_ROOT
+    health = _check_sync_health()
+    counts = _get_entity_counts() if health == "healthy" else {}
+
+    return StorageSettingsResponse(
+        storage_provider=getattr(settings, "STORAGE_PROVIDER", "local_folder"),
+        storage_path=storage_path,
+        storage_mode=getattr(settings, "STORAGE_MODE", "legacy"),
+        sync_health=health,
+        entity_counts=counts,
+    )
+
+
+@router.put("/storage", response_model=StorageSettingsResponse)
+def update_storage_settings(update: StorageSettingsUpdate):
+    """Update data storage configuration.
+
+    Persist-first: writes to .env before mutating in-memory settings.
+    """
+    env_updates: dict[str, str] = {}
+    memory_updates: list[tuple[str, object]] = []
+
+    if update.storage_provider is not None:
+        env_updates["STORAGE_PROVIDER"] = update.storage_provider
+        memory_updates.append(("STORAGE_PROVIDER", update.storage_provider))
+
+    if update.storage_path is not None:
+        path_value = update.storage_path.strip()
+        if path_value:
+            resolved = Path(path_value).resolve()
+            if not resolved.exists():
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Path does not exist: {path_value}",
+                )
+            if not resolved.is_dir():
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Path is not a directory: {path_value}",
+                )
+            env_updates["STORAGE_PATH"] = str(resolved)
+            memory_updates.append(("STORAGE_PATH", str(resolved)))
+            # Also update SECOND_BRAIN_ROOT for backward compat
+            env_updates["SECOND_BRAIN_ROOT"] = str(resolved)
+            memory_updates.append(("SECOND_BRAIN_ROOT", str(resolved)))
+        else:
+            env_updates["STORAGE_PATH"] = ""
+            memory_updates.append(("STORAGE_PATH", None))
+
+    if update.storage_mode is not None:
+        env_updates["STORAGE_MODE"] = update.storage_mode
+        memory_updates.append(("STORAGE_MODE", update.storage_mode))
+
+    if env_updates:
+        try:
+            _persist_to_env(env_updates)
+        except OSError as e:
+            logger.error(f"Failed to persist storage settings: {e}")
+            raise HTTPException(status_code=500, detail="Failed to save settings to disk")
+        for attr, value in memory_updates:
+            setattr(settings, attr, value)
+        # Reset the cached storage provider so it picks up new settings
+        from app.storage.factory import reset_storage_provider
+        reset_storage_provider()
+
+    return get_storage_settings()
+
+
+@router.post("/storage/test", response_model=StorageTestResponse)
+def test_storage_folder(path: str):
+    """Validate a storage folder path exists, is a directory, and is writable."""
+    folder = Path(path)
+    exists = folder.exists()
+    is_dir = folder.is_dir() if exists else False
+    is_writable = False
+    message = ""
+
+    if not exists:
+        message = "Path does not exist"
+    elif not is_dir:
+        message = "Path is not a directory"
+    else:
+        try:
+            test_file = folder / ".conduital_write_test"
+            test_file.write_text("test", encoding="utf-8")
+            test_file.unlink()
+            is_writable = True
+            message = "Folder is valid and writable"
+        except PermissionError:
+            message = "Folder exists but is not writable (permission denied)"
+        except Exception as e:
+            message = f"Folder exists but write test failed: {e}"
+
+    return StorageTestResponse(
+        valid=is_dir and is_writable,
+        exists=exists,
+        is_directory=is_dir,
+        is_writable=is_writable,
+        path=str(folder.resolve()) if exists else path,
+        message=message,
+    )
+
+
+@router.post("/storage/rebuild", response_model=StorageRebuildResponse)
+def rebuild_cache():
+    """Force rebuild the SQLite cache from markdown files in the storage folder."""
+    storage_path = getattr(settings, "STORAGE_PATH", None) or settings.SECOND_BRAIN_ROOT
+    if not storage_path:
+        return StorageRebuildResponse(
+            success=False,
+            message="No storage folder configured. Set a storage path first.",
+        )
+
+    try:
+        from app.core.database import get_db
+        from app.services.storage_service import StorageService
+        from app.storage.factory import reset_storage_provider
+
+        # Reset provider to pick up any config changes
+        reset_storage_provider()
+
+        db_gen = get_db()
+        db = next(db_gen)
+        try:
+            stats = StorageService.rebuild_cache(db)
+            return StorageRebuildResponse(
+                success=True,
+                message=(
+                    f"Cache rebuilt: {stats.get('scanned', 0)} files scanned, "
+                    f"{stats.get('created', 0)} created, "
+                    f"{stats.get('updated', 0)} updated, "
+                    f"{stats.get('errors', 0)} errors."
+                ),
+                stats=stats,
+            )
+        finally:
+            try:
+                next(db_gen)
+            except StopIteration:
+                pass
+    except Exception as e:
+        logger.exception("Cache rebuild failed")
+        return StorageRebuildResponse(
+            success=False,
+            message=f"Cache rebuild failed: {e}",
+        )
+
+
+@router.post("/storage/migrate", response_model=StorageMigrationResponse)
+def migrate_storage(request: StorageMigrationRequest):
+    """Execute a migration action: export to folder, import from folder, or start fresh."""
+    folder = Path(request.folder_path)
+
+    if request.action == "start_fresh":
+        # Just validate the folder exists / create it
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            return StorageMigrationResponse(
+                success=True,
+                message=f"Fresh start: folder ready at {folder}",
+            )
+        except Exception as e:
+            return StorageMigrationResponse(
+                success=False,
+                message=f"Failed to create folder: {e}",
+            )
+
+    if request.action == "export_to_folder":
+        # Export all SQLite data as markdown files to the chosen folder
+        try:
+            from app.core.database import get_db
+            from app.storage.local_folder import LocalFolderProvider
+
+            folder.mkdir(parents=True, exist_ok=True)
+            provider = LocalFolderProvider(root_path=folder)
+
+            db_gen = get_db()
+            db = next(db_gen)
+            try:
+                from app.models.project import Project as ProjectModel
+                from app.models.task import Task as TaskModel
+                from sqlalchemy import select
+
+                projects = db.execute(
+                    select(ProjectModel).where(ProjectModel.deleted_at.is_(None))
+                ).scalars().all()
+
+                exported = 0
+                errors = 0
+                for project in projects:
+                    try:
+                        tasks = db.execute(
+                            select(TaskModel).where(
+                                TaskModel.project_id == project.id,
+                                TaskModel.deleted_at.is_(None),
+                            )
+                        ).scalars().all()
+
+                        task_dicts = [
+                            {
+                                "title": t.title,
+                                "checked": t.status == "completed",
+                                "marker": t.file_marker,
+                                "file_marker": t.file_marker,
+                                "task_type": t.task_type,
+                            }
+                            for t in tasks
+                        ]
+
+                        data = {
+                            "title": project.title,
+                            "description": project.description,
+                            "status": project.status,
+                            "priority": project.priority,
+                            "momentum_score": project.momentum_score or 0.0,
+                            "metadata": {
+                                "tracker_id": project.id,
+                                "project_status": project.status,
+                                "priority": project.priority,
+                                "momentum_score": project.momentum_score or 0.0,
+                                "title": project.title,
+                                "description": project.description,
+                            },
+                            "tasks": task_dicts,
+                        }
+                        provider.write_entity("project", "", data)
+                        exported += 1
+                    except Exception as exc:
+                        logger.warning("Failed to export project '%s': %s", project.title, exc)
+                        errors += 1
+
+                return StorageMigrationResponse(
+                    success=True,
+                    message=f"Exported {exported} projects to {folder} ({errors} errors)",
+                    stats={"exported": exported, "errors": errors},
+                )
+            finally:
+                try:
+                    next(db_gen)
+                except StopIteration:
+                    pass
+        except Exception as e:
+            logger.exception("Export to folder failed")
+            return StorageMigrationResponse(
+                success=False,
+                message=f"Export failed: {e}",
+            )
+
+    if request.action == "import_from_folder":
+        # Import markdown files from the folder into SQLite
+        try:
+            if not folder.is_dir():
+                return StorageMigrationResponse(
+                    success=False,
+                    message=f"Folder does not exist: {folder}",
+                )
+
+            from app.core.database import get_db
+            from app.services.storage_service import StorageService
+            from app.storage.factory import create_storage_provider
+
+            # Temporarily create a provider pointing at the chosen folder
+            provider = create_storage_provider(
+                provider_type="local_folder",
+                storage_path=str(folder),
+            )
+
+            db_gen = get_db()
+            db = next(db_gen)
+            try:
+                # Use the existing rebuild mechanism
+                entities = provider.list_entities("project")
+                created = 0
+                errors = 0
+                for entity_summary in entities:
+                    try:
+                        full_data = provider.read_entity("project", entity_summary["entity_id"])
+                        StorageService._upsert_project_from_storage(
+                            db, entity_summary["entity_id"], full_data, provider=provider
+                        )
+                        created += 1
+                    except Exception as exc:
+                        logger.warning("Failed to import %s: %s", entity_summary["entity_id"], exc)
+                        errors += 1
+                db.commit()
+
+                return StorageMigrationResponse(
+                    success=True,
+                    message=f"Imported {created} projects from {folder} ({errors} errors)",
+                    stats={"imported": created, "errors": errors},
+                )
+            finally:
+                try:
+                    next(db_gen)
+                except StopIteration:
+                    pass
+        except Exception as e:
+            logger.exception("Import from folder failed")
+            return StorageMigrationResponse(
+                success=False,
+                message=f"Import failed: {e}",
+            )
+
+    return StorageMigrationResponse(
+        success=False,
+        message=f"Unknown action: {request.action}",
+    )
+
+
 def _apply_auto_discovery(enabled: bool) -> None:
     """Start or stop the folder watcher based on the auto_discovery_enabled setting."""
     if enabled and settings.SECOND_BRAIN_ROOT:
