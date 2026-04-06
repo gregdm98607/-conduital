@@ -53,10 +53,13 @@ conduital/
       models/       # SQLAlchemy models
       modules/      # Module system (memory layer, etc.)
       schemas/      # Pydantic schemas
-      services/     # Business logic
+      services/     # Business logic (incl. StorageService)
+      storage/      # Pluggable storage providers
+      sync/         # Markdown parsing/writing, entity handlers
     alembic/          # Database migrations
     tests/            # Backend test suite
     run.py            # Single-process launcher
+  docs/               # Architecture docs
   frontend/
     src/
       components/   # React components
@@ -67,6 +70,29 @@ conduital/
   README.md
 ```
 
+## Data Storage
+
+Conduital supports pluggable storage backends via a **StorageProvider** abstraction. Your data can live in markdown files, and SQLite acts as a fast query cache.
+
+### Storage Modes
+
+| Mode | Description |
+|------|-------------|
+| `legacy` (default) | SQLite is the source of truth. Markdown sync is optional. |
+| `storage_first` | Markdown files are the source of truth. SQLite is rebuilt on startup. |
+
+### Configuration
+
+```env
+STORAGE_MODE=storage_first          # or "legacy" (default)
+STORAGE_PROVIDER=local_folder       # pluggable backend
+STORAGE_PATH=/path/to/your/notes    # root folder for markdown files
+```
+
+In `storage_first` mode, your project files are standard YAML-frontmatter markdown -- fully compatible with **Obsidian**, Logseq, and other PKM tools. External edits (e.g. in Obsidian) are automatically detected and synced.
+
+See [`docs/storage-providers.md`](docs/storage-providers.md) for the full architecture guide and instructions on adding new providers.
+
 ## Configuration
 
 Key environment variables (see `backend/.env.example` for full list):
@@ -74,6 +100,9 @@ Key environment variables (see `backend/.env.example` for full list):
 ```env
 # Sync folder (optional)
 SECOND_BRAIN_ROOT=/path/to/your/notes
+
+# Storage mode (optional — default is "legacy")
+STORAGE_MODE=storage_first
 
 # AI features (optional -- all other features work without a key)
 ANTHROPIC_API_KEY=your_key_here
@@ -85,7 +114,7 @@ COMMERCIAL_MODE=full  # basic, gtd, proactive_assistant, full
 
 ## Version
 
-Current: **1.0.0-alpha**
+Current: **1.0.0-beta**
 
 ## License
 

@@ -95,7 +95,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 | ID | Description | Status | Target |
 |----|-------------|--------|--------|
-| ROADMAP-010 | BYOS Foundation (Bring Your Own Storage) | Open | R1/R2 |
+| ROADMAP-010 | BYOS Foundation (Bring Your Own Storage) | **Done** (Phase 1-5) | R1/R2 — StorageProvider ABC, LocalFolderProvider, StorageService write-through, full test suite |
 | DEBT-020 | SyncEngine area markdown handling | Open | R1 |
 
 ### Distribution & Marketing
@@ -203,7 +203,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 |----|-------------|--------|-------|
 | STRAT-001 | **Distribution: Desktop-first** | Decided | Local-first personal productivity; SQLite + file sync; Gumroad |
 | STRAT-002 | **Monetization Model** | Open | TBD: Open Source, Book, SaaS, Certification |
-| STRAT-003 | **BYOS (Bring Your Own Storage)** | Decided | User-owned cloud storage |
+| STRAT-003 | **BYOS (Bring Your Own Storage)** | **Done** (Phase 1-5) | User-owned cloud storage — foundation shipped with local folder provider |
 | STRAT-004 | **Multi-AI Provider Support** | Decided | Claude, ChatGPT, provider-agnostic |
 | STRAT-005 | **Unified Codebase Architecture** | Implemented | Module system (2026-02-02) |
 | STRAT-006 | **Commercial Configuration Presets** | Implemented | basic, gtd, proactive_assistant, full |
@@ -302,6 +302,20 @@ This backlog is organized by commercial release milestones. Each release builds 
 
 ---
 
+## Future Storage Providers
+
+Ideas for additional `StorageProvider` implementations (see `docs/storage-providers.md` for the architecture):
+
+| ID | Provider | Description | Status | Notes |
+|----|----------|-------------|--------|-------|
+| STORAGE-001 | **Notion API** | Read/write entities as Notion database pages via the Notion API | Open | Would allow Notion as the source of truth; needs API key + database ID config |
+| STORAGE-002 | **Google Drive API** | Store markdown files in a Google Drive folder | Open | OAuth2 flow needed; could leverage existing Google auth infrastructure |
+| STORAGE-003 | **Git-backed Storage** | Auto-commit markdown changes to a git repo | Open | Version history for free; could use GitPython or subprocess |
+| STORAGE-004 | **S3 / Cloud Object Storage** | Store entities in AWS S3, GCS, or Azure Blob | Open | Good for teams; needs cloud auth config |
+| STORAGE-005 | **REST API Provider** | Generic provider that syncs with any REST API | Open | Template for custom integrations |
+
+---
+
 ## Pre-Distribution Checklist
 
 Before any release is distributed to end users, complete all items in:
@@ -335,7 +349,7 @@ For each release, verify:
 | Open tech debt | ~3 |
 | Open documentation | 6 |
 | Completed items (archived) | 200+ |
-| Backend tests | 346 |
+| Backend tests | 454 |
 
-*Last updated: 2026-02-25 (Session 26)*
+*Last updated: 2026-04-05 (Storage Provider Phase 5)*
 *Full history: `backlog-archive-2026-02-12.md`*

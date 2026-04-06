@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Data Repo Agnostic Storage** — Pluggable `StorageProvider` abstraction decouples data persistence from SQLAlchemy/SQLite. Markdown files can now be the authoritative source of truth (`STORAGE_MODE=storage_first`), with SQLite serving as a fast read cache.
+  - `StorageProvider` ABC (`backend/app/storage/base.py`) with read/write/delete/list/exists/watch interface
+  - `LocalFolderProvider` — reads/writes YAML-frontmatter markdown files, compatible with Obsidian and other PKM tools
+  - `StorageService` — write-through layer that keeps provider and SQLite in sync
+  - Entity markdown handlers for all types: projects, areas, goals, visions, inbox items, contexts, weekly reviews
+  - Cache rebuild on startup: scans markdown folder and populates SQLite automatically
+  - External change detection via SHA-256 file hash diffing (detects Obsidian edits)
+  - Factory pattern (`create_storage_provider`) for pluggable backends
+- **Storage Provider Tests** — Comprehensive test suite covering:
+  - Unit tests for `LocalFolderProvider` CRUD and `watch_for_changes`
+  - `StorageService` write-through, cache rebuild, and external change detection
+  - Entity markdown round-trip tests for all 6 entity types
+  - Integration tests: full round-trip, SQLite↔folder migration, concurrent access
+  - Large dataset tests: 100 projects / 500 tasks performance verification
+  - Edge cases: special characters, Unicode, corrupted files, empty folders, read-only permissions
+  - Obsidian compatibility: wikilinks, callouts, embeds, Dataview, extra frontmatter fields
+- **Architecture Documentation** — `docs/storage-providers.md` explaining the provider pattern, how to add new backends, and key design decisions
+- Updated `.env.example` with storage provider settings (`STORAGE_PROVIDER`, `STORAGE_PATH`, `STORAGE_MODE`)
+- Updated `README.md` with Data Storage section
+
 ## [1.0.0-beta] - 2026-02-09
 
 ### Added
