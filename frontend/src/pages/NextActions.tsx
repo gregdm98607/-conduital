@@ -201,7 +201,7 @@ export function NextActions() {
   if (error) return <Error message="Failed to load next actions" fullPage />;
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
       <header className="mb-8 flex items-start justify-between">
         <div>

@@ -61,7 +61,7 @@ export function SomedayMaybe() {
   if (error) return <Error message="Failed to load Someday/Maybe projects" fullPage />;
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
       <header className="mb-8">
         <div className="flex items-center gap-3 mb-2">

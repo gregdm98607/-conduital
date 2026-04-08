@@ -134,7 +134,7 @@ export function Projects() {
   if (error) return <Error message="Failed to load projects" fullPage />;
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
       <header className="mb-8">
         <div className="flex items-center justify-between">

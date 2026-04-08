@@ -599,7 +599,8 @@ class TestAIEndpointsROADMAP002:
         )
         project_id = proj.json()["id"]
 
-        with patch("app.core.config.settings.AI_FEATURES_ENABLED", True):
+        with patch("app.core.config.settings.AI_FEATURES_ENABLED", True), \
+             patch("app.core.config.settings.ANTHROPIC_API_KEY", "test-key-123"):
             response = test_client.post(f"/api/v1/intelligence/ai/decompose-tasks/{project_id}")
         assert response.status_code == 400
         assert "no brainstorm" in response.json()["detail"].lower()
@@ -608,7 +609,8 @@ class TestAIEndpointsROADMAP002:
         """Task decomposition returns 404 for non-existent project"""
         from unittest.mock import patch
 
-        with patch("app.core.config.settings.AI_FEATURES_ENABLED", True):
+        with patch("app.core.config.settings.AI_FEATURES_ENABLED", True), \
+             patch("app.core.config.settings.ANTHROPIC_API_KEY", "test-key-123"):
             response = test_client.post("/api/v1/intelligence/ai/decompose-tasks/99999")
         assert response.status_code == 404
 

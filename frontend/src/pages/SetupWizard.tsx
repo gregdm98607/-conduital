@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Rocket,
-  FolderSync,
   FolderOpen,
   Brain,
   CheckCircle,
