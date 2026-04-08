@@ -266,7 +266,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-118 | Clean Windows VM testing (Win10 + Win11) | Test on VMs with no Python/Node.js |
 | BACKLOG-121 | Area Prefix Mapping UX Redesign | Clarify auto-discovery, progressive disclosure |
 | BACKLOG-128 | Badge Configuration & Today's Focus Layout | Standardize badge pattern, accent-bar style |
-| BACKLOG-133 | Smooth Card Reorder Transitions | FLIP / View Transitions API for card sorting |
+| BACKLOG-133 | Smooth Card Reorder Transitions | **Done** (S29) — useFlipAnimation hook, wired into Projects grid + AllTasks card view |
 | BACKLOG-146 | Import: conflict resolution UI — show duplicate list before import, let user choose skip/overwrite | UX Enhancement |
 | BACKLOG-147 | Import: progress indicator for large files — streaming or polling approach | UX Enhancement |
 | BACKLOG-148 | Import: export format version migration — handle older export schemas gracefully | Reliability |

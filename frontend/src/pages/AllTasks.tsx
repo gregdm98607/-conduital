@@ -15,6 +15,7 @@ import { getDueDateInfo } from '../utils/date';
 import type { Task } from '../types';
 import { StaticHeader } from '../components/common/SortableHeader';
 import { parseSortOption } from '../utils/sort';
+import { useFlipAnimation } from '../hooks/useFlipAnimation';
 
 type ViewMode = 'grid' | 'list';
 type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'waiting' | 'cancelled';
@@ -83,6 +84,8 @@ export function AllTasks() {
     const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
     return (saved === 'list' || saved === 'grid') ? saved : 'list';
   });
+
+  const { containerRef: cardListRef } = useFlipAnimation<HTMLDivElement>([sortBy, searchQuery, status, energy, projectFilter]);
 
   // Task editing modal
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -439,16 +442,17 @@ export function AllTasks() {
             onSort={(key, dir) => setSortBy(`${key}_${dir}` as SortOption)}
           />
         ) : (
-          <div className="space-y-4">
+          <div ref={cardListRef} className="space-y-4">
             {filteredTasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                onStatusChange={handleStatusChange}
-                onComplete={handleComplete}
-                onEdit={handleOpenTask}
-                isUpdating={updateTask.isPending || completeTask.isPending}
-              />
+              <div key={task.id} data-flip-id={String(task.id)}>
+                <TaskCard
+                  task={task}
+                  onStatusChange={handleStatusChange}
+                  onComplete={handleComplete}
+                  onEdit={handleOpenTask}
+                  isUpdating={updateTask.isPending || completeTask.isPending}
+                />
+              </div>
             ))}
           </div>
         )

@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { Project } from '../types';
 import { StaticHeader } from '../components/common/SortableHeader';
 import { parseSortOption } from '../utils/sort';
+import { useFlipAnimation } from '../hooks/useFlipAnimation';
 
 type ViewMode = 'grid' | 'list';
 
@@ -58,6 +59,7 @@ export function Projects() {
     return (saved === 'list' || saved === 'grid') ? saved : 'grid';
   });
   const { data, isLoading, error } = useProjects({ status });
+  const { containerRef: gridRef } = useFlipAnimation<HTMLDivElement>([sortBy, searchQuery, priorityFilter]);
 
   // Persist view mode preference
   useEffect(() => {
@@ -389,9 +391,11 @@ export function Projects() {
         )
       ) : filteredProjects.length > 0 ? (
         viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <div key={project.id} data-flip-id={String(project.id)}>
+                <ProjectCard project={project} />
+              </div>
             ))}
           </div>
         ) : (
