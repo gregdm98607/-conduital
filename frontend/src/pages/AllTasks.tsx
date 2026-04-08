@@ -190,7 +190,7 @@ export function AllTasks() {
   const projects = projectsData?.projects || [];
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
       <header className="mb-8">
         <div className="flex items-center justify-between">

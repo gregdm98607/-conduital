@@ -143,7 +143,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | ID | Description | Location | Status |
 |----|-------------|----------|--------|
 | DEBT-008 | File watcher disabled by default | `main.py` | **Done** (S26) — Auto-discovery toggle in Settings UI + runtime start/stop of folder watcher |
-| DEBT-013 | Mobile views not optimized | Frontend | Open |
+| DEBT-013 | Mobile views not optimized | Frontend | **Done** (S29) — Collapsible sidebar with hamburger menu, responsive padding (p-4 md:p-8) on all 16 pages |
 | DEBT-015 | Overlapping setup docs | Multiple MD files | Open |
 | DEBT-016 | WebSocket updates not integrated | Frontend/Backend | Open |
 | DEBT-017 | Auto-discovery debounce | `folder_watcher.py` | **Done** (S25) — Already implemented: `threading.Timer` + `threading.Lock` debounce in `folder_watcher.py` |
@@ -272,8 +272,8 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-148 | Import: export format version migration — handle older export schemas gracefully | Reliability |
 | BACKLOG-149 | Session Capture: pre-fill accomplishments from git log or task completions | Auto-populate from today's activity |
 | BACKLOG-150 | Health tab: sparkline trend charts for 7d/30d activity | Visual trends beyond raw numbers |
-| BACKLOG-151 | Display app version number in sidebar | Read from config/package; helps support + user awareness |
-| BACKLOG-152 | **Ship all releases at "Full" commercial mode** — v1.2.0 shipped with limited module preset; future releases should enable all modules | Release config |
+| BACKLOG-151 | Display app version number in sidebar | **Done** (S25) — Version fetched from /health endpoint, displayed in sidebar footer |
+| BACKLOG-152 | **Ship all releases at "Full" commercial mode** — v1.2.0 shipped with limited module preset; future releases should enable all modules | **Done** (S29) — Default COMMERCIAL_MODE changed from "basic" to "full" in config.py + .env.example |
 | BACKLOG-153 | **File Sync UX design** — sync is happening but not apparent to user; needs visual indicator, status, user+technical design doc | UX + Architecture |
 | BACKLOG-154 | **File Sync auto-discovery UX** — projects/areas auto-discovered from Sync Folder Root but user can't see what happened; wire `/discovery/status` into Settings UI | **Done** (S26) — Discovery Activity panel in Settings with event log, error badges, auto-refresh |
 
@@ -346,10 +346,10 @@ For each release, verify:
 | Metric | Count |
 |--------|-------|
 | Open backlog items | ~65 |
-| Open tech debt | ~3 |
+| Open tech debt | ~2 |
 | Open documentation | 6 |
 | Completed items (archived) | 200+ |
 | Backend tests | 454 |
 
-*Last updated: 2026-04-05 (Storage Provider Phase 5)*
+*Last updated: 2026-04-08 (Session 29 — Full mode + mobile responsive)*
 *Full history: `backlog-archive-2026-02-12.md`*

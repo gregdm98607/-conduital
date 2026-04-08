@@ -203,7 +203,7 @@ export function ProjectDetail() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Back Button */}
       <Link
         to="/projects"

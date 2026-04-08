@@ -148,7 +148,7 @@ class Settings(BaseSettings):
 
     # Commercial mode: basic, gtd, proactive_assistant, full
     # Or set ENABLED_MODULES directly for custom configurations
-    COMMERCIAL_MODE: str = "basic"
+    COMMERCIAL_MODE: str = "full"
 
     # Stored as comma-separated string to avoid pydantic-settings JSON parsing.
     # Use the enabled_modules property to get the parsed list.
