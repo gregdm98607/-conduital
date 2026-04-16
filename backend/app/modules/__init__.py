@@ -20,7 +20,13 @@ Usage:
 """
 
 from app.modules.base import ModuleBase, ModuleInfo, ModuleRegistry
-from app.modules.registry import registry, get_enabled_modules, is_module_enabled
+from app.modules.registry import (
+    registry,
+    get_enabled_modules,
+    is_module_enabled,
+    get_modules_for_tier,
+    is_module_allowed_for_tier,
+)
 
 __all__ = [
     "ModuleBase",
@@ -29,4 +35,6 @@ __all__ = [
     "registry",
     "get_enabled_modules",
     "is_module_enabled",
+    "get_modules_for_tier",
+    "is_module_allowed_for_tier",
 ]

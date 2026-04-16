@@ -119,6 +119,50 @@ def get_enabled_module_names() -> set[str]:
     return _enabled_modules.copy()
 
 
+def get_modules_for_tier(tier: str) -> set[str]:
+    """
+    Get the set of module names allowed for a commercial tier.
+
+    Tier-to-preset mapping:
+        free → basic   (core, projects)
+        gtd  → gtd     (core, projects, gtd_inbox)
+        full → full    (core, projects, gtd_inbox, memory_layer, ai_context)
+
+    Args:
+        tier: Commercial tier name (free, gtd, full)
+
+    Returns:
+        Set of module names the tier permits
+    """
+    tier_to_preset = {
+        "free": "basic",
+        "gtd": "gtd",
+        "full": "full",
+    }
+    preset_name = tier_to_preset.get(tier, "basic")
+    return COMMERCIAL_PRESETS.get(preset_name, COMMERCIAL_PRESETS["basic"]).copy()
+
+
+def is_module_allowed_for_tier(module_name: str, tier: str) -> bool:
+    """
+    Check if a module is permitted under a given commercial tier.
+
+    This is the license-aware complement to is_module_enabled().
+    is_module_enabled() checks whether the module is loaded in the runtime.
+    is_module_allowed_for_tier() checks whether the user's license permits it.
+
+    Both must be True for a user to access a gated module.
+
+    Args:
+        module_name: Name of the module to check
+        tier: User's effective commercial tier (free, gtd, full)
+
+    Returns:
+        True if the tier allows this module
+    """
+    return module_name in get_modules_for_tier(tier)
+
+
 # =============================================================================
 # Module Registration
 # =============================================================================

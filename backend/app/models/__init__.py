@@ -4,6 +4,7 @@ Database models for Conduital
 
 from app.models.base import Base
 from app.models.user import User
+from app.models.license import License
 from app.models.project import Project
 from app.models.task import Task
 from app.models.area import Area
@@ -21,6 +22,7 @@ from app.models.weekly_review import WeeklyReviewCompletion
 __all__ = [
     "Base",
     "User",
+    "License",
     "Project",
     "Task",
     "Area",

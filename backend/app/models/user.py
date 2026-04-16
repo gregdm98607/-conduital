@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import Boolean, DateTime, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 
@@ -45,9 +45,10 @@ class User(Base, TimestampMixin):
     last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     login_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    # Subscription/tier (future monetization)
-    # tier: Mapped[str] = mapped_column(String(50), nullable=False, default="free")
-    # subscription_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    # License relationship (one-to-one, managed by License model)
+    license: Mapped[Optional["License"]] = relationship(  # noqa: F821
+        "License", back_populates="user", uselist=False, lazy="joined"
+    )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email='{self.email}', display_name='{self.display_name}')>"
