@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight, Download, HardDrive, Activity, Rocket, FolderOpen, CheckCircle, XCircle, Loader2, FolderInput, Upload, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAreaMappings, useUpdateAreaMappings, useAreaMappingSuggestions, useScanProjects, useDiscoveryStatus } from '@/hooks/useDiscovery';
+import { useDiscoveryWebSocket } from '@/hooks/useDiscoveryWebSocket';
 import { useTheme } from '@/context/ThemeContext';
 import { api } from '@/services/api';
 
@@ -454,6 +455,8 @@ export function Settings() {
   const updateMappings = useUpdateAreaMappings();
   const scanProjects = useScanProjects();
   const { data: discoveryStatus, refetch: refetchDiscoveryStatus } = useDiscoveryStatus();
+  // Real-time push of discovery events (DEBT-016); polling above is fallback.
+  useDiscoveryWebSocket(true);
 
   const handleStartEdit = (prefix: string, currentValue: string) => {
     setEditingPrefix(prefix);

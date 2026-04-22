@@ -144,8 +144,8 @@ This backlog is organized by commercial release milestones. Each release builds 
 |----|-------------|----------|--------|
 | DEBT-008 | File watcher disabled by default | `main.py` | **Done** (S26) — Auto-discovery toggle in Settings UI + runtime start/stop of folder watcher |
 | DEBT-013 | Mobile views not optimized | Frontend | **Done** (S29) — Collapsible sidebar with hamburger menu, responsive padding (p-4 md:p-8) on all 16 pages |
-| DEBT-015 | Overlapping setup docs | Multiple MD files | Open |
-| DEBT-016 | WebSocket updates not integrated | Frontend/Backend | Open |
+| DEBT-015 | Overlapping setup docs | Multiple MD files | **Done** (S30) — Root README is canonical; backend/README reduced to reference-only; deleted SETUP_AND_TEST.md, INSTALL_TOAST.md, DEBUG_STEPS.md, QUICK_FIX.md, PHASE_5_FRONTEND_COMPLETE.md |
+| DEBT-016 | WebSocket updates not integrated | Frontend/Backend | **Done** (S30) — `/ws/discovery-status` + `DiscoveryBroadcaster` asyncio pub/sub + `useDiscoveryWebSocket` hook; real-time discovery events replace 30s polling in Settings; 7 tests added |
 | DEBT-017 | Auto-discovery debounce | `folder_watcher.py` | **Done** (S25) — Already implemented: `threading.Timer` + `threading.Lock` debounce in `folder_watcher.py` |
 | DEBT-018 | Google Drive network interruptions | `folder_watcher.py` | **N/A** (S25) — App is local-first; cloud sync deferred to ROADMAP-010 (BYOS) |
 | DEBT-019 | Silent auto-discovery failures | Auto-discovery service | **Done** (S25) — In-memory event log + `/discovery/status` endpoint |
@@ -263,7 +263,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-113 | Website Redesign & Product Launch Content | conduital.com marketing workstream |
 | BACKLOG-114 | Social Media & Marketing Content Plan | Multi-platform strategy, launch sequence |
 | BACKLOG-117 | Installer upgrade-in-place testing | Verify data preservation + DB migrations |
-| BACKLOG-118 | Clean Windows VM testing (Win10 + Win11) | Test on VMs with no Python/Node.js |
+| BACKLOG-118 | Clean Windows VM testing (Win10 + Win11) | **Done** (S30) — All 9 test sections passed on Win10 + Win11; installer uploaded to Gumroad; download validated |
 | BACKLOG-121 | Area Prefix Mapping UX Redesign | Clarify auto-discovery, progressive disclosure |
 | BACKLOG-128 | Badge Configuration & Today's Focus Layout | Standardize badge pattern, accent-bar style |
 | BACKLOG-133 | Smooth Card Reorder Transitions | FLIP / View Transitions API for card sorting |
@@ -345,11 +345,11 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~65 |
-| Open tech debt | ~2 |
+| Open backlog items | ~64 |
+| Open tech debt | 0 (address-when-touched items remain: DEBT-078) |
 | Open documentation | 6 |
 | Completed items (archived) | 200+ |
-| Backend tests | 454 |
+| Backend tests | 461 |
 
-*Last updated: 2026-04-08 (Session 29 — Full mode + mobile responsive)*
+*Last updated: 2026-04-22 (Session 30 — VM testing complete + DEBT-015/016 closed)*
 *Full history: `backlog-archive-2026-02-12.md`*

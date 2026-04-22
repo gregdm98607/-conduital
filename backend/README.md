@@ -1,162 +1,74 @@
-# Conduital — Backend
+# Conduital — Backend Reference
 
 Intelligent momentum-based project management with markdown file sync.
 
-## Setup
+**→ For installation, dev setup, and common commands, see the [root README](../README.md).** This document covers backend-specific architecture: database models, module system, and directory layout.
 
-### Prerequisites
+---
 
-- Python 3.11+
-- Poetry (for dependency management)
-
-### Installation
-
-1. Install dependencies:
-```bash
-poetry install
-```
-
-2. Copy environment file:
-```bash
-cp .env.example .env
-```
-
-3. Edit `.env` and configure your settings (especially `SECOND_BRAIN_ROOT`)
-
-4. Initialize database:
-```bash
-poetry run alembic upgrade head
-```
-
-### Running the Application
-
-```bash
-# Development server with auto-reload
-poetry run uvicorn app.main:app --reload --port 8000
-```
-
-## Database Migrations
-
-### Create a new migration
-
-```bash
-# Auto-generate migration from model changes
-poetry run alembic revision --autogenerate -m "description of changes"
-
-# Create empty migration
-poetry run alembic revision -m "description of changes"
-```
-
-### Apply migrations
-
-```bash
-# Upgrade to latest
-poetry run alembic upgrade head
-
-# Upgrade one version
-poetry run alembic upgrade +1
-
-# Downgrade one version
-poetry run alembic downgrade -1
-
-# Show current version
-poetry run alembic current
-
-# Show migration history
-poetry run alembic history
-```
-
-## Project Structure
+## Directory Layout
 
 ```
 backend/
-├── alembic/              # Database migrations
-│   ├── versions/         # Migration scripts
-│   └── env.py           # Alembic configuration
+├── alembic/              # Database migrations (versions/, env.py)
 ├── app/
-│   ├── api/             # API endpoints
-│   ├── core/            # Core configuration
-│   │   ├── config.py    # Settings
-│   │   └── database.py  # Database setup
-│   ├── models/          # SQLAlchemy models
-│   │   ├── project.py
-│   │   ├── task.py
-│   │   ├── area.py
-│   │   └── ...
-│   ├── schemas/         # Pydantic schemas (coming soon)
-│   ├── services/        # Business logic (coming soon)
-│   └── main.py          # FastAPI application
-├── tests/               # Test suite
-├── alembic.ini          # Alembic configuration
-├── pyproject.toml       # Poetry dependencies
-└── README.md
+│   ├── api/              # FastAPI route handlers
+│   ├── core/             # Config, database, logging
+│   ├── models/           # SQLAlchemy models
+│   ├── modules/          # Module system (memory_layer, ai_context, ...)
+│   ├── schemas/          # Pydantic schemas (request/response validation)
+│   ├── services/         # Business logic
+│   ├── storage/          # Pluggable storage providers (StorageProvider ABC)
+│   ├── sync/             # Markdown parsing, entity handlers
+│   └── main.py           # FastAPI application entry point
+├── scripts/              # Utility scripts (see scripts/README.md)
+├── tests/                # Pytest test suite
+├── alembic.ini
+├── pyproject.toml
+└── run.py                # Single-process launcher (used by packaged exe)
 ```
+
+---
 
 ## Database Models
 
 ### Core Models
 
-- **Project**: Multi-step outcomes with clear endpoints
-- **Task**: Individual action items (next actions)
-- **Area**: Areas of Responsibility (ongoing spheres of activity)
-- **Goal**: 1-3 year objectives
-- **Vision**: 3-5 year vision and life purpose
+- **Project** — Multi-step outcomes with clear endpoints
+- **Task** — Individual action items (next actions)
+- **Area** — Areas of Responsibility (ongoing spheres of activity)
+- **Goal** — 1–3 year objectives
+- **Vision** — 3–5 year vision and life purpose
 
 ### Supporting Models
 
-- **ProjectPhase**: Stages in multi-phase projects
-- **PhaseTemplate**: Reusable phase definitions
-- **Context**: Contexts for organizing tasks (@home, @computer, etc.)
-- **ActivityLog**: Change tracking for momentum calculation
-- **SyncState**: File synchronization status
-- **InboxItem**: Inbox for quick capture
+- **ProjectPhase** — Stages in multi-phase projects
+- **PhaseTemplate** — Reusable phase definitions
+- **Context** — Contexts for organizing tasks (`@home`, `@computer`, etc.)
+- **ActivityLog** — Change tracking for momentum calculation
+- **SyncState** — File synchronization status
+- **InboxItem** — Inbox for quick capture
 
-## Configuration
+Models live in [`app/models/`](app/models). See [`alembic/versions/`](alembic/versions) for schema history.
 
-Key settings in `.env`:
+---
 
-- `SECOND_BRAIN_ROOT`: Path to your synced notes folder
-- `WATCH_DIRECTORIES`: Directories to watch for changes (default: 10_Projects, 20_Areas)
-- `SYNC_INTERVAL`: How often to check for file changes (seconds)
-- `ANTHROPIC_API_KEY`: Optional - for AI features
-- `MOMENTUM_STALLED_THRESHOLD_DAYS`: Days of inactivity before project is marked stalled
+## Module System
 
-## Development
+Modules are loaded based on `COMMERCIAL_MODE` (or explicit `ENABLED_MODULES`). Full architecture in [`MODULE_SYSTEM.md`](MODULE_SYSTEM.md).
 
-### Code Quality
+| Mode | Modules |
+|------|---------|
+| `basic` | core, projects |
+| `gtd` | core, projects, gtd_inbox |
+| `proactive_assistant` | core, projects, memory_layer, ai_context |
+| `full` (default) | all modules |
 
-```bash
-# Format code
-poetry run black .
+---
 
-# Lint code
-poetry run ruff check .
+## Related
 
-# Type checking
-poetry run mypy app
-```
-
-### Testing
-
-```bash
-# Run all tests
-poetry run pytest
-
-# Run with coverage
-poetry run pytest --cov=app --cov-report=html
-
-# Run specific test file
-poetry run pytest tests/test_models.py
-```
-
-## Next Steps
-
-1. Implement API endpoints (`app/api/`)
-2. Create Pydantic schemas for request/response validation
-3. Implement sync engine for bidirectional file sync
-4. Build momentum calculation service
-5. Add AI integration for unstuck task generation
-
-## License
-
-Private project for personal use.
+- [`MODULE_SYSTEM.md`](MODULE_SYSTEM.md) — Module architecture
+- [`DISCOVERY_GUIDE.md`](DISCOVERY_GUIDE.md) — Auto-discovery workflow
+- [`scripts/README.md`](scripts/README.md) — Utility scripts
+- [`../docs/storage-providers.md`](../docs/storage-providers.md) — Storage provider design

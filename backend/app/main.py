@@ -15,7 +15,9 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+import asyncio
+
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
@@ -113,6 +115,11 @@ def mount_module_routers(app: FastAPI, enabled_modules: set[str]):
 async def lifespan(app: FastAPI):
     """Application lifespan: startup logic before yield, shutdown after."""
     # --- Startup ---
+    # Attach the discovery broadcaster to the running event loop so threaded
+    # folder-watcher callbacks can push events to WebSocket subscribers (DEBT-016).
+    from app.services.discovery_broadcast import broadcaster
+    broadcaster.attach_loop(asyncio.get_running_loop())
+
     # Ensure database directory exists
     db_dir = Path(settings.DATABASE_PATH).parent
     db_dir.mkdir(parents=True, exist_ok=True)
@@ -350,6 +357,37 @@ async def get_privacy_policy():
         return PlainTextResponse(pp_path.read_text(encoding="utf-8"))
 
     return PlainTextResponse("Privacy policy file not found.", status_code=404)
+
+
+@app.websocket("/ws/discovery-status")
+async def ws_discovery_status(websocket: WebSocket):
+    """Stream auto-discovery events in real time (DEBT-016).
+
+    Clients receive the same event shape as `/discovery/status` entries
+    (`action`, `folder`, `success`, `timestamp`, optional `error` / `detail`),
+    pushed as each event occurs. Used by the Settings page to avoid 30s
+    polling for folder-watcher activity.
+    """
+    from app.services.discovery_broadcast import broadcaster
+    from app.services.auto_discovery_service import get_recent_events
+
+    await websocket.accept()
+    queue = broadcaster.subscribe()
+    try:
+        # Seed with recent history so the UI has context immediately.
+        await websocket.send_json({
+            "type": "snapshot",
+            "events": get_recent_events(limit=20),
+        })
+        while True:
+            event = await queue.get()
+            await websocket.send_json({"type": "event", "event": event})
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        logger.debug(f"discovery-status websocket closed: {e}")
+    finally:
+        broadcaster.unsubscribe(queue)
 
 
 @app.post("/api/v1/shutdown")

@@ -53,6 +53,11 @@ def _record_event(
     with _event_lock:
         _event_log.append(event)
 
+    # Broadcast to WebSocket subscribers (DEBT-016). Thread-safe; no-op if
+    # no event loop is attached (unit tests, pre-startup).
+    from app.services.discovery_broadcast import broadcaster
+    broadcaster.publish(event)
+
 
 def get_recent_events(limit: int = 20) -> list[dict]:
     """Return the most recent discovery events (newest first)."""
