@@ -134,6 +134,15 @@ class APIClient {
           }
         }
 
+        // 403 with module_not_licensed — surface a clear upgrade prompt via toast
+        if (error.response?.status === 403) {
+          const detail = (error.response?.data as { detail?: { error?: string; module?: string; required_tier?: string; message?: string } })?.detail;
+          if (detail?.error === 'module_not_licensed') {
+            // Dispatch a custom event so any listener (e.g. a gate modal) can respond
+            window.dispatchEvent(new CustomEvent('conduital:gate-hit', { detail }));
+          }
+        }
+
         return Promise.reject(error);
       }
     );
@@ -1109,6 +1118,33 @@ class APIClient {
   async getVersion(signal?: AbortSignal): Promise<string> {
     const response = await axios.get<{ version: string }>('/health', { signal });
     return response.data.version;
+  }
+
+  // ============================================================================
+  // License
+  // ============================================================================
+
+  async getLicenseStatus(signal?: AbortSignal): Promise<{
+    tier: string;
+    effective_tier: string;
+    is_paid: boolean;
+    is_trial_active: boolean;
+    trial_expires_at: string | null;
+    activated_at: string | null;
+    purchase_id: string | null;
+  }> {
+    const response = await this.client.get('/license/status', { signal });
+    return response.data;
+  }
+
+  async activateLicense(license_key: string): Promise<{
+    success: boolean;
+    tier: string;
+    effective_tier: string;
+    message: string;
+  }> {
+    const response = await this.client.post('/license/activate', { license_key });
+    return response.data;
   }
 }
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight, Download, HardDrive, Activity, Rocket, FolderOpen, CheckCircle, XCircle, Loader2, FolderInput, Upload, Sparkles } from 'lucide-react';
+import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight, Download, HardDrive, Activity, Rocket, FolderOpen, CheckCircle, XCircle, Loader2, FolderInput, Upload, Sparkles, ShieldCheck, Key } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAreaMappings, useUpdateAreaMappings, useAreaMappingSuggestions, useScanProjects, useDiscoveryStatus } from '@/hooks/useDiscovery';
 import { useDiscoveryWebSocket } from '@/hooks/useDiscoveryWebSocket';
@@ -12,7 +12,7 @@ import { api } from '@/services/api';
 
 const SETTINGS_SECTIONS_KEY = 'pt-settings-sections';
 
-type SectionId = 'appearance' | 'data-storage' | 'area-mappings' | 'database' | 'sync' | 'ai' | 'momentum' | 'export' | 'setup';
+type SectionId = 'appearance' | 'data-storage' | 'area-mappings' | 'database' | 'sync' | 'ai' | 'momentum' | 'export' | 'setup' | 'license';
 
 function loadCollapsedSections(): Set<SectionId> {
   try {
@@ -133,8 +133,33 @@ export function Settings() {
   const [importLoading, setImportLoading] = useState(false);
   const [importResult, setImportResult] = useState<Awaited<ReturnType<typeof api.importJSON>> | null>(null);
 
+  // License state
+  const [licenseStatus, setLicenseStatus] = useState<{
+    tier: string;
+    effective_tier: string;
+    is_paid: boolean;
+    is_trial_active: boolean;
+    trial_expires_at: string | null;
+    activated_at: string | null;
+    purchase_id: string | null;
+  } | null>(null);
+  const [licenseLoading, setLicenseLoading] = useState(true);
+  const [licenseKey, setLicenseKey] = useState('');
+  const [licenseActivating, setLicenseActivating] = useState(false);
+  const [licenseActivateResult, setLicenseActivateResult] = useState<{ success: boolean; message: string } | null>(null);
+
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
+
+  // Load license status on mount
+  useEffect(() => {
+    api.getLicenseStatus()
+      .then((data) => {
+        setLicenseStatus(data);
+        setLicenseLoading(false);
+      })
+      .catch(() => setLicenseLoading(false));
+  }, []);
 
   // Load Sync settings on mount
   useEffect(() => {
@@ -236,6 +261,29 @@ export function Settings() {
       setStorageTestResult({ valid: false, message: 'Test failed' });
     }
     setStorageTesting(false);
+  };
+
+  const handleActivateLicense = async () => {
+    const key = licenseKey.trim();
+    if (!key) return;
+    setLicenseActivating(true);
+    setLicenseActivateResult(null);
+    try {
+      const result = await api.activateLicense(key);
+      setLicenseActivateResult({ success: true, message: result.message });
+      toast.success('License activated!');
+      // Refresh status
+      const updated = await api.getLicenseStatus();
+      setLicenseStatus(updated);
+      setLicenseKey('');
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        'Activation failed. Check your key and try again.';
+      setLicenseActivateResult({ success: false, message: typeof msg === 'string' ? msg : JSON.stringify(msg) });
+      toast.error('Activation failed');
+    }
+    setLicenseActivating(false);
   };
 
   const handleSaveStorageSettings = async () => {
@@ -1844,6 +1892,144 @@ export function Settings() {
                   Re-run the first-time setup wizard to reconfigure sync folder, AI key, etc.
                 </p>
               </div>
+            </div>
+          )}
+        </section>
+
+        {/* License Section */}
+        <section className="card">
+          <button
+            type="button"
+            onClick={() => toggleSection('license')}
+            aria-expanded={!collapsedSections.has('license')}
+            className="flex items-center gap-3 w-full text-left"
+          >
+            {collapsedSections.has('license') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            <ShieldCheck className="w-6 h-6 text-primary-600" />
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">License</h2>
+              {licenseStatus && !collapsedSections.has('license') === false && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5">
+                  {licenseStatus.is_paid ? `Active — ${licenseStatus.effective_tier}` : licenseStatus.is_trial_active ? 'Trial active' : 'Free'}
+                </p>
+              )}
+            </div>
+          </button>
+
+          {!collapsedSections.has('license') && (
+            <div className="mt-4 space-y-5">
+              {licenseLoading ? (
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading license status…
+                </div>
+              ) : licenseStatus ? (
+                <>
+                  {/* Current status badge */}
+                  <div className="flex items-center gap-3">
+                    {licenseStatus.is_paid ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                        <CheckCircle className="w-4 h-4" />
+                        Licensed — {licenseStatus.effective_tier === 'full' ? 'GTD+' : 'GTD'}
+                      </span>
+                    ) : licenseStatus.is_trial_active ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                        <Activity className="w-4 h-4" />
+                        Trial active
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                        <XCircle className="w-4 h-4" />
+                        Free tier
+                      </span>
+                    )}
+                    {licenseStatus.trial_expires_at && licenseStatus.is_trial_active && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        Expires {new Date(licenseStatus.trial_expires_at).toLocaleDateString()}
+                      </span>
+                    )}
+                    {licenseStatus.activated_at && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        Activated {new Date(licenseStatus.activated_at).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Activation form — show when not yet paid */}
+                  {!licenseStatus.is_paid && (
+                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3">
+                      <div>
+                        <label className="label flex items-center gap-1.5">
+                          <Key className="w-4 h-4" />
+                          Activate your license
+                        </label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                          Enter the license key from your Gumroad purchase email.
+                        </p>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={licenseKey}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => setLicenseKey(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleActivateLicense()}
+                            placeholder="gr_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                            className="input flex-1 font-mono text-sm"
+                            disabled={licenseActivating}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleActivateLicense}
+                            disabled={licenseActivating || !licenseKey.trim()}
+                            className="btn btn-primary flex items-center gap-2 whitespace-nowrap"
+                          >
+                            {licenseActivating ? (
+                              <><Loader2 className="w-4 h-4 animate-spin" /> Activating…</>
+                            ) : (
+                              <><CheckCircle className="w-4 h-4" /> Activate</>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {licenseActivateResult && (
+                        <div className={`flex items-start gap-2 text-sm rounded-lg px-3 py-2 ${
+                          licenseActivateResult.success
+                            ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                            : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                        }`}>
+                          {licenseActivateResult.success ? (
+                            <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                          ) : (
+                            <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                          )}
+                          <span>{licenseActivateResult.message}</span>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        Don't have a license?{' '}
+                        <a
+                          href="https://conduital.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary-600 hover:underline dark:text-primary-400"
+                        >
+                          Purchase at conduital.com
+                        </a>
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Already paid — show purchase info */}
+                  {licenseStatus.is_paid && licenseStatus.purchase_id && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Purchase ID: <span className="font-mono">{licenseStatus.purchase_id}</span>
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-gray-400">Could not load license status.</p>
+              )}
             </div>
           )}
         </section>

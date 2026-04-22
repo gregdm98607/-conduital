@@ -1,6 +1,8 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -37,6 +39,39 @@ const queryClient = new QueryClient({
   },
 });
 
+interface GateHitDetail {
+  module?: string;
+  required_tier?: string;
+  message?: string;
+}
+
+/** Listens for gate-hit events from the API interceptor and shows an upgrade prompt. */
+function GateListener() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ev = e as CustomEvent;
+      const detail = ev.detail as GateHitDetail;
+      const tierLabel = detail?.required_tier === 'full' ? 'GTD+' : 'GTD';
+      const msg = 'Feature requires ' + tierLabel + '. Open Settings > License to activate your key.';
+      toast(msg, {
+        duration: 8000,
+        style: { cursor: 'pointer' },
+        id: 'gate-hit',
+      });
+      // Navigate to settings on click - react-hot-toast doesn't support onClick,
+      // so we navigate immediately after a brief delay to let the user see the toast.
+      setTimeout(() => navigate('/settings'), 300);
+    };
+
+    window.addEventListener('conduital:gate-hit', handler);
+    return () => window.removeEventListener('conduital:gate-hit', handler);
+  }, [navigate]);
+
+  return null;
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -44,6 +79,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <BrowserRouter>
+            <GateListener />
             <Routes>
               {/* Public routes */}
               <Route path="/login" element={<LoginPage />} />
