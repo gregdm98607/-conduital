@@ -54,7 +54,7 @@ class License(Base, TimestampMixin):
         String(255), nullable=True, unique=True, index=True
     )
 
-    # Purchase record — set when license key is activated
+    # Purchase record -- set when license key is activated
     purchase_id: Mapped[Optional[str]] = mapped_column(
         String(255), nullable=True, unique=True
     )
@@ -79,7 +79,10 @@ class License(Base, TimestampMixin):
         if self.trial_expires_at is None:
             return False
         from datetime import timezone as tz
-        return datetime.now(tz.utc) < self.trial_expires_at
+        expires = self.trial_expires_at
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=tz.utc)
+        return datetime.now(tz.utc) < expires
 
     @property
     def is_paid(self) -> bool:

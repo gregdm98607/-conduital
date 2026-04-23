@@ -37,6 +37,7 @@ from app.api import (
     intelligence,
     discovery,
     export,
+    license as license_api,
     settings as settings_api,
 )
 from app.core.config import settings
@@ -448,6 +449,9 @@ app.include_router(
 
 # Inbox module (always mounted, but could be gated in future)
 app.include_router(inbox.router, prefix=f"{settings.API_V1_PREFIX}/inbox", tags=["Inbox"])
+
+# License activation and status (commercial tier management)
+app.include_router(license_api.router, prefix=f"{settings.API_V1_PREFIX}/license", tags=["License"])
 
 # Data Export (BACKLOG-074: Data portability)
 app.include_router(export.router, prefix=f"{settings.API_V1_PREFIX}/export", tags=["Export"])

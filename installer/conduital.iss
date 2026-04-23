@@ -21,7 +21,7 @@
 ; ============================================================================
 
 #define MyAppName "Conduital"
-#define MyAppVersion "1.2.1"
+#define MyAppVersion "1.3.0"
 #define MyAppPublisher "Conduital"
 #define MyAppURL "https://conduital.com"
 #define MyAppExeName "Conduital.exe"

@@ -121,6 +121,38 @@ async def storage_change_detection_job():
         db.close()
 
 
+async def trial_expiry_job():
+    """
+    Daily job: downgrade expired reverse-trials to the free tier.
+
+    Calls LicenseService.process_expired_trials() which finds every license
+    where trial_expires_at < now AND activated_at IS NULL AND tier != 'free',
+    sets tier = 'free', and commits.
+
+    Without this job the reverse-trial promise never fires: users on day 15
+    would silently keep full-tier access forever.
+    """
+    logger.info("Starting scheduled trial expiry processing")
+    db: Session = SessionLocal()
+    try:
+        from app.services.license_service import LicenseService
+
+        affected_ids = LicenseService.process_expired_trials(db)
+        if affected_ids:
+            logger.info(
+                "Trial expiry: downgraded %d license(s) to free tier (user_ids=%s)",
+                len(affected_ids),
+                affected_ids,
+            )
+        else:
+            logger.debug("Trial expiry: no expired trials found")
+    except Exception as e:
+        logger.error("Trial expiry job failed: %s", e, exc_info=True)
+        db.rollback()
+    finally:
+        db.close()
+
+
 async def urgency_zone_recalculation_job():
     """
     Background job to recalculate urgency zones for all active tasks.
@@ -208,6 +240,19 @@ def start_scheduler():
         replace_existing=True,
     )
     logger.info("Scheduled urgency zone recalculation: daily at 12:05 AM")
+
+
+    # Schedule trial expiry processing daily at 3:00 AM
+    # Downgrades any license whose trial_expires_at has passed and is not yet paid.
+    # This is the commercial gate that makes the reverse-trial model work.
+    _scheduler.add_job(
+        trial_expiry_job,
+        CronTrigger(hour=3, minute=0),
+        id="trial_expiry",
+        name="Daily Trial Expiry Processing",
+        replace_existing=True,
+    )
+    logger.info("Scheduled trial expiry processing: daily at 3:00 AM")
 
     _scheduler.start()
     logger.info("Background scheduler started")

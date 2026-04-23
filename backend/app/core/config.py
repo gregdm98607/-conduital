@@ -296,6 +296,13 @@ class Settings(BaseSettings):
     # Frontend URL for OAuth redirects
     FRONTEND_URL: str = "http://localhost:5173"
 
+    # =========================================================================
+    # Commercial / Distribution
+    # =========================================================================
+    # Gumroad product_id — found in the Gumroad dashboard under the product URL.
+    # Required for remote license verification; leave blank to accept keys locally.
+    GUMROAD_PRODUCT_ID: str = ""
+
     @property
     def DATABASE_URL(self) -> str:
         """Construct SQLite database URL"""
