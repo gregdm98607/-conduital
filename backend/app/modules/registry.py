@@ -19,11 +19,10 @@ registry = ModuleRegistry()
 # =============================================================================
 
 COMMERCIAL_PRESETS: dict[str, set[str]] = {
-    # Conduital Basic: Core functionality + inbox capture
+    # Conduital Basic: Core functionality only (free tier)
     "basic": {
         "core",
         "projects",
-        "gtd_inbox",
     },
 
     # Conduital Workflow: Full workflow support
