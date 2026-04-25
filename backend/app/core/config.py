@@ -303,6 +303,21 @@ class Settings(BaseSettings):
     # Required for remote license verification; leave blank to accept keys locally.
     GUMROAD_PRODUCT_ID: str = ""
 
+    # Stripe (webhook fulfillment)
+    STRIPE_SECRET_KEY: Optional[str] = None           # sk_live_* or sk_test_*
+    STRIPE_WEBHOOK_SECRET: Optional[str] = None       # whsec_* (from Stripe Dashboard → Webhooks)
+    STRIPE_GTD_PRICE_ID: Optional[str] = None         # price_* for GTD tier
+    STRIPE_FULL_PRICE_ID: Optional[str] = None        # price_* for Full tier
+
+    # Resend (transactional email — fulfillment + license delivery)
+    RESEND_API_KEY: Optional[str] = None              # re_* (from resend.com)
+    CONDUITAL_DOWNLOAD_URL: str = "https://conduital.com/download/v1.3.0"
+
+    # PostHog (analytics telemetry)
+    POSTHOG_WRITE_KEY: Optional[str] = None           # Production PostHog write key
+    POSTHOG_DEV_WRITE_KEY: Optional[str] = None       # Development PostHog write key
+    ANALYTICS_ENABLED: bool = True                    # Master enable/disable for telemetry
+
     @property
     def DATABASE_URL(self) -> str:
         """Construct SQLite database URL"""

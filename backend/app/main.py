@@ -39,6 +39,8 @@ from app.api import (
     export,
     license as license_api,
     settings as settings_api,
+    webhooks as webhooks_api,
+    telemetry as telemetry_api,
 )
 from app.core.config import settings
 from app.core.database import enable_wal_mode
@@ -174,6 +176,12 @@ async def lifespan(app: FastAPI):
     from app.services.scheduler_service import start_scheduler
     start_scheduler()
 
+    # Initialise PostHog telemetry (non-fatal if posthog package not yet installed)
+    from app.services.telemetry_service import telemetry as _telemetry
+    _write_key = settings.POSTHOG_WRITE_KEY or settings.POSTHOG_DEV_WRITE_KEY or ""
+    _telemetry.init(write_key=_write_key, enabled=settings.ANALYTICS_ENABLED and bool(_write_key))
+    logger.info("Telemetry: %s", "enabled" if _telemetry.is_enabled else "disabled (key not configured)")
+
     from app.services.scheduler_service import run_urgency_zone_recalculation_now
     await run_urgency_zone_recalculation_now()
 
@@ -208,6 +216,10 @@ async def lifespan(app: FastAPI):
         stop_scheduler()
     except Exception as e:
         logger.debug(f"Scheduler cleanup: {e}")
+
+    # Flush PostHog queue before exit
+    from app.services.telemetry_service import telemetry as _telemetry
+    _telemetry.flush()
 
     from app.sync.file_watcher import stop_file_watcher
     try:
@@ -452,6 +464,12 @@ app.include_router(inbox.router, prefix=f"{settings.API_V1_PREFIX}/inbox", tags=
 
 # License activation and status (commercial tier management)
 app.include_router(license_api.router, prefix=f"{settings.API_V1_PREFIX}/license", tags=["License"])
+
+# Stripe webhook receiver (purchase fulfillment — no auth, Stripe signature verified internally)
+app.include_router(webhooks_api.router, prefix=f"{settings.API_V1_PREFIX}/webhooks", tags=["Webhooks"])
+
+# Analytics telemetry (PostHog event ingestion + distinct-id management)
+app.include_router(telemetry_api.router, prefix=f"{settings.API_V1_PREFIX}/telemetry", tags=["Telemetry"])
 
 # Data Export (BACKLOG-074: Data portability)
 app.include_router(export.router, prefix=f"{settings.API_V1_PREFIX}/export", tags=["Export"])
