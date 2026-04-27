@@ -299,9 +299,11 @@ class Settings(BaseSettings):
     # =========================================================================
     # Commercial / Distribution
     # =========================================================================
-    # Gumroad product_id — found in the Gumroad dashboard under the product URL.
-    # Required for remote license verification; leave blank to accept keys locally.
-    GUMROAD_PRODUCT_ID: str = ""
+    # Gumroad product permalink — used for remote license key verification.
+    # Found in the Gumroad dashboard: Content tab → License Key section.
+    # Baked in as default so all installations verify against the correct product
+    # without requiring per-machine config. Override via config.env if needed.
+    GUMROAD_PRODUCT_ID: str = "ViTAUsAeCqSMolv6DUjhBQ=="
 
     # Stripe (webhook fulfillment)
     STRIPE_SECRET_KEY: Optional[str] = None           # sk_live_* or sk_test_*

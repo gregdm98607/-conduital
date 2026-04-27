@@ -18,6 +18,7 @@ from app.models.sync_state import SyncState
 from app.models.inbox import InboxItem
 from app.models.momentum_snapshot import MomentumSnapshot
 from app.models.weekly_review import WeeklyReviewCompletion
+from app.models.feedback import Feedback
 
 __all__ = [
     "Base",
@@ -36,4 +37,5 @@ __all__ = [
     "InboxItem",
     "MomentumSnapshot",
     "WeeklyReviewCompletion",
+    "Feedback",
 ]

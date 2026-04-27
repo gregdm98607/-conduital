@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { KeyboardShortcutOverlay } from '@/components/common/KeyboardShortcutOverlay';
+import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 
 interface NavItem {
   name: string;
@@ -218,6 +219,11 @@ export function Layout() {
       {/* User Menu */}
       <div className="px-3 py-3 border-t border-gray-800/60">
         <UserMenu />
+      </div>
+
+      {/* Feedback */}
+      <div className="px-3 pb-1">
+        <FeedbackWidget />
       </div>
 
       {/* Footer */}

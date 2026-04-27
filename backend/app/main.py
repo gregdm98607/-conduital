@@ -37,6 +37,7 @@ from app.api import (
     intelligence,
     discovery,
     export,
+    feedback as feedback_api,
     license as license_api,
     settings as settings_api,
     webhooks as webhooks_api,
@@ -477,6 +478,11 @@ app.include_router(export.router, prefix=f"{settings.API_V1_PREFIX}/export", tag
 # Settings (AI config, momentum thresholds)
 app.include_router(
     settings_api.router, prefix=f"{settings.API_V1_PREFIX}/settings", tags=["Settings"]
+)
+
+# In-app feedback widget (F-001)
+app.include_router(
+    feedback_api.router, prefix=f"{settings.API_V1_PREFIX}/feedback", tags=["Feedback"]
 )
 
 # Setup wizard (first-run configuration)

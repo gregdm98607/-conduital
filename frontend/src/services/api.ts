@@ -1146,6 +1146,21 @@ class APIClient {
     const response = await this.client.post('/license/activate', { license_key });
     return response.data;
   }
+
+  // ============================================================================
+  // Feedback (F-001)
+  // ============================================================================
+
+  async submitFeedback(payload: {
+    category: 'bug' | 'feature' | 'general';
+    message: string;
+    page?: string;
+    email?: string;
+    app_version?: string;
+  }): Promise<{ id: number; category: string; submitted_at: string }> {
+    const response = await this.client.post('/feedback', payload);
+    return response.data;
+  }
 }
 
 // Export singleton instance

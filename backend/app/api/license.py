@@ -7,8 +7,8 @@ Endpoints:
     POST /license/activate   — redeem a license key (Gumroad or Stripe)
     GET  /license/status     — current license state for this installation
 
-Key dispatch by prefix:
-    gr_*        → Gumroad /v2/licenses/verify  (sync, no webhook required)
+Key dispatch:
+    8HEX-8HEX-8HEX-8HEX → Gumroad /v2/licenses/verify  (sync, no webhook required)
     sk_live_*/sk_test_*  → Stripe  (wired in a later session; returns 503 until ready)
 
 Single-user mode (AUTH_ENABLED=False):
@@ -20,6 +20,7 @@ Auth mode (AUTH_ENABLED=True):
 """
 
 import logging
+import re
 from datetime import timezone
 from typing import Optional
 
@@ -40,12 +41,20 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 # Gumroad variant name → Conduital tier
 # Keep in sync with the Gumroad product version names in the dashboard.
+# Matching is case-insensitive (see _tier_from_variant).
 # ---------------------------------------------------------------------------
 GUMROAD_VARIANT_TO_TIER: dict[str, str] = {
-    "GTD — Most Popular": "gtd",
-    "GTD+": "full",
+    "free": "free",
+    "gtd — most popular": "gtd",
+    "gtd+": "full",
     # Fallback: any unrecognised paid variant maps to gtd (conservative).
 }
+
+# Regex that matches real Gumroad license keys.
+# Format: 8HEX-8HEX-8HEX-8HEX  (case-insensitive, e.g. 6F0E4C97-B72A4E69-A11BF6C4-AF6517E7)
+_GUMROAD_KEY_RE = re.compile(
+    r"^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{8}-[0-9A-Fa-f]{8}-[0-9A-Fa-f]{8}$"
+)
 
 GUMROAD_VERIFY_URL = "https://api.gumroad.com/v2/licenses/verify"
 
@@ -114,7 +123,8 @@ class LicenseActivateRequest(BaseModel):
         max_length=500,
         description=(
             "License key delivered after purchase.  "
-            "Gumroad keys begin with 'gr_'; Stripe keys begin with 'sk_live_' or 'sk_test_'."
+            "Gumroad keys look like XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX.  "
+            "Stripe keys begin with 'sk_live_' or 'sk_test_' (not yet supported)."
         ),
     )
 
@@ -192,19 +202,17 @@ def activate_license(
     """
     Redeem a license key and upgrade the installation to the purchased tier.
 
-    Dispatches by key prefix:
-    - ``gr_*``       — Gumroad: verified synchronously via /v2/licenses/verify.
-    - ``sk_live_*``  — Stripe live key: not yet implemented (503).
-    - ``sk_test_*``  — Stripe test key: not yet implemented (503).
+    Dispatches by key format:
+    - UUID (8HEX-8HEX-8HEX-8HEX) — Gumroad: verified synchronously via /v2/licenses/verify.
+    - ``sk_live_*``               — Stripe live key: not yet implemented (503).
+    - ``sk_test_*``               — Stripe test key: not yet implemented (503).
 
     On success the license record is updated immediately and the new effective
     tier is returned.  Calling activate again with the same key is idempotent.
     """
     key = body.license_key.strip()
 
-    if key.startswith("gr_"):
-        return _activate_gumroad(key, user_id, db)
-
+    # Stripe keys (not yet implemented)
     if key.startswith(("sk_live_", "sk_test_")):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -214,12 +222,16 @@ def activate_license(
             ),
         )
 
+    # Gumroad keys — UUID format: 8HEX-8HEX-8HEX-8HEX
+    if _GUMROAD_KEY_RE.match(key):
+        return _activate_gumroad(key, user_id, db)
+
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail=(
-            f"Unrecognised license key format.  "
-            f"Gumroad keys start with 'gr_'.  "
-            f"Received key starts with: '{key[:8]}…'"
+            "Unrecognised license key format.  "
+            "Your Gumroad key should look like: XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX.  "
+            f"Received: '{key[:20]}…'"
         ),
     )
 
@@ -233,8 +245,8 @@ def _activate_gumroad(key: str, user_id: int, db: Session) -> LicenseActivateRes
     Verify a Gumroad license key and activate the matching tier.
 
     Calls POST https://api.gumroad.com/v2/licenses/verify with:
-        product_id   — from settings.GUMROAD_PRODUCT_ID
-        license_key  — the raw key from the buyer
+        product_permalink — from settings.GUMROAD_PRODUCT_ID
+        license_key       — the raw key from the buyer
 
     The Gumroad response includes a ``purchase`` object whose ``variants``
     field contains the product-version name chosen at checkout.  That name
@@ -271,7 +283,7 @@ def _activate_gumroad(key: str, user_id: int, db: Session) -> LicenseActivateRes
     try:
         resp = httpx.post(
             GUMROAD_VERIFY_URL,
-            data={"product_id": product_id, "license_key": key},
+            data={"product_permalink": product_id, "license_key": key},
             timeout=10.0,
         )
     except httpx.RequestError as exc:
@@ -294,7 +306,7 @@ def _activate_gumroad(key: str, user_id: int, db: Session) -> LicenseActivateRes
     purchase = payload.get("purchase", {})
     variant_name: str = purchase.get("variants", "") or ""
     sale_id: str = purchase.get("sale_id", key)
-    tier = GUMROAD_VARIANT_TO_TIER.get(variant_name.strip(), "gtd")
+    tier = GUMROAD_VARIANT_TO_TIER.get(variant_name.strip().lower(), "gtd")
 
     logger.info(
         "Gumroad key verified — sale_id=%s variant='%s' → tier=%s",
