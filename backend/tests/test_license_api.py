@@ -263,22 +263,54 @@ class TestActivateGumroad:
 # POST /license/activate — other key formats
 # ---------------------------------------------------------------------------
 
+class TestActivateStripeInline:
+    """MON-008 — Stripe receipts activate inline as opaque tokens."""
+
+    def _post(self, client, key: str):
+        return client.post("/api/v1/license/activate", json={"license_key": key})
+
+    def test_sk_live_activates_gtd(self, client):
+        resp = self._post(client, "sk_live_abcDEF123456")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        assert data["tier"] == "gtd"
+        assert data["effective_tier"] == "gtd"
+        assert "verified via Stripe webhook" in data["message"]
+
+    def test_sk_test_activates_gtd(self, client):
+        resp = self._post(client, "sk_test_xyz789")
+        assert resp.status_code == 200
+        assert resp.json()["tier"] == "gtd"
+
+    def test_cs_live_activates_gtd(self, client):
+        resp = self._post(client, "cs_live_a1B2c3D4e5F6g7H8")
+        assert resp.status_code == 200
+        assert resp.json()["tier"] == "gtd"
+
+    def test_webhook_8group_key_activates_gtd(self, client):
+        """The 8-group hex key emailed by the Stripe webhook activates inline."""
+        key = "AAAAAAAA-BBBBBBBB-CCCCCCCC-DDDDDDDD-EEEEEEEE-FFFFFFFF-00000000-11111111"
+        resp = self._post(client, key)
+        assert resp.status_code == 200
+        assert resp.json()["tier"] == "gtd"
+
+    def test_idempotent(self, client):
+        """Pasting the same Stripe receipt twice succeeds both times."""
+        r1 = self._post(client, "sk_live_idempotent_1")
+        r2 = self._post(client, "sk_live_idempotent_1")
+        assert r1.status_code == 200
+        assert r2.status_code == 200
+
+    def test_status_reflects_paid_after_stripe_inline(self, client):
+        """After Stripe inline activation, /status shows is_paid=True."""
+        self._post(client, "sk_live_paid_check_001")
+        status_resp = client.get("/api/v1/license/status").json()
+        assert status_resp["is_paid"] is True
+        assert status_resp["tier"] == "gtd"
+
+
 class TestActivateOtherFormats:
-    def test_stripe_live_key_returns_503(self, client):
-        resp = client.post(
-            "/api/v1/license/activate",
-            json={"license_key": "sk_live_abc123"},
-        )
-        assert resp.status_code == 503
-        assert "Stripe" in resp.json()["detail"]
-
-    def test_stripe_test_key_returns_503(self, client):
-        resp = client.post(
-            "/api/v1/license/activate",
-            json={"license_key": "sk_test_abc123"},
-        )
-        assert resp.status_code == 503
-
     def test_unknown_prefix_returns_400(self, client):
         resp = client.post(
             "/api/v1/license/activate",

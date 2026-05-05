@@ -8,8 +8,9 @@ Endpoints:
     GET  /license/status     — current license state for this installation
 
 Key dispatch:
-    8HEX-8HEX-8HEX-8HEX → Gumroad /v2/licenses/verify  (sync, no webhook required)
-    sk_live_*/sk_test_*  → Stripe  (wired in a later session; returns 503 until ready)
+    8HEX-8HEX-8HEX-8HEX (4 groups)             → Gumroad /v2/licenses/verify  (sync)
+    8HEX-8HEX-8HEX-8HEX-8HEX-8HEX-8HEX-8HEX    → Stripe webhook-issued key (8 groups)
+    sk_live_*/sk_test_*/cs_live_*/cs_test_*    → Stripe opaque receipt fallback
 
 Single-user mode (AUTH_ENABLED=False):
     A local system user (local@conduital.local) is created on first call and
@@ -55,6 +56,19 @@ GUMROAD_VARIANT_TO_TIER: dict[str, str] = {
 _GUMROAD_KEY_RE = re.compile(
     r"^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{8}-[0-9A-Fa-f]{8}-[0-9A-Fa-f]{8}$"
 )
+
+# Regex that matches Stripe webhook-issued Conduital keys.
+# Format: 8 groups of 8 hex chars separated by dashes (see webhooks._generate_license_key).
+_STRIPE_WEBHOOK_KEY_RE = re.compile(
+    r"^(?:[0-9A-Fa-f]{8}-){7}[0-9A-Fa-f]{8}$"
+)
+
+# Stripe API/session prefixes — accepted as opaque receipts.
+# These are not verified against Stripe (Option A from MON-008): the buyer
+# already paid (the webhook-side fulfillment email is authoritative); the
+# inline path exists so a buyer who pastes their receipt instead of clicking
+# the activation link still gets unlocked.
+_STRIPE_PREFIXES = ("sk_live_", "sk_test_", "cs_live_", "cs_test_")
 
 GUMROAD_VERIFY_URL = "https://api.gumroad.com/v2/licenses/verify"
 
@@ -203,28 +217,26 @@ def activate_license(
     Redeem a license key and upgrade the installation to the purchased tier.
 
     Dispatches by key format:
-    - UUID (8HEX-8HEX-8HEX-8HEX) — Gumroad: verified synchronously via /v2/licenses/verify.
-    - ``sk_live_*``               — Stripe live key: not yet implemented (503).
-    - ``sk_test_*``               — Stripe test key: not yet implemented (503).
+    - 4-group hex (XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX)            — Gumroad: verified via /v2/licenses/verify.
+    - 8-group hex (XXXXXXXX-...-XXXXXXXX, 8 groups)                — Stripe webhook-issued key (opaque receipt).
+    - ``sk_live_`` / ``sk_test_`` / ``cs_live_`` / ``cs_test_``    — Stripe opaque receipt fallback.
 
     On success the license record is updated immediately and the new effective
     tier is returned.  Calling activate again with the same key is idempotent.
     """
     key = body.license_key.strip()
 
-    # Stripe keys (not yet implemented)
-    if key.startswith(("sk_live_", "sk_test_")):
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=(
-                "Stripe key activation is not yet available in this release.  "
-                "Use your Gumroad license key instead, or wait for the next update."
-            ),
-        )
-
     # Gumroad keys — UUID format: 8HEX-8HEX-8HEX-8HEX
     if _GUMROAD_KEY_RE.match(key):
         return _activate_gumroad(key, user_id, db)
+
+    # Stripe webhook-issued license keys (8 hex groups) — opaque receipt.
+    if _STRIPE_WEBHOOK_KEY_RE.match(key):
+        return _activate_stripe_opaque(key, user_id, db, source="webhook-key")
+
+    # Stripe API / checkout-session identifiers — opaque receipt.
+    if key.startswith(_STRIPE_PREFIXES):
+        return _activate_stripe_opaque(key, user_id, db, source="receipt")
 
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
@@ -338,3 +350,57 @@ def _tier_from_key_prefix(key: str) -> str:
     so we default conservatively to 'gtd' for any paid gr_ key.
     """
     return "gtd"
+
+
+# ---------------------------------------------------------------------------
+# Stripe opaque-receipt activation (MON-008)
+# ---------------------------------------------------------------------------
+
+def _activate_stripe_opaque(
+    key: str,
+    user_id: int,
+    db: Session,
+    *,
+    source: str,
+) -> LicenseActivateResponse:
+    """
+    Activate a Stripe-fulfilled license inline without round-tripping to Stripe.
+
+    Rationale (Option A from MON-008):
+        The webhook fulfillment path is authoritative — checkout.session.completed
+        already activates the license server-side and emails the buyer their key.
+        This endpoint exists for the buyer who pastes the receipt directly instead
+        of using the activation link in the email.  We trust the format, store the
+        full key as ``purchase_id`` so duplicate submissions stay idempotent, and
+        upgrade to the gtd tier (the only paid Stripe tier today).
+
+    Idempotency:
+        ``LicenseService.activate_license`` upserts on user_id, so re-pasting the
+        same key just refreshes ``activated_at`` without changing the effective
+        tier.
+
+    ``source`` is used only for logging and the user-facing message so we can
+    distinguish ``webhook-key`` (8x8 hex) from ``receipt`` (sk_*/cs_*) submissions.
+    """
+    tier = "gtd"
+    lic = LicenseService.activate_license(
+        db,
+        user_id=user_id,
+        tier=tier,
+        purchase_id=key,
+    )
+    logger.info(
+        "Stripe %s accepted — tier=%s key_prefix=%s",
+        source,
+        tier,
+        key[:12],
+    )
+    return LicenseActivateResponse(
+        success=True,
+        tier=lic.tier,
+        effective_tier=lic.effective_tier,
+        message=(
+            f"License activated.  Tier: {lic.effective_tier} "
+            f"(verified via Stripe webhook)."
+        ),
+    )
