@@ -313,7 +313,7 @@ class Settings(BaseSettings):
 
     # Resend (transactional email — fulfillment + license delivery)
     RESEND_API_KEY: Optional[str] = None              # re_* (from resend.com)
-    CONDUITAL_DOWNLOAD_URL: str = "https://conduital.com/download/v1.3.0"
+    CONDUITAL_DOWNLOAD_URL: str = "https://conduital.com/downloads/ConduitalSetup-1.4.1.exe"
 
     # PostHog (analytics telemetry)
     POSTHOG_WRITE_KEY: Optional[str] = None           # Production PostHog write key

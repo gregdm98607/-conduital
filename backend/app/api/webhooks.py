@@ -17,7 +17,7 @@ Configuration (.env):
     STRIPE_SECRET_KEY        — sk_live_* or sk_test_*
     STRIPE_WEBHOOK_SECRET    — whsec_* (from Stripe Dashboard → Webhooks)
     RESEND_API_KEY           — re_* (from resend.com dashboard)
-    CONDUITAL_DOWNLOAD_URL   — https://conduital.com/download/v1.3.0
+    CONDUITAL_DOWNLOAD_URL   — https://conduital.com/downloads/ConduitalSetup-1.4.1.exe
     STRIPE_GTD_PRICE_ID      — price_* for the GTD tier
     STRIPE_FULL_PRICE_ID     — price_* for the Full tier
 """
@@ -115,7 +115,7 @@ def _send_fulfillment_email(buyer_email: str, tier: str, license_key: str) -> bo
         return False
 
     tier_label = {"gtd": "GTD", "full": "GTD+"}.get(tier, tier.upper())
-    download_url = settings.CONDUITAL_DOWNLOAD_URL or "https://conduital.com/download/v1.3.0"
+    download_url = settings.CONDUITAL_DOWNLOAD_URL or "https://conduital.com/downloads/ConduitalSetup-1.4.1.exe"
 
     subject = f"Your Conduital {tier_label} license key is ready"
     html_body = f"""
