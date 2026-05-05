@@ -236,10 +236,12 @@ def get_conflicts(
 
     return [
         {
+            "id": s.id,
             "file_path": s.file_path,
             "last_synced": s.last_synced_at.isoformat() if s.last_synced_at else None,
             "entity_type": s.entity_type,
             "entity_id": s.entity_id,
+            "error_message": s.error_message,
         }
         for s in conflicts
     ]

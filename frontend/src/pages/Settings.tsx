@@ -6,6 +6,8 @@ import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus,
 import toast from 'react-hot-toast';
 import { useAreaMappings, useUpdateAreaMappings, useAreaMappingSuggestions, useScanProjects, useDiscoveryStatus } from '@/hooks/useDiscovery';
 import { useDiscoveryWebSocket } from '@/hooks/useDiscoveryWebSocket';
+import { useSyncStatus } from '@/hooks/useSyncStatus';
+import { SyncEventList } from '@/components/sync/SyncEventList';
 import { useTheme } from '@/context/ThemeContext';
 import { api, type FeedbackListItem } from '@/services/api';
 import { telemetry } from '@/services/telemetry';
@@ -613,6 +615,9 @@ export function Settings() {
   const { data: discoveryStatus, refetch: refetchDiscoveryStatus } = useDiscoveryStatus();
   // Real-time push of discovery events (DEBT-016); polling above is fallback.
   useDiscoveryWebSocket(true);
+
+  // Live file-sync events for the "Recent Sync Activity" panel (BACKLOG-153, S34).
+  const syncStatus = useSyncStatus();
 
   const handleStartEdit = (prefix: string, currentValue: string) => {
     setEditingPrefix(prefix);
@@ -1522,6 +1527,40 @@ export function Settings() {
                   </div>
                 </div>
               )}
+
+              {/* Recent Sync Activity (BACKLOG-153, S34) */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Sync Activity</h3>
+                    <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
+                      {syncStatus.events.length}
+                    </span>
+                    {syncStatus.errorCount > 0 && (
+                      <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">
+                        {syncStatus.errorCount} error{syncStatus.errorCount !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {syncStatus.conflictCount > 0 && (
+                      <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">
+                        {syncStatus.conflictCount} conflict{syncStatus.conflictCount !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {syncStatus.lastSyncedAt
+                      ? `Last synced: ${new Date(syncStatus.lastSyncedAt).toLocaleString()}`
+                      : 'Never synced'}
+                  </span>
+                </div>
+                <div className="max-h-64 overflow-y-auto rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30">
+                  <SyncEventList
+                    events={syncStatus.events.slice(0, 10)}
+                    emptyMessage="No sync events yet. Click Sync now to scan your synced notes folder."
+                  />
+                </div>
+              </div>
             </div>
           ))}
         </section>

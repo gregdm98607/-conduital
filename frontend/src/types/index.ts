@@ -580,6 +580,16 @@ export interface SyncEventsResponse {
   last_synced_at: string | null;
 }
 
+// File-level conflict that requires manual resolution (BACKLOG-153, S34).
+export interface SyncConflict {
+  id: number;
+  file_path: string;
+  last_synced: string | null;
+  entity_type: string | null;
+  entity_id: number | null;
+  error_message: string | null;
+}
+
 // ============================================================================
 // Authentication Types
 // ============================================================================

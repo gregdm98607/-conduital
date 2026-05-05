@@ -36,7 +36,7 @@ type WSMessage =
   | { type: 'snapshot'; events: SyncEvent[]; last_synced_at: string | null }
   | { type: 'event'; event: SyncEvent };
 
-function deriveStatus(events: SyncEvent[]): SyncStatusKind {
+export function deriveStatus(events: SyncEvent[]): SyncStatusKind {
   // Walk newest → oldest: the first terminal event wins.
   for (const e of events) {
     if (e.action === 'scan_completed') return 'idle';
@@ -46,6 +46,20 @@ function deriveStatus(events: SyncEvent[]): SyncStatusKind {
     if (e.action === 'file_synced' || e.action === 'project_synced') return 'idle';
   }
   return 'idle';
+}
+
+export function relativeTime(iso: string | null, nowMs: number = Date.now()): string {
+  if (!iso) return 'Never';
+  const then = new Date(iso).getTime();
+  const seconds = Math.max(0, Math.floor((nowMs - then) / 1000));
+  if (seconds < 5) return 'Just now';
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 function countUnresolved(events: SyncEvent[], action: SyncEvent['action']): number {

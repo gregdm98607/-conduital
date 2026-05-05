@@ -28,6 +28,7 @@ import type {
   AreaHealthBreakdown,
   SyncStatus,
   SyncEventsResponse,
+  SyncConflict,
   InboxItem,
   InboxItemCreate,
   InboxItemProcess,
@@ -952,6 +953,21 @@ class APIClient {
     const response = await this.client.get<SyncEventsResponse>('/sync/events', {
       params: { limit },
       signal,
+    });
+    return response.data;
+  }
+
+  async getSyncConflicts(signal?: AbortSignal): Promise<SyncConflict[]> {
+    const response = await this.client.get<SyncConflict[]>('/sync/conflicts', { signal });
+    return response.data;
+  }
+
+  async resolveSyncConflict(
+    syncId: number,
+    useFile: boolean,
+  ): Promise<{ success: boolean; message: string }> {
+    const response = await this.client.post(`/sync/resolve/${syncId}`, null, {
+      params: { use_file: useFile },
     });
     return response.data;
   }
