@@ -121,33 +121,31 @@ backend/app/core/config.py                                      # CONDUITAL_DOWN
 - **Why pause on BACKLOG-087:** templates are an onboarding workstream —
   picking the right personas, content, and surface deserves its own session.
   The reward is bigger but the planning load is non-trivial.
-- **BACKLOG-161 partial unblock landed mid-S35** (Option A chosen):
+- **BACKLOG-161 closed mid-S35** (Option A — static asset on conduital.com):
   - Backend default `CONDUITAL_DOWNLOAD_URL` repointed to
     `https://conduital.com/downloads/ConduitalSetup-1.4.1.exe`
     ([config.py:316](backend/app/core/config.py), [webhooks.py:118](backend/app/api/webhooks.py)).
-  - **v1.4.1 installer built mid-session.** Fresh PyInstaller bundle in
-    `backend/dist/Conduital/` (~63 MB) + `installer/Output/ConduitalSetup-1.4.1.exe`
-    (~28 MB). `installer/conduital.iss` already had `MyAppVersion=1.4.1`
-    from S35 closeout; `VersionInfoVersion`/`VersionInfoProductVersion`
-    still lag at `1.2.1.0` — cosmetic only, file properties dialog will
-    show wrong version, no functional impact.
-  - Site-side work tracked separately — a dedicated session in
-    `c:/dev/conduital-site` will copy `installer/Output/ConduitalSetup-1.4.1.exe`
-    into `public/downloads/`, add `vercel.json` redirects for
-    `/download/v1.4.1` + `/download/latest`, add a `/download` page,
-    and link from Header/Footer.
-  - **What's still open in S36:**
-    1. Run the conduital-site session to ship the binary + redirects.
-    2. Verify the deploy: `curl -IL https://conduital.com/downloads/ConduitalSetup-1.4.1.exe`
-       returns 200 with the expected content-length (~28 MB).
-    3. End-to-end test the Stripe webhook → Resend email flow against
-       the live URL (test-mode price IDs, real Resend send to a Greg
-       inbox). Confirm the download button in the email actually fetches
-       the .exe.
-    4. Mark BACKLOG-161 done in `backlog.md` once (2) and (3) verify.
-    5. Optional cleanup: bump `VersionInfoVersion` /
-       `VersionInfoProductVersion` in `installer/conduital.iss` from
-       `1.2.1.0` → `1.4.1.0` and re-run Inno Setup. Cosmetic, can defer.
+  - v1.4.1 installer built fresh: `installer/Output/ConduitalSetup-1.4.1.exe`
+    (28.27 MB, SHA256 `833C0FC796207A8CE5782D033071E3C7C3EB7A15FC32988D7EBECCC4FFBAEE56`).
+  - conduital-site shipped at commit `98aa61e`: binary in `public/downloads/`,
+    `vercel.json` redirects for `/download/v1.4.1` + `/download/latest`,
+    new `/download` page exposes version/size/hash. All four URL
+    variants verified live (HEAD returns 200, content-length matches build).
+  - **Open follow-ups (not blocking):**
+    1. End-to-end Stripe webhook → Resend email test in test-mode (real
+       Resend send to a Greg inbox; click the download button in the
+       email and confirm the .exe arrives). Defer to whenever Stripe
+       test-mode is next on a session.
+    2. Cosmetic: bump `VersionInfoVersion` / `VersionInfoProductVersion`
+       in `installer/conduital.iss` from `1.2.1.0` → `1.4.1.0` and
+       re-run Inno Setup. Currently the .exe's file-properties dialog
+       shows the wrong version. Not user-visible during install.
+    3. Future versions: rebuild the .exe locally, copy into
+       `conduital-site/public/downloads/`, update `vercel.json`
+       redirects for the new tag, and bump `CONDUITAL_DOWNLOAD_URL` to
+       match. The `/download/latest` redirect is the stable URL —
+       updating only its destination keeps email links from older
+       releases working.
 - **Test count flat at 499.** R7 was a small frontend addition; no
   regression risk surfaced. If R8 has any backend work, target +N new tests
   to keep the trend up.

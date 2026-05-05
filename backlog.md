@@ -322,7 +322,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | BACKLOG-158 | Stripe inline activation | **Done** (S32) — Tracks to MON-008 |
 | BACKLOG-159 | **Welcome / paid-tier post-activation flow** — `WelcomePaidTierModal` mounted in `Layout`; Settings → License activation path dispatches `conduital:license-activated` window event on free→paid transition; modal lists unlocked features per tier (GTD vs GTD+); fires `welcome_paid_tier` PostHog event; per-session via sessionStorage. | **Done** (S35, v1.4.1) |
 | BACKLOG-160 | **License status visibility in sidebar** — small tier badge ("Free Trial · 9d", "GTD", "Full") visible at all times; click → Settings → License. Currently visible only in Settings. | UX |
-| BACKLOG-161 | **Public download URL hosted** — `CONDUITAL_DOWNLOAD_URL` defaults to `https://conduital.com/download/v1.3.0` but conduital.com is not yet hosting downloads. Stripe/Resend fulfillment emails will 404. | Distribution blocker |
+| BACKLOG-161 | **Public download URL hosted** — `CONDUITAL_DOWNLOAD_URL` defaults to `https://conduital.com/downloads/ConduitalSetup-1.4.1.exe`; conduital-site serves the binary from `public/downloads/` with `vercel.json` redirects for `/download/v1.4.1` + `/download/latest`; new `/download` page exposes version, size, SHA256. | **Done** (S35, mid-session) — Stripe/Resend fulfillment URL is now live |
 
 ### Parking Lot — Completed (Archived)
 
@@ -392,11 +392,11 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~65 (BACKLOG-159 shipped in S35 v1.4.1; BACKLOG-160/161 still open) |
+| Open backlog items | ~64 (BACKLOG-159 + BACKLOG-161 shipped in S35 v1.4.1; BACKLOG-160 still open) |
 | Open tech debt | 0 |
 | Open documentation | 6 |
 | Completed items (archived) | 200+ |
 | Backend tests | 499 (498 pass, 1 skip) |
 
-*Last updated: 2026-05-04 (post-S35 — v1.4.1 R7 BACKLOG-159 paid-tier post-activation flow shipped; DEBT-078 closed)*
+*Last updated: 2026-05-05 (post-S35 — v1.4.1 R7 BACKLOG-159 paid-tier post-activation flow shipped; DEBT-078 closed; BACKLOG-161 download URL hosted on conduital.com)*
 *Full history: `backlog-archive-2026-02-12.md`*
