@@ -372,6 +372,7 @@ export function Settings() {
   const handleActivateLicense = async () => {
     const key = licenseKey.trim();
     if (!key) return;
+    const wasPaid = licenseStatus?.is_paid === true;
     setLicenseActivating(true);
     setLicenseActivateResult(null);
     try {
@@ -386,6 +387,19 @@ export function Settings() {
       const updated = await api.getLicenseStatus();
       setLicenseStatus(updated);
       setLicenseKey('');
+      // Free → paid transition: fire welcome flow once. We treat any
+      // activation that lands the user in a paid tier as a celebratory
+      // moment when they weren't already paid.
+      if (!wasPaid && updated.is_paid) {
+        window.dispatchEvent(
+          new CustomEvent('conduital:license-activated', {
+            detail: {
+              tier: result.tier,
+              effective_tier: result.effective_tier,
+            },
+          })
+        );
+      }
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||

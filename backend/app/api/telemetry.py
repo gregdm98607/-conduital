@@ -55,6 +55,7 @@ KNOWN_EVENTS: set[str] = {
     # Conversion funnel — upgrade flow
     "upgrade_prompt_shown", "upgrade_prompt_clicked", "upgrade_prompt_dismissed",
     "checkout_started", "purchase_completed", "license_activated",
+    "welcome_paid_tier", "welcome_paid_tier_dismissed",
     # Trial events
     "trial_started", "trial_day_7_banner_shown", "trial_day_11_banner_shown",
     "trial_day_13_modal_shown", "trial_day_13_modal_dismissed",
