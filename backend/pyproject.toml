@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "conduital"
-version = "1.4.0"
+version = "1.4.1"
 description = "Intelligent momentum system for independent operators with markdown file sync"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
@@ -48,6 +48,9 @@ ruff = "^0.8.0"
 mypy = "^1.13.0"
 httpx = "^0.28.0"
 pyinstaller = "^6.11.0"
+
+[tool.poetry.scripts]
+test = "pytest:console_main"
 
 [build-system]
 requires = ["poetry-core"]

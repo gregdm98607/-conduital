@@ -1,122 +1,137 @@
-# Session 35 — R7 selection (post-v1.4.0)
+# Session 36 — R8 selection (post-v1.4.1)
 
 ## Context
 
-Session 34 (2026-05-04) shipped **v1.4.0**, closing R6 / BACKLOG-153 in two
-commits:
+Session 35 (2026-05-04) shipped **v1.4.1**, closing R7 / BACKLOG-159 plus the
+DEBT-078 quick win. Two commits expected:
 
-- `feat(BACKLOG-153)` Phase 2 file sync UX:
-  - **Backend** — [`backend/app/api/sync.py`](backend/app/api/sync.py)
-    `/sync/conflicts` now returns `id` + `error_message` so the frontend can
-    drive `POST /sync/resolve/{sync_id}`.
-  - **Frontend** — new [`useSyncConflicts`](frontend/src/hooks/useSyncConflicts.ts)
-    hook polls `/sync/conflicts` (30s) with optimistic removal; new
-    [`SyncEventList`](frontend/src/components/sync/SyncEventList.tsx) shared
-    renderer (eventIcon / actionLabel / shortPath); a Conflicts tab in
-    [`SyncDetailsPanel`](frontend/src/components/sync/SyncDetailsPanel.tsx)
-    with "Use file" / "Use database" actions; Settings → File Sync grew a
-    Recent Sync Activity subsection mirroring the Discovery Activity panel
-    pattern; `relativeTime` + `deriveStatus` exported from
-    [`useSyncStatus`](frontend/src/hooks/useSyncStatus.ts).
-- `chore(S34)` v1.4.0 closeout — version bumps + backlog refresh + this prompt.
+- `feat(BACKLOG-159)` Paid-tier post-activation flow:
+  - **Frontend** — new
+    [`WelcomePaidTierModal`](frontend/src/components/license/WelcomePaidTierModal.tsx)
+    mounted globally in
+    [`Layout`](frontend/src/components/layout/Layout.tsx); shows once per
+    free→paid activation with the unlocked-feature list for GTD vs GTD+;
+    fires `welcome_paid_tier` PostHog event; per-session dismissal via
+    `sessionStorage`. Activation path in
+    [`Settings.handleActivateLicense`](frontend/src/pages/Settings.tsx)
+    dispatches `conduital:license-activated` window event when the prior
+    `is_paid` was false and the new state flips to paid.
+  - **Backend** — `welcome_paid_tier` + `welcome_paid_tier_dismissed` added
+    to `KNOWN_EVENTS` in
+    [`backend/app/api/telemetry.py`](backend/app/api/telemetry.py).
+- `chore(S35)` v1.4.1 closeout — DEBT-078 (`[tool.poetry.scripts]` `test`
+  entry added to `backend/pyproject.toml`), version bumps, backlog refresh,
+  this prompt.
 
-**Build / test status (post-S34):**
-- ✅ `npm run build` clean (~3.5s, 808 kB / 202 kB gzip).
-- ✅ `pytest backend/tests/` 498 passed, 1 skipped (no new tests added — Phase
-  2 was frontend-heavy; the small TS test for `relativeTime` / `deriveStatus`
-  noted in the S34 prompt was skipped because no JS test runner is installed).
+**Build / test status (post-S35):**
+- ✅ `npm run build` clean (~3.6s, 812 kB / 202 kB gzip).
+- ✅ `pytest backend/tests/` 498 passed, 1 skipped (no new tests; the welcome
+  modal is a thin frontend-only wrapper around an existing event surface).
 - ✅ Versions bumped: `pyproject.toml` / `package.json` /
-  `installer/conduital.iss` → `1.4.0`.
+  `installer/conduital.iss` → `1.4.1`.
 
-## Pick R7
+## Pick R8
 
-R6 is done. We have a clean monetization story (R5 done in S31-S32) and a
-clean file-sync UX (R6 done in S33-S34). The next swing should be high-value
-and well-scoped. Candidates:
+R5 done (monetization), R6 done (file sync UX), R7 done (paid-tier
+post-activation polish). Backlog has zero open tech debt. The next swing
+should target either (a) sidebar license visibility (the other small loose
+end from R6 deferrals), (b) onboarding for new installs, or (c) the
+distribution gap that's still blocking a real launch.
 
-### Recommended: **BACKLOG-159 — Paid-tier post-activation flow** (~half day)
+### Recommended: **BACKLOG-160 — Sidebar license badge** (~2–3 hours)
 
-This was the **deferred R6 candidate B**. After a user activates a license
-(Stripe inline or Gumroad), today they get a bare "License accepted" toast
-and the Settings page silently flips state. Plan:
+Smallest, finishes the license-visibility loop. The Welcome modal closes the
+"what just happened" gap; this closes the "what tier am I on right now" gap.
 
-1. Detect a successful activation transition (free → paid) in the license
-   hook, fire a one-time celebratory state.
-2. Show a modal listing what just unlocked (modules, features) — read from
-   `is_module_allowed_for_tier()` so it stays accurate.
-3. Link to a quick feature tour OR persist a "What's new" badge on relevant
-   sidebar links for one session.
-4. Add a `welcome_paid_tier` PostHog event so we can measure activation→TTV.
+Plan:
+1. New
+   [`SidebarLicenseBadge`](frontend/src/components/license/SidebarLicenseBadge.tsx)
+   reads `useTrialStatus` (already polls `/license/status` every 30 min).
+2. Renders compact pill: `Free Trial · 9d`, `GTD`, or `GTD+`. Clicking
+   navigates to Settings → License (use a query param like
+   `?section=license` if useful — cheap to add).
+3. Mount in
+   [`Layout`](frontend/src/components/layout/Layout.tsx) sidebar footer
+   beside `SyncIndicator`. Should not push `SyncIndicator` off when the
+   sidebar drawer is collapsed on mobile — pick layout carefully.
+4. Day-7/11/13 styling can mirror `TrialBanner` colors (amber/red).
+5. Add small `sidebar_license_badge_clicked` PostHog event.
 
-**Why this:** finishes the monetization story (we instrumented the funnel in
-MON-009 but the post-purchase moment is bare). Small surface area. No backend
-changes.
-
-### Alternative: **BACKLOG-160 — Sidebar license badge** (~2-3 hours)
-
-Small tier badge ("Free Trial · 9d", "GTD", "Full") next to the SyncIndicator
-in the sidebar footer. Click → Settings → License. Useful for users on long
-trials who keep losing track of remaining days.
+**Why this:** finishes the post-activation arc cleanly (modal +
+always-visible badge), takes a single short session, and unblocks any
+"Where do I see my plan?" support questions before launch.
 
 ### Alternative: **BACKLOG-087 — Starter Templates by Persona** (~half day)
 
-Deferred R6 candidate C. Pre-baked project templates (Writer, Knowledge
-Worker, Engineer, etc.) that drop in 5-10 starter projects + areas. Big
-onboarding win for new installs. Higher uncertainty on UX surface (do we add
-an onboarding wizard or just a "Load template" button?).
+Pre-baked project templates (Writer, Knowledge Worker, Engineer). Bigger
+onboarding win for first-launch UX. Pick this if Greg has fresh data showing
+new-install drop-off in the first hour. Otherwise BACKLOG-160 first because
+it can ride alongside it.
 
-### Cleanup (always-on, regardless of R7 pick)
+### Alternative: **BACKLOG-161 — Public download URL** (Distribution blocker)
 
-1. **DEBT-078** — `pytest` not on PATH. Add a `[tool.poetry.scripts]` entry
-   to `backend/pyproject.toml` so `poetry run test` works without the
-   `backend\venv\Scripts\python.exe -m pytest` incantation. ~10 min. Worth
-   knocking out at the top of S35.
-2. **BACKLOG-161** — distribution blocker (download URL); needs DNS + hosting
-   decision. Worth raising with Greg again if v1.4 release/announcement is
-   imminent.
-3. **Frontend lint backlog** — 18 errors / 16 warnings still in
+`CONDUITAL_DOWNLOAD_URL` defaults to `https://conduital.com/download/v1.3.0`
+but `conduital.com` isn't hosting downloads yet, so Stripe/Resend
+fulfillment emails will 404. Needs a DNS/hosting decision from Greg, not
+just code. Worth raising with him at the top of S36 — even a placeholder
+GitHub Releases redirect would unblock a real launch.
+
+### Cleanup (always-on)
+
+1. **Frontend lint backlog** — still 18 errors / 16 warnings in
    `frontend/src/pages/{Contexts,Goals,Visions,InboxPage,ProjectDetail,Projects,SomedayMaybe}.tsx`
-   and `pages/memory/`. None block build (`tsc && vite build` is clean). A
-   `npm run lint -- --fix` pass + manual fix for the conditional-hook errors
-   is ~1 hour. Could be a side-quest if R7 work is light.
+   and `pages/memory/`. None block build. `npm run lint -- --fix` + manual
+   pass for conditional-hook errors is ~1 hour. Side-quest if R8 work is
+   light.
+2. **Welcome modal test coverage** — no tests added in S35. If we add a JS
+   test runner (vitest) we should backfill `WelcomePaidTierModal` and
+   `useTrialStatus` (both are pure-ish and would catch regressions). Could
+   pair with BACKLOG-160 since they share the same surface.
 
 ## Phase 4 — Session Closeout
 
 1. Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -x -q` (target: 498+ pass).
 2. Frontend build: `cd frontend && cmd //c "npm run build"`.
-3. Update [`backlog.md`](backlog.md) — mark R7 selection's items done, update
-   Stats, bump test count if applicable.
-4. Bump version `1.4.0 → 1.4.1` (patch) or `1.5.0` (minor) depending on R7
+3. Update [`backlog.md`](backlog.md) — mark R8 selection's items done, update
+   Stats.
+4. Bump version `1.4.1 → 1.4.2` (patch) or `1.5.0` (minor) depending on R8
    scope.
 5. Commit + push (one feat commit per chunk; one closeout commit at the end).
-6. **Write Session 36 prompt → `next-prompt.md`** (per CLAUDE.md MEMORY rule).
+6. **Write Session 37 prompt → `next-prompt.md`** (per CLAUDE.md MEMORY rule).
 
-## Read First (regardless of R7 pick)
+## Read First (regardless of R8 pick)
 
 ```
-backlog.md                                              # current state
-frontend/src/services/telemetry.ts                      # PostHog event surface (for BACKLOG-159 event)
-frontend/src/hooks/useTrialStatus.ts                    # license-state hook to extend
-frontend/src/components/banners/TrialBanner.tsx         # existing banner pattern to mirror
-frontend/src/pages/Settings.tsx                         # Settings → License section
-backend/app/core/feature_flags.py                       # is_module_allowed_for_tier helper
+backlog.md                                                      # current state
+frontend/src/components/license/WelcomePaidTierModal.tsx        # S35 reference for tier-aware UI
+frontend/src/hooks/useTrialStatus.ts                            # license-state hook (used by sidebar badge)
+frontend/src/components/layout/Layout.tsx                       # sidebar footer mount point
+frontend/src/components/sync/SyncIndicator.tsx                  # sibling component for sidebar badge layout
+frontend/src/pages/Settings.tsx                                 # license activation handler — already wired
+backend/app/core/config.py                                      # CONDUITAL_DOWNLOAD_URL (BACKLOG-161)
 ```
 
 ## Strategic Notes (PO context)
 
-- **Why BACKLOG-159 next:** v1.4.0 lands with sync UX polished and license
-  activation working — but the moment a user converts is anticlimactic.
-  Closing this loop ties off the monetization arc. It's also small enough to
-  ship in a single session, leaving room for cleanup.
-- **Why not BACKLOG-087 first:** templates touch onboarding, which deserves
-  its own session. Picking it over BACKLOG-159 makes sense only if Greg has
-  fresh data showing new-install drop-off in the first hour.
-- **R6 produced no new debt.** `sync_broadcast` cleanly mirrors
-  `discovery_broadcast`; if a third pub/sub channel ever appears, genericizing
-  is a 30-line refactor — not now.
-- **Test count regression risk:** S34 added zero backend tests (Phase 2 was
-  frontend-only). If R7 has backend work, target +N new tests to keep the
-  trend up.
+- **Why BACKLOG-160 next:** the welcome modal handles the activation moment;
+  the badge handles every other moment. Together they make license state
+  legible at a glance, which matters once we have non-Greg users. Small
+  enough to leave room in the session for either lint cleanup or seeding
+  BACKLOG-087.
+- **Why pause on BACKLOG-087:** templates are an onboarding workstream —
+  picking the right personas, content, and surface deserves its own session.
+  The reward is bigger but the planning load is non-trivial.
+- **BACKLOG-161 is non-code blocker.** Worth a 5-min check-in at the top of
+  S36: do we point `CONDUITAL_DOWNLOAD_URL` at GitHub Releases as a stopgap
+  before announcing v1.4.x?
+- **Test count flat at 499.** R7 was a small frontend addition; no
+  regression risk surfaced. If R8 has any backend work, target +N new tests
+  to keep the trend up.
+- **Welcome modal tradeoff captured:** we hardcoded the per-tier feature
+  list in `WelcomePaidTierModal.tsx` instead of building a backend
+  endpoint. That's fine while there are exactly two paid tiers and the
+  feature list rarely changes. Revisit if/when we add a third tier or
+  start A/B-testing the unlock copy.
 
 ## Shell Notes (Windows-specific)
 
@@ -130,6 +145,7 @@ backend/app/core/feature_flags.py                       # is_module_allowed_for_
 
 ## Debt Watch
 
-- **DEBT-078** — `backend\venv\Scripts\python.exe` required (no `pytest` on
-  PATH). Quick win still pending; carries from S33-S34.
-- No new debt introduced in S34.
+- **Zero open tech debt** as of S35 (DEBT-078 closed). First time in the
+  v1.x series the debt column is empty — try to keep it that way.
+- New surface in S35 (`WelcomePaidTierModal`) has no automated test
+  coverage. Worth backfilling once we add a JS test runner.

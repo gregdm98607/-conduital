@@ -1,13 +1,13 @@
 # Conduital — Release-Based Backlog
 
-> **R6 selection (S33→S34):** **A. File Sync UX** (BACKLOG-153) — **Done** in
-> S34 (v1.4.0). Phase 1 (S33, v1.3.4): sidebar live indicator + sync event
-> broadcaster + `/ws/sync-status`. Phase 2 (S34, v1.4.0): conflict-resolution
-> UI (`Conflicts` tab in `SyncDetailsPanel` + `useSyncConflicts` hook +
-> `/sync/conflicts` returns `id`), Settings → Recent Sync Activity subsection,
-> shared `SyncEventList` renderer. R7 selection TBD — deferred R6 candidates
-> were B (BACKLOG-159 paid-tier post-activation flow) and C (BACKLOG-087
-> persona starter templates).
+> **R7 selection (S35):** **B. Paid-tier post-activation flow** (BACKLOG-159)
+> — **Done** in S35 (v1.4.1). New `WelcomePaidTierModal` (mounted in `Layout`)
+> shows once per free→paid activation with the unlock list for the new tier;
+> `welcome_paid_tier` PostHog event added to telemetry whitelist; activation
+> path in Settings dispatches a `conduital:license-activated` event.
+> Cleanup: DEBT-078 closed (added `[tool.poetry.scripts]` test entry to
+> `backend/pyproject.toml`). Deferred R6 candidate C (BACKLOG-087 persona
+> starter templates) and BACKLOG-160 (sidebar license badge) remain open.
 
 This backlog is organized by commercial release milestones. Each release builds on the previous, enabling incremental delivery.
 
@@ -183,7 +183,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | DEBT-018 | Google Drive network interruptions | `folder_watcher.py` | **N/A** (S25) — App is local-first; cloud sync deferred to ROADMAP-010 (BYOS) |
 | DEBT-019 | Silent auto-discovery failures | Auto-discovery service | **Done** (S25) — In-memory event log + `/discovery/status` endpoint |
 | DEBT-075 | Momentum PUT endpoint mutates singleton `settings` object in-memory | `settings.py:282-292` | **Done** (S25) — Persist-first pattern: .env written before in-memory mutation; 19 tests added |
-| DEBT-078 | Test run requires explicit venv python | `backend/venv` | Open |
+| DEBT-078 | Test run requires explicit venv python | `backend/venv` | **Done** (S35) — Added `[tool.poetry.scripts] test = "pytest:console_main"` to `backend/pyproject.toml`; `poetry run test` works in poetry-managed environments. The venv path remains the default Windows runner. |
 | DEBT-081 | No app icon (.ico) — installer and exe use default icons | Need `assets/conduital.ico` | **Done** (Session 1) |
 | DEBT-108 | `AIReviewSummary` loading spinner missing `aria-label` / `role="status"` | `AIReviewSummary.tsx:48` | **Done** (Session 6) |
 | DEBT-117 | Heatmap color thresholds (0.25/0.5/0.75) inconsistent with `getMomentumLevel()` (0.2/0.4/0.7) | `MomentumHeatmap.tsx:9-15` | Done (S12) |
@@ -320,7 +320,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | BACKLOG-156 | **Trial expiry banners** — Day-7 sticky banner ("7 days left, upgrade for X"); Day-11 banner with stronger CTA; Day-13 blocking modal with extension request CTA. Hook each to its telemetry event. Dismissable except Day-13 modal. | UX — Tracks to MON-010 |
 | BACKLOG-157 | Feedback admin view | **Done** (S32) — Tracks to MON-011 |
 | BACKLOG-158 | Stripe inline activation | **Done** (S32) — Tracks to MON-008 |
-| BACKLOG-159 | **Welcome / paid-tier post-activation flow** — when activation succeeds, show a one-time celebratory state with what just unlocked (modules, features); link to relevant feature tour. Replaces the bare "License accepted" toast. | UX onboarding |
+| BACKLOG-159 | **Welcome / paid-tier post-activation flow** — `WelcomePaidTierModal` mounted in `Layout`; Settings → License activation path dispatches `conduital:license-activated` window event on free→paid transition; modal lists unlocked features per tier (GTD vs GTD+); fires `welcome_paid_tier` PostHog event; per-session via sessionStorage. | **Done** (S35, v1.4.1) |
 | BACKLOG-160 | **License status visibility in sidebar** — small tier badge ("Free Trial · 9d", "GTD", "Full") visible at all times; click → Settings → License. Currently visible only in Settings. | UX |
 | BACKLOG-161 | **Public download URL hosted** — `CONDUITAL_DOWNLOAD_URL` defaults to `https://conduital.com/download/v1.3.0` but conduital.com is not yet hosting downloads. Stripe/Resend fulfillment emails will 404. | Distribution blocker |
 
@@ -392,11 +392,11 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~66 (BACKLOG-153 fully shipped in S34 v1.4.0; BACKLOG-159/160/161 still open) |
-| Open tech debt | 1 — DEBT-078 (low) |
+| Open backlog items | ~65 (BACKLOG-159 shipped in S35 v1.4.1; BACKLOG-160/161 still open) |
+| Open tech debt | 0 |
 | Open documentation | 6 |
 | Completed items (archived) | 200+ |
 | Backend tests | 499 (498 pass, 1 skip) |
 
-*Last updated: 2026-05-04 (post-S33 — v1.3.4 R6 Phase 1 File Sync UX shipped: sync broadcaster + WS channel + sidebar indicator)*
+*Last updated: 2026-05-04 (post-S35 — v1.4.1 R7 BACKLOG-159 paid-tier post-activation flow shipped; DEBT-078 closed)*
 *Full history: `backlog-archive-2026-02-12.md`*
