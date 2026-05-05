@@ -26,6 +26,7 @@ import {
 import { UserMenu } from '@/components/auth/UserMenu';
 import { KeyboardShortcutOverlay } from '@/components/common/KeyboardShortcutOverlay';
 import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
+import { TrialBanner } from '@/components/trial/TrialBanner';
 
 interface NavItem {
   name: string;
@@ -281,8 +282,11 @@ export function Layout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto pt-14 md:pt-0">
-        <Outlet />
+      <main className="flex-1 overflow-auto pt-14 md:pt-0 flex flex-col">
+        <TrialBanner />
+        <div className="flex-1">
+          <Outlet />
+        </div>
       </main>
 
       {/* Keyboard Shortcut Overlay */}
