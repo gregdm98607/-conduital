@@ -8,11 +8,12 @@ import { useAreaMappings, useUpdateAreaMappings, useAreaMappingSuggestions, useS
 import { useDiscoveryWebSocket } from '@/hooks/useDiscoveryWebSocket';
 import { useTheme } from '@/context/ThemeContext';
 import { api } from '@/services/api';
+import { telemetry } from '@/services/telemetry';
 
 
 const SETTINGS_SECTIONS_KEY = 'pt-settings-sections';
 
-type SectionId = 'appearance' | 'data-storage' | 'area-mappings' | 'database' | 'sync' | 'ai' | 'momentum' | 'export' | 'setup' | 'license';
+type SectionId = 'appearance' | 'data-storage' | 'area-mappings' | 'database' | 'sync' | 'ai' | 'momentum' | 'export' | 'setup' | 'license' | 'privacy';
 
 function loadCollapsedSections(): Set<SectionId> {
   try {
@@ -23,7 +24,7 @@ function loadCollapsedSections(): Set<SectionId> {
   } catch {
     localStorage.removeItem(SETTINGS_SECTIONS_KEY);
   }
-  return new Set<SectionId>(['appearance', 'data-storage', 'area-mappings', 'database', 'sync', 'ai', 'momentum', 'export', 'setup']);
+  return new Set<SectionId>(['appearance', 'data-storage', 'area-mappings', 'database', 'sync', 'ai', 'momentum', 'export', 'setup', 'privacy']);
 }
 
 export function Settings() {
@@ -148,6 +149,10 @@ export function Settings() {
   const [licenseActivating, setLicenseActivating] = useState(false);
   const [licenseActivateResult, setLicenseActivateResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Privacy / telemetry opt-out
+  const [analyticsOptOut, setAnalyticsOptOut] = useState<boolean>(() => telemetry.isOptedOut());
+  const [optOutSaving, setOptOutSaving] = useState(false);
+
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
 
@@ -263,6 +268,19 @@ export function Settings() {
     setStorageTesting(false);
   };
 
+  const handleAnalyticsToggle = async (next: boolean) => {
+    setOptOutSaving(true);
+    setAnalyticsOptOut(next);
+    try {
+      await telemetry.setOptOut(next);
+      toast.success(next ? 'Anonymous analytics turned off.' : 'Anonymous analytics turned on.');
+    } catch {
+      toast.error('Could not update analytics setting.');
+      setAnalyticsOptOut(!next);
+    }
+    setOptOutSaving(false);
+  };
+
   const handleActivateLicense = async () => {
     const key = licenseKey.trim();
     if (!key) return;
@@ -271,6 +289,10 @@ export function Settings() {
     try {
       const result = await api.activateLicense(key);
       setLicenseActivateResult({ success: true, message: result.message });
+      telemetry.track('license_activated', {
+        tier: result.tier,
+        effective_tier: result.effective_tier,
+      });
       toast.success('License activated!');
       // Refresh status
       const updated = await api.getLicenseStatus();
@@ -2030,6 +2052,61 @@ export function Settings() {
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400">Could not load license status.</p>
               )}
+            </div>
+          )}
+        </section>
+
+        {/* Privacy Section */}
+        <section className="card">
+          <button
+            type="button"
+            onClick={() => toggleSection('privacy')}
+            aria-expanded={!collapsedSections.has('privacy')}
+            className="flex items-center gap-3 w-full text-left"
+          >
+            {collapsedSections.has('privacy') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            <Eye className="w-6 h-6 text-primary-600" />
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Privacy</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5">
+                {analyticsOptOut ? 'Anonymous analytics off' : 'Anonymous analytics on'}
+              </p>
+            </div>
+          </button>
+
+          {!collapsedSections.has('privacy') && (
+            <div className="mt-4 space-y-4">
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <label htmlFor="analytics-opt-out" className="font-medium text-gray-900 dark:text-gray-100 block">
+                      Anonymous usage analytics
+                    </label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Helps us understand which features you use. We send a random installation
+                      ID and event names only — no project content, file paths, or personal data.
+                      Toggling off stops all analytics immediately.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    id="analytics-opt-out"
+                    role="switch"
+                    aria-checked={!analyticsOptOut}
+                    onClick={() => handleAnalyticsToggle(!analyticsOptOut)}
+                    disabled={optOutSaving}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                      !analyticsOptOut ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
+                    } ${optOutSaving ? 'opacity-50 cursor-wait' : ''}`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        !analyticsOptOut ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </section>

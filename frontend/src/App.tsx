@@ -28,6 +28,7 @@ import { Contexts } from './pages/Contexts';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { SetupWizard } from './pages/SetupWizard';
 import { SetupGuard } from './components/setup/SetupGuard';
+import { telemetry } from './services/telemetry';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +61,11 @@ function GateListener() {
         style: { cursor: 'pointer' },
         id: 'gate-hit',
       });
+      if (detail?.module) {
+        telemetry.track(`gate_hit_${detail.module}`, {
+          required_tier: detail.required_tier ?? null,
+        });
+      }
       // Navigate to settings on click - react-hot-toast doesn't support onClick,
       // so we navigate immediately after a brief delay to let the user see the toast.
       setTimeout(() => navigate('/settings'), 300);
@@ -72,6 +78,16 @@ function GateListener() {
   return null;
 }
 
+/** Initialises telemetry on first mount and emits app_launched. */
+function TelemetryBoot() {
+  useEffect(() => {
+    telemetry.init().then(() => {
+      telemetry.track('app_launched', {});
+    });
+  }, []);
+  return null;
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -79,6 +95,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <BrowserRouter>
+            <TelemetryBoot />
             <GateListener />
             <Routes>
               {/* Public routes */}

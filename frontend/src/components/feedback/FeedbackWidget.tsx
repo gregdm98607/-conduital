@@ -18,6 +18,7 @@ import { useState, useRef } from 'react';
 import { MessageSquarePlus, Bug, Lightbulb, MessageCircle, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '@/services/api';
+import { telemetry } from '@/services/telemetry';
 
 type Category = 'bug' | 'feature' | 'general';
 
@@ -91,6 +92,11 @@ export function FeedbackWidget() {
         message: trimmed,
         page: window.location.pathname,
         email: email.trim() || undefined,
+      });
+      telemetry.track('feedback_submitted', {
+        category,
+        has_email: Boolean(email.trim()),
+        page: window.location.pathname,
       });
       toast.success('Thanks for your feedback!');
       setOpen(false);
