@@ -216,7 +216,7 @@ export function FeedbackWidget() {
                       ? 'Describe what happened and what you expected…'
                       : category === 'feature'
                         ? 'Describe the feature and the problem it would solve…'
-                        : 'What's on your mind?'
+                        : "What's on your mind?"
                   }
                   className="w-full px-3 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-600 resize-none focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                   required

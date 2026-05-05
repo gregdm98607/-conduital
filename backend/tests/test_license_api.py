@@ -185,7 +185,7 @@ class TestActivateGumroad:
         mock_resp.json.return_value = GUMROAD_SUCCESS_GTD
         mock_post.return_value = mock_resp
 
-        resp = self._post(client, "gr_gtd_abc123")
+        resp = self._post(client, "12345678-ABCDEF12-34567890-ABCDEF12")
         assert resp.status_code == 200
         data = resp.json()
         assert data["success"] is True
@@ -201,7 +201,7 @@ class TestActivateGumroad:
         mock_resp.json.return_value = GUMROAD_SUCCESS_FULL
         mock_post.return_value = mock_resp
 
-        resp = self._post(client, "gr_full_abc123")
+        resp = self._post(client, "23456789-BCDEF123-45678901-BCDEF123")
         assert resp.status_code == 200
         data = resp.json()
         assert data["tier"] == "full"
@@ -216,7 +216,7 @@ class TestActivateGumroad:
         mock_resp.json.return_value = GUMROAD_FAILURE
         mock_post.return_value = mock_resp
 
-        resp = self._post(client, "gr_invalid_key")
+        resp = self._post(client, "34567890-CDEF1234-56789012-CDEF1234")
         assert resp.status_code == 422
         assert "does not exist" in resp.json()["detail"]
 
@@ -228,7 +228,7 @@ class TestActivateGumroad:
         mock_settings.GUMROAD_PRODUCT_ID = "conduital"
         mock_post.side_effect = _httpx.ConnectError("timeout")
 
-        resp = self._post(client, "gr_network_fail")
+        resp = self._post(client, "45678901-DEF12345-67890123-DEF12345")
         assert resp.status_code == 502
 
     @patch("app.api.license.settings")
@@ -237,7 +237,7 @@ class TestActivateGumroad:
         mock_settings.AUTH_ENABLED = False
         mock_settings.GUMROAD_PRODUCT_ID = ""
 
-        resp = self._post(client, "gr_unverified_key")
+        resp = self._post(client, "56789012-EF123456-78901234-EF123456")
         assert resp.status_code == 200
         data = resp.json()
         assert data["success"] is True
@@ -253,8 +253,8 @@ class TestActivateGumroad:
         mock_resp.json.return_value = GUMROAD_SUCCESS_GTD
         mock_post.return_value = mock_resp
 
-        r1 = self._post(client, "gr_idempotent_key")
-        r2 = self._post(client, "gr_idempotent_key")
+        r1 = self._post(client, "67890123-F1234567-89012345-F1234567")
+        r2 = self._post(client, "67890123-F1234567-89012345-F1234567")
         assert r1.status_code == 200
         assert r2.status_code == 200
 
