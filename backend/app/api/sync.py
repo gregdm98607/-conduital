@@ -205,6 +205,23 @@ def get_sync_status(
     )
 
 
+@router.get("/events")
+def get_sync_events(
+    limit: int = Query(20, ge=1, le=50, description="Maximum events to return"),
+):
+    """Recent sync events (newest first) — HTTP fallback for the WS channel.
+
+    Used by `useSyncStatus` when the WebSocket is unavailable, and by tests
+    that exercise the broadcaster from a sync context.
+    """
+    from app.services.sync_broadcast import get_recent_sync_events, get_last_synced_at
+
+    return {
+        "events": get_recent_sync_events(limit=limit),
+        "last_synced_at": get_last_synced_at(),
+    }
+
+
 @router.get("/conflicts", response_model=list[dict])
 def get_conflicts(
     db: Session = Depends(get_db),

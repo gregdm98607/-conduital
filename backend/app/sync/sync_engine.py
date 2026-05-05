@@ -18,6 +18,7 @@ from app.core.db_utils import calculate_file_hash, ensure_unique_file_marker, lo
 from app.models.project import Project
 from app.models.sync_state import SyncState
 from app.models.task import Task
+from app.services.sync_broadcast import record_sync_event
 from app.sync.markdown_parser import MarkdownParser
 from app.sync.markdown_writer import MarkdownWriter
 
@@ -155,9 +156,21 @@ class SyncEngine:
             self.db.commit()
 
             logger.info(f"Synced to database: {project.title}")
+            record_sync_event(
+                action="file_synced",
+                file_path=str(file_path),
+                success=True,
+                detail=project.title,
+            )
             return project
 
-        except SyncConflict:
+        except SyncConflict as conflict:
+            record_sync_event(
+                action="conflict_detected",
+                file_path=str(file_path),
+                success=False,
+                error=str(conflict),
+            )
             raise
         except Exception as e:
             logger.error(f"Error syncing file {file_path}: {e}")
@@ -169,6 +182,12 @@ class SyncEngine:
                 self.db.commit()
             except Exception:
                 pass  # Don't cascade if sync state update also fails
+            record_sync_event(
+                action="sync_error",
+                file_path=str(file_path),
+                success=False,
+                error=str(e),
+            )
             return None
 
     def sync_database_to_file(self, project: Project) -> bool:
@@ -217,10 +236,23 @@ class SyncEngine:
             self.db.commit()
 
             logger.info(f"Synced to file: {file_path.name}")
+            record_sync_event(
+                action="project_synced",
+                file_path=str(file_path),
+                success=True,
+                detail=project.title,
+            )
             return True
 
         except Exception as e:
             logger.error(f"Error syncing to file for project {project.title}: {e}")
+            record_sync_event(
+                action="sync_error",
+                file_path=project.file_path,
+                success=False,
+                error=str(e),
+                detail=project.title,
+            )
             return False
 
     def _sync_tasks_from_file(self, project: Project, file_tasks: list[dict]):
@@ -334,6 +366,7 @@ class SyncEngine:
             Statistics dict
         """
         logger.info(f"Scanning synced notes folder: {self.root_path}")
+        record_sync_event(action="scan_started", success=True, detail=str(self.root_path))
 
         stats = {
             "scanned": 0,
@@ -366,6 +399,7 @@ class SyncEngine:
                     stats["errors"] += 1
 
         logger.info(f"Scan complete: {stats}")
+        record_sync_event(action="scan_completed", success=True, stats=stats)
         return stats
 
     def sync_project_to_file(self, project_id: int) -> bool:

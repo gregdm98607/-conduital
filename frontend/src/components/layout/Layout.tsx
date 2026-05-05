@@ -14,7 +14,6 @@ import {
   Lightbulb,
   Settings as SettingsIcon,
   Zap,
-  CloudCog,
   Target,
   Brain,
   Crosshair,
@@ -27,6 +26,7 @@ import { UserMenu } from '@/components/auth/UserMenu';
 import { KeyboardShortcutOverlay } from '@/components/common/KeyboardShortcutOverlay';
 import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 import { TrialBanner } from '@/components/trial/TrialBanner';
+import { SyncIndicator } from '@/components/sync/SyncIndicator';
 
 interface NavItem {
   name: string;
@@ -229,16 +229,7 @@ export function Layout() {
 
       {/* Footer */}
       <div className="px-4 py-3 border-t border-gray-800/60">
-        <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-600">
-          <CloudCog className="w-3 h-3" />
-          <span>File Sync</span>
-          {appVersion && (
-            <>
-              <span className="text-gray-700">·</span>
-              <span className="text-gray-700">v{appVersion}</span>
-            </>
-          )}
-        </div>
+        <SyncIndicator appVersion={appVersion} />
       </div>
     </>
   );

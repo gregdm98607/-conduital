@@ -556,6 +556,30 @@ export interface SyncStatus {
   files: SyncFileStatus[];
 }
 
+// Live sync events streamed from /ws/sync-status (BACKLOG-153, S33).
+export type SyncEventAction =
+  | 'scan_started'
+  | 'scan_completed'
+  | 'file_synced'
+  | 'project_synced'
+  | 'conflict_detected'
+  | 'sync_error';
+
+export interface SyncEvent {
+  timestamp: string;
+  action: SyncEventAction;
+  success: boolean;
+  file_path?: string;
+  detail?: string;
+  error?: string;
+  stats?: { scanned?: number; synced?: number; errors?: number; skipped?: number };
+}
+
+export interface SyncEventsResponse {
+  events: SyncEvent[];
+  last_synced_at: string | null;
+}
+
 // ============================================================================
 // Authentication Types
 // ============================================================================

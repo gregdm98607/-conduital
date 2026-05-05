@@ -124,6 +124,10 @@ async def lifespan(app: FastAPI):
     from app.services.discovery_broadcast import broadcaster
     broadcaster.attach_loop(asyncio.get_running_loop())
 
+    # Same wiring for the sync broadcaster (BACKLOG-153, S33).
+    from app.services.sync_broadcast import broadcaster as sync_broadcaster
+    sync_broadcaster.attach_loop(asyncio.get_running_loop())
+
     # Ensure database directory exists
     db_dir = Path(settings.DATABASE_PATH).parent
     db_dir.mkdir(parents=True, exist_ok=True)
@@ -402,6 +406,40 @@ async def ws_discovery_status(websocket: WebSocket):
         logger.debug(f"discovery-status websocket closed: {e}")
     finally:
         broadcaster.unsubscribe(queue)
+
+
+@app.websocket("/ws/sync-status")
+async def ws_sync_status(websocket: WebSocket):
+    """Stream file-sync events in real time (BACKLOG-153, S33).
+
+    Clients receive a `snapshot` of recent events on connect, then per-event
+    pushes for `scan_started` / `scan_completed` / `file_synced` /
+    `project_synced` / `conflict_detected` / `sync_error`. Used by the
+    sidebar `SyncIndicator` and Settings → Sync activity view.
+    """
+    from app.services.sync_broadcast import (
+        broadcaster as sync_broadcaster,
+        get_recent_sync_events,
+        get_last_synced_at,
+    )
+
+    await websocket.accept()
+    queue = sync_broadcaster.subscribe()
+    try:
+        await websocket.send_json({
+            "type": "snapshot",
+            "events": get_recent_sync_events(limit=20),
+            "last_synced_at": get_last_synced_at(),
+        })
+        while True:
+            event = await queue.get()
+            await websocket.send_json({"type": "event", "event": event})
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        logger.debug(f"sync-status websocket closed: {e}")
+    finally:
+        sync_broadcaster.unsubscribe(queue)
 
 
 @app.post("/api/v1/shutdown")

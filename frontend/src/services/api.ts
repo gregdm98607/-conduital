@@ -27,6 +27,7 @@ import type {
   AreaWithProjects,
   AreaHealthBreakdown,
   SyncStatus,
+  SyncEventsResponse,
   InboxItem,
   InboxItemCreate,
   InboxItemProcess,
@@ -944,6 +945,14 @@ class APIClient {
 
   async getSyncStatus(signal?: AbortSignal): Promise<SyncStatus> {
     const response = await this.client.get<SyncStatus>('/sync/status', { signal });
+    return response.data;
+  }
+
+  async getSyncEvents(limit: number = 20, signal?: AbortSignal): Promise<SyncEventsResponse> {
+    const response = await this.client.get<SyncEventsResponse>('/sync/events', {
+      params: { limit },
+      signal,
+    });
     return response.data;
   }
 
