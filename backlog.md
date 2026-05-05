@@ -1,13 +1,13 @@
 # Conduital — Release-Based Backlog
 
-> **R6 selection (S33, 2026-05-04):** **A. File Sync UX** (BACKLOG-153).
-> Why: PostHog telemetry not yet readable from this session and per `r6-scope.md`
-> the default-fallback recommendation was A — benefits every install, well-scoped,
-> reuses the existing `discovery_broadcast` pattern. Deferred B (BACKLOG-159) and
-> C (BACKLOG-087) per the scope doc. First slice this session: backend sync
-> event broadcaster + `/ws/sync-status` + `useSyncStatus` hook + `SyncIndicator`
-> in the sidebar footer. Conflict-resolution UI and Settings → Sync recent-activity
-> panel land in S34.
+> **R6 selection (S33→S34):** **A. File Sync UX** (BACKLOG-153) — **Done** in
+> S34 (v1.4.0). Phase 1 (S33, v1.3.4): sidebar live indicator + sync event
+> broadcaster + `/ws/sync-status`. Phase 2 (S34, v1.4.0): conflict-resolution
+> UI (`Conflicts` tab in `SyncDetailsPanel` + `useSyncConflicts` hook +
+> `/sync/conflicts` returns `id`), Settings → Recent Sync Activity subsection,
+> shared `SyncEventList` renderer. R7 selection TBD — deferred R6 candidates
+> were B (BACKLOG-159 paid-tier post-activation flow) and C (BACKLOG-087
+> persona starter templates).
 
 This backlog is organized by commercial release milestones. Each release builds on the previous, enabling incremental delivery.
 
@@ -314,7 +314,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | BACKLOG-150 | Health tab: sparkline trend charts for 7d/30d activity | Visual trends beyond raw numbers |
 | BACKLOG-151 | Display app version number in sidebar | **Done** (S25) — Version fetched from /health endpoint, displayed in sidebar footer |
 | BACKLOG-152 | **Ship all releases at "Full" commercial mode** — v1.2.0 shipped with limited module preset; future releases should enable all modules | **Done** (S29) — Default COMMERCIAL_MODE changed from "basic" to "full" in config.py + .env.example |
-| BACKLOG-153 | **File Sync UX** — Phase 1 (S33, v1.3.4): sync event broadcaster (`app/services/sync_broadcast.py`), `/ws/sync-status` WebSocket + `GET /api/v1/sync/events` HTTP fallback, `useSyncStatus` hook, `SyncIndicator` in sidebar footer + `SyncDetailsPanel` modal with manual "Sync now". Live status (`syncing` / `idle` / `error` / `conflict`) + relative-time "Synced 2m ago" + recent events. **Phase 2 deferred to S34**: conflict-resolution UI for `conflict_strategy: prompt` + Settings → Sync recent-activity subsection. | UX + Architecture |
+| BACKLOG-153 | **File Sync UX** — Phase 1 (S33, v1.3.4): sync event broadcaster (`app/services/sync_broadcast.py`), `/ws/sync-status` WebSocket + `GET /api/v1/sync/events` HTTP fallback, `useSyncStatus` hook, `SyncIndicator` in sidebar footer + `SyncDetailsPanel` modal with manual "Sync now". Phase 2 (S34, v1.4.0): conflict-resolution UI (Conflicts tab in `SyncDetailsPanel` with "Use file" / "Use database" actions hitting `POST /sync/resolve/{id}`), `useSyncConflicts` hook, `id` field added to `/sync/conflicts` response, shared `SyncEventList` renderer, Settings → Recent Sync Activity subsection mirroring Discovery Activity pattern. **Done** (S34, v1.4.0). | UX + Architecture |
 | BACKLOG-154 | **File Sync auto-discovery UX** — projects/areas auto-discovered from Sync Folder Root but user can't see what happened; wire `/discovery/status` into Settings UI | **Done** (S26) — Discovery Activity panel in Settings with event log, error badges, auto-refresh |
 | BACKLOG-155 | **PostHog frontend wiring** — implement `/services/telemetry.ts` client; persist installation `distinct_id`; emit core funnel events (app_launched, gate_hit_*, license_activated, trial_*, feedback_submitted, purchase_completed); honor opt-out; add Settings → Privacy toggle | UX + Analytics — Tracks to MON-009 |
 | BACKLOG-156 | **Trial expiry banners** — Day-7 sticky banner ("7 days left, upgrade for X"); Day-11 banner with stronger CTA; Day-13 blocking modal with extension request CTA. Hook each to its telemetry event. Dismissable except Day-13 modal. | UX — Tracks to MON-010 |
@@ -392,7 +392,7 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~67 (BACKLOG-153 Phase 1 shipped in S33 v1.3.4; Phase 2 conflict-resolution UI still open. BACKLOG-159/160/161 still open) |
+| Open backlog items | ~66 (BACKLOG-153 fully shipped in S34 v1.4.0; BACKLOG-159/160/161 still open) |
 | Open tech debt | 1 — DEBT-078 (low) |
 | Open documentation | 6 |
 | Completed items (archived) | 200+ |

@@ -1,133 +1,135 @@
-# Session 34 — File Sync UX Phase 2 (conflict resolution + Settings activity)
+# Session 35 — R7 selection (post-v1.4.0)
 
 ## Context
 
-Session 33 (2026-05-04) shipped **v1.3.4** with R6 Phase 1 (BACKLOG-153 file
-sync UX) in one feat commit + one closeout commit:
+Session 34 (2026-05-04) shipped **v1.4.0**, closing R6 / BACKLOG-153 in two
+commits:
 
-- **Backend** — new [`backend/app/services/sync_broadcast.py`](backend/app/services/sync_broadcast.py)
-  mirroring `discovery_broadcast.py` pattern (in-memory ring buffer + asyncio
-  pub/sub + thread-safe `record_sync_event`). [`backend/app/sync/sync_engine.py`](backend/app/sync/sync_engine.py)
-  now publishes events at: `scan_started`, `scan_completed`, `file_synced`,
-  `project_synced`, `conflict_detected`, `sync_error`. New WebSocket
-  `/ws/sync-status` in [`backend/app/main.py`](backend/app/main.py) (snapshot +
-  per-event push) and HTTP fallback `GET /api/v1/sync/events` in
-  [`backend/app/api/sync.py`](backend/app/api/sync.py). 6 new tests in
-  [`backend/tests/test_sync_broadcast.py`](backend/tests/test_sync_broadcast.py).
-- **Frontend** — [`frontend/src/hooks/useSyncStatus.ts`](frontend/src/hooks/useSyncStatus.ts)
-  wraps the WS with reconnect + HTTP fallback (30s tick), derives
-  `'idle' | 'syncing' | 'error' | 'conflict'`. [`frontend/src/components/sync/SyncIndicator.tsx`](frontend/src/components/sync/SyncIndicator.tsx)
-  replaces the static "File Sync" footer in
-  [`frontend/src/components/layout/Layout.tsx`](frontend/src/components/layout/Layout.tsx)
-  with a live indicator ("Synced 2m ago"). [`frontend/src/components/sync/SyncDetailsPanel.tsx`](frontend/src/components/sync/SyncDetailsPanel.tsx)
-  is the modal — recent events list + manual "Sync now" button.
+- `feat(BACKLOG-153)` Phase 2 file sync UX:
+  - **Backend** — [`backend/app/api/sync.py`](backend/app/api/sync.py)
+    `/sync/conflicts` now returns `id` + `error_message` so the frontend can
+    drive `POST /sync/resolve/{sync_id}`.
+  - **Frontend** — new [`useSyncConflicts`](frontend/src/hooks/useSyncConflicts.ts)
+    hook polls `/sync/conflicts` (30s) with optimistic removal; new
+    [`SyncEventList`](frontend/src/components/sync/SyncEventList.tsx) shared
+    renderer (eventIcon / actionLabel / shortPath); a Conflicts tab in
+    [`SyncDetailsPanel`](frontend/src/components/sync/SyncDetailsPanel.tsx)
+    with "Use file" / "Use database" actions; Settings → File Sync grew a
+    Recent Sync Activity subsection mirroring the Discovery Activity panel
+    pattern; `relativeTime` + `deriveStatus` exported from
+    [`useSyncStatus`](frontend/src/hooks/useSyncStatus.ts).
+- `chore(S34)` v1.4.0 closeout — version bumps + backlog refresh + this prompt.
 
-**Build / test status (post-S33):**
-- ✅ `npm run build` clean (~3.3s).
-- ✅ `pytest backend/tests/` 498 passed, 1 skipped (was 492 → +6 new).
-- ✅ Versions bumped: `pyproject.toml` / `package.json` / `installer/conduital.iss` → `1.3.4`.
+**Build / test status (post-S34):**
+- ✅ `npm run build` clean (~3.5s, 808 kB / 202 kB gzip).
+- ✅ `pytest backend/tests/` 498 passed, 1 skipped (no new tests added — Phase
+  2 was frontend-heavy; the small TS test for `relativeTime` / `deriveStatus`
+  noted in the S34 prompt was skipped because no JS test runner is installed).
+- ✅ Versions bumped: `pyproject.toml` / `package.json` /
+  `installer/conduital.iss` → `1.4.0`.
 
-## Phase 2 — What's left for BACKLOG-153
+## Pick R7
 
-Phase 1 made sync visible. Phase 2 closes the loop on conflicts and gives a
-denser view in Settings.
+R6 is done. We have a clean monetization story (R5 done in S31-S32) and a
+clean file-sync UX (R6 done in S33-S34). The next swing should be high-value
+and well-scoped. Candidates:
 
-### 1. Conflict-resolution UI (~half day)
+### Recommended: **BACKLOG-159 — Paid-tier post-activation flow** (~half day)
 
-The backend already supports `conflict_strategy: prompt` and exposes
-`GET /api/v1/sync/conflicts` + `POST /api/v1/sync/resolve/{sync_id}`. What's
-missing is a frontend that surfaces them:
+This was the **deferred R6 candidate B**. After a user activates a license
+(Stripe inline or Gumroad), today they get a bare "License accepted" toast
+and the Settings page silently flips state. Plan:
 
-1. Extend `useSyncStatus` (or create a sibling `useSyncConflicts`) to poll
-   `/sync/conflicts` whenever `status === 'conflict'` or after a
-   `conflict_detected` event arrives over the WS.
-2. Wire a "Conflicts (N)" tab into [`SyncDetailsPanel`](frontend/src/components/sync/SyncDetailsPanel.tsx)
-   listing each conflict (file path, last-synced timestamp) with two buttons:
-   "Use file version" / "Use database version". Each hits
-   `POST /api/v1/sync/resolve/{sync_id}?use_file=true|false`.
-3. Toast on success; refresh both the conflicts query and the events stream.
-4. When no conflicts exist, hide the tab to keep the modal minimal.
+1. Detect a successful activation transition (free → paid) in the license
+   hook, fire a one-time celebratory state.
+2. Show a modal listing what just unlocked (modules, features) — read from
+   `is_module_allowed_for_tier()` so it stays accurate.
+3. Link to a quick feature tour OR persist a "What's new" badge on relevant
+   sidebar links for one session.
+4. Add a `welcome_paid_tier` PostHog event so we can measure activation→TTV.
 
-### 2. Settings → Sync recent-activity subsection (~1-2 hours)
+**Why this:** finishes the monetization story (we instrumented the funnel in
+MON-009 but the post-purchase moment is bare). Small surface area. No backend
+changes.
 
-Right now [`frontend/src/pages/Settings.tsx`](frontend/src/pages/Settings.tsx)
-has a Sync section but no live activity view (the modal in the sidebar is
-ephemeral). Mirror the Discovery Activity panel pattern:
+### Alternative: **BACKLOG-160 — Sidebar license badge** (~2-3 hours)
 
-1. Add a "Recent Sync Activity" subsection under the existing Sync settings.
-2. Reuse `useSyncStatus` and render the last 10 events using the same icon +
-   label helpers from `SyncDetailsPanel` (consider extracting `eventIcon` /
-   `actionLabel` into `frontend/src/components/sync/SyncEventList.tsx` so both
-   places share the renderer).
-3. Show `lastSyncedAt` prominently at the top of the section.
+Small tier badge ("Free Trial · 9d", "GTD", "Full") next to the SyncIndicator
+in the sidebar footer. Click → Settings → License. Useful for users on long
+trials who keep losing track of remaining days.
 
-### 3. Polish (~30 min)
+### Alternative: **BACKLOG-087 — Starter Templates by Persona** (~half day)
 
-- Bundle is now 803 kB / 200 kB gzip — consider lazy-loading
-  `SyncDetailsPanel` (only mounted when the modal opens). Optional, cheap.
-- Add a small TS test covering the `relativeTime` / `deriveStatus` helpers in
-  `useSyncStatus.ts`.
+Deferred R6 candidate C. Pre-baked project templates (Writer, Knowledge
+Worker, Engineer, etc.) that drop in 5-10 starter projects + areas. Big
+onboarding win for new installs. Higher uncertainty on UX surface (do we add
+an onboarding wizard or just a "Load template" button?).
 
-## Always-On Cleanup
+### Cleanup (always-on, regardless of R7 pick)
 
-1. **DEBT-078** — `pytest` not on PATH. Add a `[tool.poetry.scripts]` entry to
-   `backend/pyproject.toml` so `poetry run test` works without the
-   `backend\venv\Scripts\python.exe -m pytest` incantation. ~10 min.
-2. **BACKLOG-161 (download URL)** — distribution blocker; needs DNS + hosting
-   decision. Worth raising with Greg again if v1.4 release is in sight.
+1. **DEBT-078** — `pytest` not on PATH. Add a `[tool.poetry.scripts]` entry
+   to `backend/pyproject.toml` so `poetry run test` works without the
+   `backend\venv\Scripts\python.exe -m pytest` incantation. ~10 min. Worth
+   knocking out at the top of S35.
+2. **BACKLOG-161** — distribution blocker (download URL); needs DNS + hosting
+   decision. Worth raising with Greg again if v1.4 release/announcement is
+   imminent.
+3. **Frontend lint backlog** — 18 errors / 16 warnings still in
+   `frontend/src/pages/{Contexts,Goals,Visions,InboxPage,ProjectDetail,Projects,SomedayMaybe}.tsx`
+   and `pages/memory/`. None block build (`tsc && vite build` is clean). A
+   `npm run lint -- --fix` pass + manual fix for the conditional-hook errors
+   is ~1 hour. Could be a side-quest if R7 work is light.
 
 ## Phase 4 — Session Closeout
 
 1. Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -x -q` (target: 498+ pass).
 2. Frontend build: `cd frontend && cmd //c "npm run build"`.
-3. Update [`backlog.md`](backlog.md) — mark BACKLOG-153 fully done if Phase 2
-   ships, update Stats, bump test count.
-4. Bump version `1.3.4 → 1.3.5` (or `1.4.0` if BACKLOG-153 closes and warrants
-   a minor).
-5. Commit + push (one commit per chunk: conflict UI, Settings panel,
-   closeout).
-6. **Write Session 35 prompt → `next-prompt.md`** (per CLAUDE.md MEMORY rule).
+3. Update [`backlog.md`](backlog.md) — mark R7 selection's items done, update
+   Stats, bump test count if applicable.
+4. Bump version `1.4.0 → 1.4.1` (patch) or `1.5.0` (minor) depending on R7
+   scope.
+5. Commit + push (one feat commit per chunk; one closeout commit at the end).
+6. **Write Session 36 prompt → `next-prompt.md`** (per CLAUDE.md MEMORY rule).
 
-## Read First
+## Read First (regardless of R7 pick)
 
 ```
-backend/app/services/sync_broadcast.py                  # S33 sync event broadcaster
-backend/app/sync/sync_engine.py                         # SyncEngine publish points
-backend/app/api/sync.py                                 # /sync/conflicts + /sync/resolve already exist
-frontend/src/hooks/useSyncStatus.ts                     # Hook to extend or sibling hook off
-frontend/src/components/sync/SyncDetailsPanel.tsx       # Add Conflicts tab here
-frontend/src/components/sync/SyncIndicator.tsx          # Sidebar indicator (no changes expected)
-frontend/src/pages/Settings.tsx                         # Add Recent Sync Activity subsection
+backlog.md                                              # current state
+frontend/src/services/telemetry.ts                      # PostHog event surface (for BACKLOG-159 event)
+frontend/src/hooks/useTrialStatus.ts                    # license-state hook to extend
+frontend/src/components/banners/TrialBanner.tsx         # existing banner pattern to mirror
+frontend/src/pages/Settings.tsx                         # Settings → License section
+backend/app/core/feature_flags.py                       # is_module_allowed_for_tier helper
 ```
 
 ## Strategic Notes (PO context)
 
-- **Why Phase 2 next, not a different R6 candidate:** Phase 1 only delivers
-  half of the user value. Without conflict resolution, a user who lands on
-  `conflict_detected` is stuck — they can see it happened but can't fix it
-  from the UI. Phase 2 finishes the user story.
-- **Why surface Settings → Sync activity:** the sidebar indicator is great
-  for at-a-glance, but power users want a longer history. The Discovery
-  Activity panel is the precedent and is well-loved.
-- **WS reconnect under load:** Phase 1's WS uses exponential backoff up to
-  30s. If the backend restarts during a long scan, the frontend will
-  reconnect but may miss the `scan_completed` event. The HTTP fallback
-  fetches `/sync/events` every 30s, so worst-case the indicator is 30s
-  stale — acceptable but worth verifying once Phase 2 is in.
-- **Phase 1 introduced no new debt.** `sync_broadcast` is a clean copy of
-  `discovery_broadcast`; if we ever genericize the pattern it's a 3-line
-  refactor.
+- **Why BACKLOG-159 next:** v1.4.0 lands with sync UX polished and license
+  activation working — but the moment a user converts is anticlimactic.
+  Closing this loop ties off the monetization arc. It's also small enough to
+  ship in a single session, leaving room for cleanup.
+- **Why not BACKLOG-087 first:** templates touch onboarding, which deserves
+  its own session. Picking it over BACKLOG-159 makes sense only if Greg has
+  fresh data showing new-install drop-off in the first hour.
+- **R6 produced no new debt.** `sync_broadcast` cleanly mirrors
+  `discovery_broadcast`; if a third pub/sub channel ever appears, genericizing
+  is a 30-line refactor — not now.
+- **Test count regression risk:** S34 added zero backend tests (Phase 2 was
+  frontend-only). If R7 has backend work, target +N new tests to keep the
+  trend up.
 
 ## Shell Notes (Windows-specific)
 
 - Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -x -q`
-- Single test file: `backend\venv\Scripts\python.exe -m pytest backend/tests/test_sync_broadcast.py -q`
+- Single test file: `backend\venv\Scripts\python.exe -m pytest backend/tests/<name>.py -q`
 - Frontend build: `cd frontend && cmd //c "npm run build"`
+- Frontend lint (changed files only): `cd frontend && cmd //c "npx eslint <path> --ext ts,tsx"`
 - Inno Setup: `"$LOCALAPPDATA/Programs/Inno Setup 6/ISCC.exe" installer/conduital.iss`
 - Alembic upgrade: `backend\venv\Scripts\python.exe -m alembic -c backend/alembic.ini upgrade head`
 - git commit with special chars: write message to temp file, use `git commit -F file.txt`
 
 ## Debt Watch
 
-- **DEBT-078** — `backend\venv\Scripts\python.exe` required (no `pytest` on PATH). Quick win for S34.
-- No new debt introduced in S33.
+- **DEBT-078** — `backend\venv\Scripts\python.exe` required (no `pytest` on
+  PATH). Quick win still pending; carries from S33-S34.
+- No new debt introduced in S34.
