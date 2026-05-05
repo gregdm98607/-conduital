@@ -16,7 +16,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | **R2: Conduital GTD** | + `gtd_inbox` | GTD practitioners | **v1.2.0 shipped** — module wired, InboxPage live, weekly review + waiting-for + someday-maybe routes active |
 | **R3: Proactive Assistant** | + `memory_layer` + `ai_context` | AI-augmented users | Memory Layer admin shipped (v1.2.0); AI Context modules deferred |
 | **R4: Full Suite** | All modules | Power users | Default `COMMERCIAL_MODE=full` since v1.2.0 |
-| **R5: Monetization** | License + Telemetry + Feedback | Paying users | **v1.3.2 shipped** — Gumroad activation live; Stripe webhook live; PostHog frontend wired (events flowing); trial expiry banners live; in-app feedback widget live. Open: MON-008 (Stripe inline 503), MON-011 (feedback admin view) |
+| **R5: Monetization** | License + Telemetry + Feedback | Paying users | **v1.3.3 shipped** — Gumroad activation; Stripe webhook + Stripe inline activation (opaque receipt); PostHog frontend wired; trial expiry banners; in-app feedback widget + admin view. R5 Must-Have backlog clean. |
 
 ---
 
@@ -46,10 +46,10 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | MON-005 | App-level gate-hit handling | **Done** (v1.3.0) | 403 → toast + redirect to Settings |
 | MON-006 | Feature gating per tier | **Done** (v1.3.0) | `is_module_allowed_for_tier()` enforces license boundaries |
 | MON-007 | In-app feedback widget | **Done** (2026-04-26) | `FeedbackWidget.tsx` + `POST /api/v1/feedback` + SQLite `feedback` table |
-| MON-008 | **Stripe inline `/license/activate`** | **Open** | Currently 503. If a user pastes a Stripe-derived key, activation fails. Webhook is the only fulfillment path. |
+| MON-008 | Stripe inline `/license/activate` | **Done** (v1.3.3, S32) | Removed 503. `sk_live_*`/`sk_test_*`/`cs_live_*`/`cs_test_*` and the 8-group hex webhook key all activate inline as opaque receipts (Option A). Webhook remains authoritative; inline path is the buyer-pasted-receipt fallback. Idempotent. |
 | MON-009 | PostHog frontend wiring | **Done** (v1.3.2, S31) | `frontend/src/services/telemetry.ts` singleton (batch 10/5s, distinct_id cache, opt-out, sendBeacon flush). Wired: `app_first_launch`, `app_launched`, `license_activated`, `gate_hit_<module>`, `feedback_submitted`, `trial_day_7/11/13_*`. Settings → Privacy toggle. |
 | MON-010 | Trial expiry banners (Day 7/11/13) | **Done** (v1.3.2, S31) | `useTrialStatus` hook + `TrialBanner` component. Day-7 amber sticky, Day-11 red sticky, Day-13 blocking modal with extension request. Per-session dismissal via sessionStorage. |
-| MON-011 | **Feedback admin view** | **Open** | Submissions land in SQLite with no read UI. Greg has no triage path. |
+| MON-011 | Feedback admin view | **Done** (v1.3.3, S32) | Settings → Feedback section: filter chips (All / Bug / Feature / General / Unresolved), inline expand, resolve checkbox (PATCH `/feedback/{id}`), CSV export. New `resolved` column on `feedback` table (Alembic 018). |
 | MON-012 | Auth-mode license activation | Deferred | Returns 501. Single-user desktop is the only supported path; multi-user is post-R4. |
 
 ---
@@ -309,8 +309,8 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | BACKLOG-154 | **File Sync auto-discovery UX** — projects/areas auto-discovered from Sync Folder Root but user can't see what happened; wire `/discovery/status` into Settings UI | **Done** (S26) — Discovery Activity panel in Settings with event log, error badges, auto-refresh |
 | BACKLOG-155 | **PostHog frontend wiring** — implement `/services/telemetry.ts` client; persist installation `distinct_id`; emit core funnel events (app_launched, gate_hit_*, license_activated, trial_*, feedback_submitted, purchase_completed); honor opt-out; add Settings → Privacy toggle | UX + Analytics — Tracks to MON-009 |
 | BACKLOG-156 | **Trial expiry banners** — Day-7 sticky banner ("7 days left, upgrade for X"); Day-11 banner with stronger CTA; Day-13 blocking modal with extension request CTA. Hook each to its telemetry event. Dismissable except Day-13 modal. | UX — Tracks to MON-010 |
-| BACKLOG-157 | **Feedback admin view** — Settings → Feedback tab. List feedback by category (bug/feature/general), date, page; mark resolved; CSV export; filter unread. | UX — Tracks to MON-011 |
-| BACKLOG-158 | **Stripe inline activation** — close the 503 path in `/license/activate` for `sk_live_*` / `sk_test_*` keys. Verify against Stripe API or treat as opaque receipt; bind to local license; idempotent. | Backend — Tracks to MON-008 |
+| BACKLOG-157 | Feedback admin view | **Done** (S32) — Tracks to MON-011 |
+| BACKLOG-158 | Stripe inline activation | **Done** (S32) — Tracks to MON-008 |
 | BACKLOG-159 | **Welcome / paid-tier post-activation flow** — when activation succeeds, show a one-time celebratory state with what just unlocked (modules, features); link to relevant feature tour. Replaces the bare "License accepted" toast. | UX onboarding |
 | BACKLOG-160 | **License status visibility in sidebar** — small tier badge ("Free Trial · 9d", "GTD", "Full") visible at all times; click → Settings → License. Currently visible only in Settings. | UX |
 | BACKLOG-161 | **Public download URL hosted** — `CONDUITAL_DOWNLOAD_URL` defaults to `https://conduital.com/download/v1.3.0` but conduital.com is not yet hosting downloads. Stripe/Resend fulfillment emails will 404. | Distribution blocker |
@@ -383,7 +383,7 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~69 (MON-009/010 + DEBT-143/144 closed in S31; MON-008/011, BACKLOG-155..161 still open) |
+| Open backlog items | ~67 (MON-008/011 + BACKLOG-157/158 closed in S32 v1.3.3; BACKLOG-153/159/160/161 still open) |
 | Open tech debt | 1 — DEBT-078 (low) |
 | Open documentation | 6 |
 | Completed items (archived) | 200+ |
