@@ -5,7 +5,7 @@ Feedback model — stores in-app user feedback submissions.
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -34,6 +34,11 @@ class Feedback(Base):
     page: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String(254), nullable=True)
     app_version: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
+    # Triage state — admin marks entries resolved once acted upon.
+    resolved: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="0", default=False, index=True
+    )
 
     # Metadata
     submitted_at: Mapped[datetime] = mapped_column(

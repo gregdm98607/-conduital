@@ -2,18 +2,20 @@ import { useState, useEffect, useCallback } from 'react';
 import type { ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight, Download, HardDrive, Activity, Rocket, FolderOpen, CheckCircle, XCircle, Loader2, FolderInput, Upload, Sparkles, ShieldCheck, Key } from 'lucide-react';
+import { Settings as SettingsIcon, Database, RefreshCw, Brain, FolderTree, Plus, Trash2, Edit2, Check, X, Lightbulb, AlertTriangle, Sun, Moon, Monitor, Wifi, WifiOff, Eye, EyeOff, ChevronDown, ChevronRight, Download, HardDrive, Activity, Rocket, FolderOpen, CheckCircle, XCircle, Loader2, FolderInput, Upload, Sparkles, ShieldCheck, Key, MessageSquare, Bug } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAreaMappings, useUpdateAreaMappings, useAreaMappingSuggestions, useScanProjects, useDiscoveryStatus } from '@/hooks/useDiscovery';
 import { useDiscoveryWebSocket } from '@/hooks/useDiscoveryWebSocket';
 import { useTheme } from '@/context/ThemeContext';
-import { api } from '@/services/api';
+import { api, type FeedbackListItem } from '@/services/api';
 import { telemetry } from '@/services/telemetry';
 
 
 const SETTINGS_SECTIONS_KEY = 'pt-settings-sections';
 
-type SectionId = 'appearance' | 'data-storage' | 'area-mappings' | 'database' | 'sync' | 'ai' | 'momentum' | 'export' | 'setup' | 'license' | 'privacy';
+type SectionId = 'appearance' | 'data-storage' | 'area-mappings' | 'database' | 'sync' | 'ai' | 'momentum' | 'export' | 'setup' | 'license' | 'feedback' | 'privacy';
+
+type FeedbackFilter = 'all' | 'bug' | 'feature' | 'general' | 'unresolved';
 
 function loadCollapsedSections(): Set<SectionId> {
   try {
@@ -24,7 +26,7 @@ function loadCollapsedSections(): Set<SectionId> {
   } catch {
     localStorage.removeItem(SETTINGS_SECTIONS_KEY);
   }
-  return new Set<SectionId>(['appearance', 'data-storage', 'area-mappings', 'database', 'sync', 'ai', 'momentum', 'export', 'setup', 'privacy']);
+  return new Set<SectionId>(['appearance', 'data-storage', 'area-mappings', 'database', 'sync', 'ai', 'momentum', 'export', 'setup', 'feedback', 'privacy']);
 }
 
 export function Settings() {
@@ -149,6 +151,13 @@ export function Settings() {
   const [licenseActivating, setLicenseActivating] = useState(false);
   const [licenseActivateResult, setLicenseActivateResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Feedback admin (MON-011)
+  const [feedbackEntries, setFeedbackEntries] = useState<FeedbackListItem[]>([]);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackFilter, setFeedbackFilter] = useState<FeedbackFilter>('all');
+  const [feedbackExpandedId, setFeedbackExpandedId] = useState<number | null>(null);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
+
   // Privacy / telemetry opt-out
   const [analyticsOptOut, setAnalyticsOptOut] = useState<boolean>(() => telemetry.isOptedOut());
   const [optOutSaving, setOptOutSaving] = useState(false);
@@ -266,6 +275,83 @@ export function Settings() {
       setStorageTestResult({ valid: false, message: 'Test failed' });
     }
     setStorageTesting(false);
+  };
+
+  const loadFeedback = useCallback(async () => {
+    setFeedbackLoading(true);
+    setFeedbackError(null);
+    try {
+      const params: { category?: 'bug' | 'feature' | 'general'; resolved?: boolean } = {};
+      if (feedbackFilter === 'bug' || feedbackFilter === 'feature' || feedbackFilter === 'general') {
+        params.category = feedbackFilter;
+      } else if (feedbackFilter === 'unresolved') {
+        params.resolved = false;
+      }
+      const entries = await api.listFeedback({ ...params, page_size: 200 });
+      setFeedbackEntries(entries);
+    } catch {
+      setFeedbackError('Could not load feedback entries.');
+    }
+    setFeedbackLoading(false);
+  }, [feedbackFilter]);
+
+  // Load feedback whenever the section is expanded or the filter changes
+  useEffect(() => {
+    if (collapsedSections.has('feedback')) return;
+    void loadFeedback();
+  }, [collapsedSections, loadFeedback]);
+
+  const handleToggleResolved = async (entry: FeedbackListItem) => {
+    const next = !entry.resolved;
+    // Optimistic update
+    setFeedbackEntries((prev) =>
+      prev.map((e) => (e.id === entry.id ? { ...e, resolved: next } : e)),
+    );
+    try {
+      await api.updateFeedback(entry.id, { resolved: next });
+    } catch {
+      toast.error('Could not update feedback');
+      // Revert
+      setFeedbackEntries((prev) =>
+        prev.map((e) => (e.id === entry.id ? { ...e, resolved: entry.resolved } : e)),
+      );
+    }
+  };
+
+  const handleExportFeedbackCSV = () => {
+    if (feedbackEntries.length === 0) {
+      toast('No feedback to export', { icon: 'ℹ️' });
+      return;
+    }
+    const escape = (v: unknown): string => {
+      const s = v === null || v === undefined ? '' : String(v);
+      if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    const header = ['id', 'category', 'message', 'page', 'email', 'app_version', 'submitted_at', 'resolved'];
+    const lines = [header.join(',')];
+    for (const e of feedbackEntries) {
+      lines.push([
+        e.id,
+        e.category,
+        e.message,
+        e.page ?? '',
+        e.email ?? '',
+        e.app_version ?? '',
+        e.submitted_at,
+        e.resolved ? 'true' : 'false',
+      ].map(escape).join(','));
+    }
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    a.href = url;
+    a.download = `feedback-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleAnalyticsToggle = async (next: boolean) => {
@@ -2052,6 +2138,136 @@ export function Settings() {
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400">Could not load license status.</p>
               )}
+            </div>
+          )}
+        </section>
+
+        {/* Feedback Section (MON-011) */}
+        <section className="card">
+          <button
+            type="button"
+            onClick={() => toggleSection('feedback')}
+            aria-expanded={!collapsedSections.has('feedback')}
+            className="flex items-center gap-3 w-full text-left"
+          >
+            {collapsedSections.has('feedback') ? <ChevronRight className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            <MessageSquare className="w-6 h-6 text-primary-600" />
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Feedback</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5">
+                In-app submissions ({feedbackEntries.filter((e) => !e.resolved).length} open)
+              </p>
+            </div>
+          </button>
+
+          {!collapsedSections.has('feedback') && (
+            <div className="mt-4 space-y-4">
+              {/* Filter chips + actions */}
+              <div className="flex flex-wrap items-center gap-2">
+                {(['all', 'bug', 'feature', 'general', 'unresolved'] as FeedbackFilter[]).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setFeedbackFilter(f)}
+                    className={`px-3 py-1 text-sm rounded-full border transition-colors ${
+                      feedbackFilter === f
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {f === 'all' ? 'All' : f === 'unresolved' ? 'Unresolved' : f.charAt(0).toUpperCase() + f.slice(1)}
+                  </button>
+                ))}
+                <div className="ml-auto flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void loadFeedback()}
+                    disabled={feedbackLoading}
+                    className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 inline-flex items-center gap-1"
+                    aria-label="Refresh feedback"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${feedbackLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExportFeedbackCSV}
+                    disabled={feedbackEntries.length === 0}
+                    className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Export CSV
+                  </button>
+                </div>
+              </div>
+
+              {/* List */}
+              {feedbackError ? (
+                <p className="text-sm text-red-600 dark:text-red-400">{feedbackError}</p>
+              ) : feedbackLoading ? (
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading feedback…
+                </div>
+              ) : feedbackEntries.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No feedback entries match this filter.
+                </p>
+              ) : (
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  {feedbackEntries.map((entry) => {
+                    const expanded = feedbackExpandedId === entry.id;
+                    const CategoryIcon =
+                      entry.category === 'bug' ? Bug
+                        : entry.category === 'feature' ? Lightbulb
+                          : MessageSquare;
+                    const preview = entry.message.length > 80
+                      ? entry.message.slice(0, 80) + '…'
+                      : entry.message;
+                    const submitted = new Date(entry.submitted_at).toLocaleString();
+                    return (
+                      <li key={entry.id} className={`${entry.resolved ? 'bg-gray-50 dark:bg-gray-800/40' : 'bg-white dark:bg-gray-900'}`}>
+                        <div className="flex items-start gap-3 p-3">
+                          <input
+                            type="checkbox"
+                            aria-label={entry.resolved ? 'Mark as unresolved' : 'Mark as resolved'}
+                            checked={entry.resolved}
+                            onChange={() => void handleToggleResolved(entry)}
+                            className="mt-1"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setFeedbackExpandedId(expanded ? null : entry.id)}
+                            className="flex-1 text-left min-w-0"
+                          >
+                            <div className="flex items-center gap-2 text-sm">
+                              <CategoryIcon className={`w-4 h-4 shrink-0 ${entry.resolved ? 'text-gray-400' : 'text-primary-600'}`} />
+                              <span className={`font-medium truncate ${entry.resolved ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-gray-900 dark:text-gray-100'}`}>
+                                {preview}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              <span className="capitalize">{entry.category}</span>
+                              {entry.page && <span>· {entry.page}</span>}
+                              <span>· {submitted}</span>
+                              {entry.email && <span>· {entry.email}</span>}
+                              {entry.app_version && <span>· v{entry.app_version}</span>}
+                            </div>
+                            {expanded && (
+                              <div className="mt-2 p-3 rounded bg-gray-50 dark:bg-gray-800 text-sm whitespace-pre-wrap text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
+                                {entry.message}
+                              </div>
+                            )}
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Submissions are stored locally in <code className="font-mono text-[11px]">conduital.db</code>. Nothing is sent to a remote server.
+              </p>
             </div>
           )}
         </section>

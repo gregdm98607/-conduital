@@ -1,14 +1,15 @@
 """
-Feedback API endpoint (F-001)
+Feedback API endpoint (F-001 / MON-011)
 
 Accepts in-app feedback submissions from users and stores them locally in SQLite.
 No outbound call is made — feedback is available for review in the admin layer
 and can be exported later.
 
 Endpoints:
-    POST /api/v1/feedback        — submit a feedback entry
-    GET  /api/v1/feedback        — list all feedback (admin / local only)
-    GET  /api/v1/feedback/{id}   — retrieve a single entry
+    POST  /api/v1/feedback              — submit a feedback entry
+    GET   /api/v1/feedback              — list feedback (filter by category / resolved)
+    GET   /api/v1/feedback/{id}         — retrieve a single entry
+    PATCH /api/v1/feedback/{id}         — update triage state (resolved)
 """
 
 import logging
@@ -91,8 +92,15 @@ class FeedbackListItem(BaseModel):
     email: Optional[str]
     app_version: Optional[str]
     submitted_at: datetime
+    resolved: bool
 
     model_config = {"from_attributes": True}
+
+
+class FeedbackUpdate(BaseModel):
+    """Admin update payload — currently only triage state."""
+
+    resolved: bool = Field(..., description="Mark the entry resolved or unresolved")
 
 
 # ---------------------------------------------------------------------------
@@ -149,6 +157,9 @@ def submit_feedback(
 )
 def list_feedback(
     category: Optional[str] = Query(None, description="Filter by category"),
+    resolved: Optional[bool] = Query(
+        None, description="Filter by triage state (true = resolved, false = open)"
+    ),
     page_num: int = Query(1, ge=1, alias="page"),
     page_size: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -157,11 +168,14 @@ def list_feedback(
     Return all stored feedback entries, newest first.
 
     Available to the local admin; no authentication required since Conduital
-    is a single-user local app. Supports category filtering and pagination.
+    is a single-user local app. Supports category and resolved filtering plus
+    pagination.
     """
     query = db.query(Feedback)
     if category:
         query = query.filter(Feedback.category == category)
+    if resolved is not None:
+        query = query.filter(Feedback.resolved == resolved)
 
     skip = (page_num - 1) * page_size
     entries = (
@@ -179,4 +193,35 @@ def get_feedback(feedback_id: int, db: Session = Depends(get_db)) -> FeedbackLis
     entry = db.query(Feedback).filter(Feedback.id == feedback_id).first()
     if not entry:
         raise HTTPException(status_code=404, detail="Feedback entry not found")
+    return FeedbackListItem.model_validate(entry)
+
+
+@router.patch(
+    "/{feedback_id}",
+    response_model=FeedbackListItem,
+    summary="Update feedback triage state",
+)
+def update_feedback(
+    feedback_id: int,
+    body: FeedbackUpdate,
+    db: Session = Depends(get_db),
+) -> FeedbackListItem:
+    """
+    Update the resolved flag for a feedback entry.
+
+    Used by the Settings → Feedback admin view to mark items as triaged.
+    """
+    entry = db.query(Feedback).filter(Feedback.id == feedback_id).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Feedback entry not found")
+
+    entry.resolved = body.resolved
+    db.commit()
+    db.refresh(entry)
+
+    logger.info(
+        "Feedback %d marked %s",
+        entry.id,
+        "resolved" if entry.resolved else "open",
+    )
     return FeedbackListItem.model_validate(entry)

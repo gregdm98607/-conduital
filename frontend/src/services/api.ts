@@ -1161,6 +1161,35 @@ class APIClient {
     const response = await this.client.post('/feedback', payload);
     return response.data;
   }
+
+  async listFeedback(params?: {
+    category?: 'bug' | 'feature' | 'general';
+    resolved?: boolean;
+    page?: number;
+    page_size?: number;
+  }): Promise<FeedbackListItem[]> {
+    const response = await this.client.get('/feedback', { params });
+    return response.data;
+  }
+
+  async updateFeedback(
+    id: number,
+    payload: { resolved: boolean },
+  ): Promise<FeedbackListItem> {
+    const response = await this.client.patch(`/feedback/${id}`, payload);
+    return response.data;
+  }
+}
+
+export interface FeedbackListItem {
+  id: number;
+  category: 'bug' | 'feature' | 'general';
+  message: string;
+  page: string | null;
+  email: string | null;
+  app_version: string | null;
+  submitted_at: string;
+  resolved: boolean;
 }
 
 // Export singleton instance
