@@ -13,9 +13,10 @@ This backlog is organized by commercial release milestones. Each release builds 
 |---------|---------|-----------------|--------|
 | **R1: Conduital Basic** | `core` + `projects` | Project managers, individuals | **v1.0.0-alpha shipped** (2026-02-08) |
 | **R1.1: Conduital Beta** | `core` + `projects` | Project managers, individuals | **v1.0.0-beta shipped** (2026-02-09) |
-| **R2: Conduital GTD** | + `gtd_inbox` | GTD practitioners | Planned |
-| **R3: Proactive Assistant** | + `memory_layer` + `ai_context` | AI-augmented users | Planned |
-| **R4: Full Suite** | All modules | Power users | Planned |
+| **R2: Conduital GTD** | + `gtd_inbox` | GTD practitioners | **v1.2.0 shipped** — module wired, InboxPage live, weekly review + waiting-for + someday-maybe routes active |
+| **R3: Proactive Assistant** | + `memory_layer` + `ai_context` | AI-augmented users | Memory Layer admin shipped (v1.2.0); AI Context modules deferred |
+| **R4: Full Suite** | All modules | Power users | Default `COMMERCIAL_MODE=full` since v1.2.0 |
+| **R5: Monetization** | License + Telemetry + Feedback | Paying users | **v1.3.2 shipped** — Gumroad activation live; Stripe webhook live; PostHog frontend wired (events flowing); trial expiry banners live; in-app feedback widget live. Open: MON-008 (Stripe inline 503), MON-011 (feedback admin view) |
 
 ---
 
@@ -27,6 +28,29 @@ This backlog is organized by commercial release milestones. Each release builds 
 |----|-------------|--------|-------|
 | BACKLOG-076 | **List View Design Standard** | **Done** (S12) | SortableHeader/StaticHeader components, wired in Projects + AllTasks pages |
 | DOC-005 | **Module System Documentation** | Deferred to R2 | User-facing docs |
+
+---
+
+## R5: Monetization — Active
+
+This block tracks the v1.3.x monetization workstream and what remains for v1.4.
+
+### Must Have (Launch Blocking)
+
+| ID | Description | Status | Notes |
+|----|-------------|--------|-------|
+| MON-001 | Gumroad license activation | **Done** (v1.3.0) | `POST /api/v1/license/activate` — UUID key format, /v2/licenses/verify call, 8HEX-8HEX-8HEX-8HEX strict regex |
+| MON-002 | Stripe webhook fulfillment | **Done** (v1.3.1) | `POST /api/v1/webhooks/stripe` — checkout.session.completed → key gen → Resend email |
+| MON-003 | Trial system + daily expiry job | **Done** (v1.3.0) | 3AM scheduler downgrades expired trials |
+| MON-004 | Settings → License panel | **Done** (v1.3.0) | Tier badge, key entry, activate button, inline feedback |
+| MON-005 | App-level gate-hit handling | **Done** (v1.3.0) | 403 → toast + redirect to Settings |
+| MON-006 | Feature gating per tier | **Done** (v1.3.0) | `is_module_allowed_for_tier()` enforces license boundaries |
+| MON-007 | In-app feedback widget | **Done** (2026-04-26) | `FeedbackWidget.tsx` + `POST /api/v1/feedback` + SQLite `feedback` table |
+| MON-008 | **Stripe inline `/license/activate`** | **Open** | Currently 503. If a user pastes a Stripe-derived key, activation fails. Webhook is the only fulfillment path. |
+| MON-009 | PostHog frontend wiring | **Done** (v1.3.2, S31) | `frontend/src/services/telemetry.ts` singleton (batch 10/5s, distinct_id cache, opt-out, sendBeacon flush). Wired: `app_first_launch`, `app_launched`, `license_activated`, `gate_hit_<module>`, `feedback_submitted`, `trial_day_7/11/13_*`. Settings → Privacy toggle. |
+| MON-010 | Trial expiry banners (Day 7/11/13) | **Done** (v1.3.2, S31) | `useTrialStatus` hook + `TrialBanner` component. Day-7 amber sticky, Day-11 red sticky, Day-13 blocking modal with extension request. Per-session dismissal via sessionStorage. |
+| MON-011 | **Feedback admin view** | **Open** | Submissions land in SQLite with no read UI. Greg has no triage path. |
+| MON-012 | Auth-mode license activation | Deferred | Returns 501. Single-user desktop is the only supported path; multi-user is post-R4. |
 
 ---
 
@@ -180,6 +204,13 @@ This backlog is organized by commercial release milestones. Each release builds 
 | DEBT-141 | Health tab has no retry/refresh if `/memory/stats` fails — shows error with no recovery path | `MemoryPage.tsx` (Health tab) | **Done** (S21) — Added refetch button with spin animation |
 | DEBT-142 | Version strings stale at `1.1.0-beta` — should be `1.2.0` in `pyproject.toml`, `package.json`, `conduital.iss` | Multiple files | **Done** (S23) — All 5 version locations bumped to 1.2.0 via sync script |
 
+### High Priority (S31 hotfix sweep)
+
+| ID | Description | Location | Status |
+|----|-------------|----------|--------|
+| DEBT-143 | `FeedbackWidget.tsx` line 219 single-quote apostrophe broke TS build | `frontend/src/components/feedback/FeedbackWidget.tsx:219` | **Done** (v1.3.2, S31) — switched outer JSX string to double quotes |
+| DEBT-144 | 6 license tests failed against tightened Gumroad key regex | `backend/tests/test_license_api.py::TestActivateGumroad::*` | **Done** (v1.3.2, S31) — replaced `gr_*` keys with valid 8HEX-8HEX-8HEX-8HEX format |
+
 ---
 
 ## Cross-Cutting: Documentation
@@ -276,6 +307,13 @@ This backlog is organized by commercial release milestones. Each release builds 
 | BACKLOG-152 | **Ship all releases at "Full" commercial mode** — v1.2.0 shipped with limited module preset; future releases should enable all modules | **Done** (S29) — Default COMMERCIAL_MODE changed from "basic" to "full" in config.py + .env.example |
 | BACKLOG-153 | **File Sync UX design** — sync is happening but not apparent to user; needs visual indicator, status, user+technical design doc | UX + Architecture |
 | BACKLOG-154 | **File Sync auto-discovery UX** — projects/areas auto-discovered from Sync Folder Root but user can't see what happened; wire `/discovery/status` into Settings UI | **Done** (S26) — Discovery Activity panel in Settings with event log, error badges, auto-refresh |
+| BACKLOG-155 | **PostHog frontend wiring** — implement `/services/telemetry.ts` client; persist installation `distinct_id`; emit core funnel events (app_launched, gate_hit_*, license_activated, trial_*, feedback_submitted, purchase_completed); honor opt-out; add Settings → Privacy toggle | UX + Analytics — Tracks to MON-009 |
+| BACKLOG-156 | **Trial expiry banners** — Day-7 sticky banner ("7 days left, upgrade for X"); Day-11 banner with stronger CTA; Day-13 blocking modal with extension request CTA. Hook each to its telemetry event. Dismissable except Day-13 modal. | UX — Tracks to MON-010 |
+| BACKLOG-157 | **Feedback admin view** — Settings → Feedback tab. List feedback by category (bug/feature/general), date, page; mark resolved; CSV export; filter unread. | UX — Tracks to MON-011 |
+| BACKLOG-158 | **Stripe inline activation** — close the 503 path in `/license/activate` for `sk_live_*` / `sk_test_*` keys. Verify against Stripe API or treat as opaque receipt; bind to local license; idempotent. | Backend — Tracks to MON-008 |
+| BACKLOG-159 | **Welcome / paid-tier post-activation flow** — when activation succeeds, show a one-time celebratory state with what just unlocked (modules, features); link to relevant feature tour. Replaces the bare "License accepted" toast. | UX onboarding |
+| BACKLOG-160 | **License status visibility in sidebar** — small tier badge ("Free Trial · 9d", "GTD", "Full") visible at all times; click → Settings → License. Currently visible only in Settings. | UX |
+| BACKLOG-161 | **Public download URL hosted** — `CONDUITAL_DOWNLOAD_URL` defaults to `https://conduital.com/download/v1.3.0` but conduital.com is not yet hosting downloads. Stripe/Resend fulfillment emails will 404. | Distribution blocker |
 
 ### Parking Lot — Completed (Archived)
 
@@ -345,11 +383,11 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~64 |
-| Open tech debt | 0 (address-when-touched items remain: DEBT-078) |
+| Open backlog items | ~69 (MON-009/010 + DEBT-143/144 closed in S31; MON-008/011, BACKLOG-155..161 still open) |
+| Open tech debt | 1 — DEBT-078 (low) |
 | Open documentation | 6 |
 | Completed items (archived) | 200+ |
-| Backend tests | 461 |
+| Backend tests | 480 (479 pass, 1 skip) |
 
-*Last updated: 2026-04-22 (Session 30 — VM testing complete + DEBT-015/016 closed)*
+*Last updated: 2026-05-04 (post-S31 — v1.3.2 hotfix sweep + PostHog frontend wiring + trial banners shipped)*
 *Full history: `backlog-archive-2026-02-12.md`*
