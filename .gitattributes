@@ -1,0 +1,40 @@
+# Default: normalize all text files to LF in repo, auto-detect on checkout
+* text=auto eol=lf
+
+# Windows-only scripts must stay CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Inno Setup scripts
+*.iss text eol=crlf
+
+# Binary files (no line-ending conversion)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text eol=lf
+*.pdf binary
+*.zip binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.eot binary
+
+# Lock files — keep stable
+poetry.lock text eol=lf
+package-lock.json text eol=lf
+yarn.lock text eol=lf
+
+# Diff hints
+*.md diff=markdown
+*.py diff=python
+*.ts diff=typescript
+*.tsx diff=typescript
