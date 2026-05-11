@@ -21,7 +21,12 @@
 ; ============================================================================
 
 #define MyAppName "Conduital"
-#define MyAppVersion "1.2.0"
+; Version is sourced from backend\pyproject.toml (single source of truth).
+; Always compile via build-installer.bat, which extracts the version and
+; passes it as /DMyAppVersion=x.y.z so this file never drifts.
+#ifndef MyAppVersion
+  #error MyAppVersion not defined — compile via build-installer.bat, not iscc directly
+#endif
 #define MyAppPublisher "Conduital"
 #define MyAppURL "https://conduital.com"
 #define MyAppExeName "Conduital.exe"
@@ -63,12 +68,12 @@ UninstallDisplayName={#MyAppName}
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 ; Version info embedded in installer exe
-VersionInfoVersion=1.2.0.0
+VersionInfoVersion={#MyAppVersion}
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppName} Setup
 VersionInfoCopyright=Copyright (c) 2026 Greg Maxfield
 VersionInfoProductName={#MyAppName}
-VersionInfoProductVersion=1.2.0.0
+VersionInfoProductVersion={#MyAppVersion}
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

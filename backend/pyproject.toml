@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "conduital"
-version = "1.2.0"
+version = "1.4.1"
 description = "Intelligent momentum system for independent operators with markdown file sync"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
