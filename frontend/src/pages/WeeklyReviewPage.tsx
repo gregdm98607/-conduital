@@ -12,6 +12,8 @@ import { useAreas, useMarkAreaReviewed } from '../hooks/useAreas';
 import { useProjects } from '../hooks/useProjects';
 import { Loading } from '../components/common/Loading';
 import { Error } from '../components/common/Error';
+import { GuidanceChip } from '../components/common/GuidanceChip';
+import { useGuidanceChip } from '../hooks/useGuidanceChip';
 import { AIReviewSummary } from '../components/intelligence/AIReviewSummary';
 import { formatDate, getReviewStatus } from '../utils/date';
 import type { Area, WeeklyReviewAISummary, ProjectReviewInsight } from '../types';
@@ -86,6 +88,7 @@ export function WeeklyReviewPage() {
   const [expandedInsights, setExpandedInsights] = useState<Record<number, ProjectReviewInsight>>({});
   const [pendingInsightIds, setPendingInsightIds] = useState<Set<number>>(new Set());
   const [collapsedSections, setCollapsedSections] = useState<Set<ReviewSectionId>>(loadCollapsedReviewSections);
+  const [reviewChipVisible, dismissReviewChip] = useGuidanceChip('weekly_review_intro');
 
   const toggleSection = useCallback((id: ReviewSectionId) => {
     setCollapsedSections(prev => {
@@ -251,6 +254,12 @@ export function WeeklyReviewPage() {
           {formatDate(review.review_date)}
         </p>
       </header>
+
+      <GuidanceChip isVisible={reviewChipVisible} onDismiss={dismissReviewChip}>
+        The Weekly Review is your ~20-minute system checkpoint. It clears your head,
+        reviews every project, and ensures nothing falls through the cracks. Most GTD
+        users do it on Friday afternoon.
+      </GuidanceChip>
 
       {/* AI Review Co-Pilot */}
       <AIReviewSummary onSummaryGenerated={(summary) => setAiSummary(summary)} />

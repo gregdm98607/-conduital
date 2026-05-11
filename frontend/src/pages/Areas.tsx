@@ -11,6 +11,8 @@ import { CreateProjectModal } from '../components/projects/CreateProjectModal';
 import { AreaCardSkeleton, TableRowSkeleton } from '@/components/common/Skeleton';
 import { SearchInput } from '@/components/common/SearchInput';
 import { EmptyState } from '@/components/common/EmptyState';
+import { GuidanceChip } from '@/components/common/GuidanceChip';
+import { useGuidanceChip } from '@/hooks/useGuidanceChip';
 import { Area } from '@/types';
 
 type ViewMode = 'grid' | 'list';
@@ -72,6 +74,7 @@ export function Areas() {
   const markAreaReviewed = useMarkAreaReviewed();
   const archiveArea = useArchiveArea();
   const unarchiveArea = useUnarchiveArea();
+  const [areasChipVisible, dismissAreasChip] = useGuidanceChip('areas_intro');
 
   // Persist view mode preference
   useEffect(() => {
@@ -230,6 +233,11 @@ export function Areas() {
           </button>
         </div>
       </header>
+
+      <GuidanceChip isVisible={areasChipVisible} onDismiss={dismissAreasChip}>
+        Areas are ongoing responsibilities that never complete — Health, Work, Relationships,
+        Finance. Projects live inside Areas and have a finish line; Areas do not.
+      </GuidanceChip>
 
       {/* Search and Filters */}
       <div className="mb-6 space-y-4">

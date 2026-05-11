@@ -405,11 +405,11 @@ export function Projects() {
       ) : allProjects.length === 0 ? (
         <EmptyState
           variant="projects"
-          title={`No ${status || ''} projects yet`}
-          description="Create a project to start tracking your work and building momentum."
+          title="No projects yet"
+          description="Projects hold the work that moves forward together. Create your first one — it takes 10 seconds."
           action={
             <button onClick={() => setIsCreateModalOpen(true)} className="btn btn-primary">
-              Create Your First Project
+              Create a project
             </button>
           }
         />

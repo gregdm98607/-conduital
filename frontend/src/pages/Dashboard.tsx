@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { RefreshCw, Edit2, Calendar, ChevronDown, Star, Clock, AlertCircle, Layers, FolderOpen, CheckCircle, FileText, TrendingUp, TrendingDown, Minus, Flame } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { RefreshCw, Edit2, Calendar, ChevronDown, Star, Clock, AlertCircle, Layers, FolderOpen, CheckCircle, FileText, TrendingUp, TrendingDown, Minus, Flame, Inbox } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNextActions } from '../hooks/useNextActions';
 import { useStalledProjects, useUpdateMomentum } from '../hooks/useProjects';
 import { useAreas } from '../hooks/useAreas';
 import { useDashboardStats, useMomentumSummary, useWeeklyReviewHistory } from '../hooks/useIntelligence';
+import { useInboxStats } from '../hooks/useInbox';
 import { useUpdateTask } from '../hooks/useTasks';
 import { StalledAlert } from '../components/intelligence/StalledAlert';
 import { AIDashboardSuggestions } from '../components/intelligence/AIDashboardSuggestions';
@@ -14,6 +15,8 @@ import { AIEnergyRecommendations } from '../components/intelligence/AIEnergyReco
 import { AIRebalanceSuggestions } from '../components/intelligence/AIRebalanceSuggestions';
 import { MomentumHeatmap } from '../components/intelligence/MomentumHeatmap';
 import { StatsSkeleton, NextActionSkeleton } from '../components/common/Skeleton';
+import { GuidanceChip } from '../components/common/GuidanceChip';
+import { useGuidanceChip } from '../hooks/useGuidanceChip';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { ContextExportModal } from '../components/common/ContextExportModal';
 import { SessionSummaryModal } from '../components/common/SessionSummaryModal';
@@ -40,14 +43,17 @@ const urgencyZoneBadges: Record<UrgencyZone, { label: string; badgeColor: string
 };
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats();
   const { data: momentumSummary, isLoading: momentumSummaryLoading } = useMomentumSummary();
   const { data: stalled, isLoading: stalledLoading } = useStalledProjects(true);
   const { data: nextActions, isLoading: actionsLoading } = useNextActions({ limit: 5 });
   const { data: areas } = useAreas();
+  const { data: inboxStats, isLoading: inboxStatsLoading } = useInboxStats();
   const updateMomentum = useUpdateMomentum();
   const updateTask = useUpdateTask();
   const { data: reviewHistory } = useWeeklyReviewHistory();
+  const [momentumChipVisible, dismissMomentumChip] = useGuidanceChip('momentum_intro');
 
   // State for task editing modal
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -106,6 +112,12 @@ export function Dashboard() {
   const avgMomentum = dashboardStats?.avg_momentum ?? 0;
   const orphanProjectCount = dashboardStats?.orphan_project_count ?? 0;
   const streakDays = dashboardStats?.completion_streak_days ?? 0;
+
+  const isCompletelyEmpty =
+    !statsLoading &&
+    !inboxStatsLoading &&
+    activeProjectCount === 0 &&
+    (inboxStats?.unprocessed_count ?? 0) === 0;
 
   // Review frequency intelligence
   const reviewReminders = useMemo(() => {
@@ -178,6 +190,37 @@ export function Dashboard() {
         </div>
       </header>
 
+      {/* Welcome panel — first-run experience when no projects or inbox items exist */}
+      {isCompletelyEmpty && (
+        <div className="card p-8 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+            You&apos;re all set up. Here&apos;s how to start.
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
+            Conduital is empty — let&apos;s change that.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <button
+              onClick={() => navigate('/projects')}
+              className="btn btn-primary flex-1 justify-center"
+            >
+              <FolderOpen className="w-4 h-4 mr-2" />
+              Create a project
+            </button>
+            <button
+              onClick={() => navigate('/inbox')}
+              className="btn btn-secondary flex-1 justify-center"
+            >
+              <Inbox className="w-4 h-4 mr-2" />
+              Capture a thought
+            </button>
+          </div>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-4 text-center">
+            Or explore the sidebar to see what Conduital can do.
+          </p>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         {isLoading ? (
@@ -224,6 +267,14 @@ export function Dashboard() {
           </>
         )}
       </div>
+
+      {!isCompletelyEmpty && (
+        <GuidanceChip isVisible={momentumChipVisible} onDismiss={dismissMomentumChip}>
+          Your Momentum Score reflects how current your projects are. A score drifting
+          toward 0 means a project hasn&apos;t moved in a while — not that you failed, just
+          that it needs attention.
+        </GuidanceChip>
+      )}
 
       {/* Momentum Summary */}
       {!momentumSummaryLoading && momentumSummary && momentumSummary.total_active > 0 && (

@@ -1,11 +1,15 @@
 import { useState, useMemo, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Play, Filter, Calendar, ChevronDown, ChevronRight, AlertTriangle, Clock, Hourglass, LayoutGrid, Layers, CalendarClock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNextActions } from '../hooks/useNextActions';
 import { useCompleteTask, useStartTask, useUpdateTask } from '../hooks/useTasks';
 import { Error } from '../components/common/Error';
+import { EmptyState } from '../components/common/EmptyState';
+import { GuidanceChip } from '../components/common/GuidanceChip';
 import { NextActionSkeleton } from '../components/common/Skeleton';
 import { SearchInput } from '../components/common/SearchInput';
+import { useGuidanceChip } from '../hooks/useGuidanceChip';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { DeferPopover } from '../components/tasks/DeferPopover';
 import { CompleteTaskButton } from '../components/tasks/CompleteTaskButton';
@@ -96,6 +100,7 @@ export function NextActions() {
   // State for task editing modal
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [naChipVisible, dismissNaChip] = useGuidanceChip('next_actions_intro');
 
   // Collapsible zone state - persisted in localStorage
   const [collapsedZones, setCollapsedZones] = useState<Record<string, boolean>>(() => {
@@ -236,6 +241,12 @@ export function NextActions() {
           </button>
         </div>
       </header>
+
+      <GuidanceChip isVisible={naChipVisible} onDismiss={dismissNaChip}>
+        Next actions are the specific physical tasks you can do right now — keep this list
+        honest and short. If it&apos;s not something you can physically do today, it belongs
+        in a project, not here.
+      </GuidanceChip>
 
       {/* Search */}
       <div className="mb-6">
@@ -576,10 +587,16 @@ export function NextActions() {
           </button>
         </div>
       ) : (
-        <div className="card text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">No next actions found</p>
-          <p className="text-gray-400 dark:text-gray-500 text-sm">Try adjusting your filters or add tasks to your projects</p>
-        </div>
+        <EmptyState
+          variant="tasks"
+          title="No next actions yet"
+          description="Next actions are specific physical tasks you can do right now — not 'plan the trip', but 'open browser, search flights'. Add tasks to your projects and mark them as next actions."
+          action={
+            <Link to="/projects" className="btn btn-secondary">
+              Go to Projects
+            </Link>
+          }
+        />
       )}
 
       {/* Edit Task Modal */}

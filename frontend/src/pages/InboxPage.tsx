@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Inbox, Plus, Trash2, FolderKanban, CheckSquare, Archive, Clock, ExternalLink, Edit2, Check, X, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -9,6 +9,8 @@ import { Error } from '../components/common/Error';
 import { Loading } from '../components/common/Loading';
 import { SearchInput } from '../components/common/SearchInput';
 import { Modal } from '../components/common/Modal';
+import { GuidanceChip } from '../components/common/GuidanceChip';
+import { useGuidanceChip } from '../hooks/useGuidanceChip';
 import type { InboxItem, InboxResultType, Project, InboxBatchActionType } from '../types';
 import { parseUTCDate } from '../utils/date';
 
@@ -42,6 +44,9 @@ export function InboxPage() {
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState('');
   const [quickCaptureProjectId, setQuickCaptureProjectId] = useState<number | undefined>();
+  const [inlineCaptureText, setInlineCaptureText] = useState('');
+  const inlineCaptureRef = useRef<HTMLInputElement>(null);
+  const [inboxChipVisible, dismissInboxChip] = useGuidanceChip('inbox_intro');
 
   // BETA-031: Multi-select state
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -71,6 +76,29 @@ export function InboxPage() {
   useEffect(() => {
     setSelectedIds(new Set());
   }, [showProcessed]);
+
+  // Autofocus the inline capture input when the inbox is empty
+  useEffect(() => {
+    if (!isLoading && (items?.length ?? 0) === 0 && inlineCaptureRef.current) {
+      inlineCaptureRef.current.focus();
+    }
+  }, [isLoading, items]);
+
+  const handleInlineCapture = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = inlineCaptureText.trim();
+    if (!text) return;
+    createInboxItem.mutate(
+      { content: text },
+      {
+        onSuccess: () => {
+          toast.success('Captured to inbox');
+          setInlineCaptureText('');
+        },
+        onError: () => toast.error('Failed to capture item. Please try again.'),
+      }
+    );
+  };
 
   // Client-side search filtering
   const filteredItems = useMemo(() => {
@@ -302,6 +330,11 @@ export function InboxPage() {
           Quick Capture
         </button>
       </header>
+
+      <GuidanceChip isVisible={inboxChipVisible} onDismiss={dismissInboxChip}>
+        This is your capture net — dump anything unprocessed here, then decide what to do
+        with it during your Weekly Review. The goal: get it out of your head.
+      </GuidanceChip>
 
       {/* Stats — BETA-032: server-side stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -549,26 +582,41 @@ export function InboxPage() {
             );
           })}
         </div>
-      ) : (
+      ) : searchQuery ? (
         <div className="card text-center py-12">
           <Inbox className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">
-            {searchQuery ? 'No items match your search' : 'Inbox is empty'}
+          <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">No items match your search</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm">Try adjusting your search query</p>
+        </div>
+      ) : (
+        <div className="card text-center py-10 px-6">
+          <p className="text-gray-600 dark:text-gray-300 text-lg font-medium mb-1">
+            What&apos;s on your mind?
           </p>
           <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">
-            {searchQuery
-              ? 'Try adjusting your search query'
-              : 'Capture ideas, tasks, and thoughts here to process later'}
+            Process it later during your Weekly Review.
           </p>
-          {!searchQuery && (
+          <form
+            onSubmit={handleInlineCapture}
+            className="flex gap-2 max-w-md mx-auto"
+          >
+            <input
+              ref={inlineCaptureRef}
+              type="text"
+              className="input flex-1"
+              placeholder="Type something and press Enter to capture it"
+              value={inlineCaptureText}
+              onChange={(e) => setInlineCaptureText(e.target.value)}
+              disabled={createInboxItem.isPending}
+            />
             <button
-              onClick={() => setIsQuickCaptureOpen(true)}
+              type="submit"
+              disabled={!inlineCaptureText.trim() || createInboxItem.isPending}
               className="btn btn-primary"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Capture Something
+              Capture
             </button>
-          )}
+          </form>
         </div>
       )}
 

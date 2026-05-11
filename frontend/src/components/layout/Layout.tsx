@@ -27,6 +27,7 @@ import { KeyboardShortcutOverlay } from '@/components/common/KeyboardShortcutOve
 import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 import { TrialBanner } from '@/components/trial/TrialBanner';
 import { WelcomePaidTierModal } from '@/components/license/WelcomePaidTierModal';
+import { FirstRunGuide } from '@/components/onboarding/FirstRunGuide';
 import { SyncIndicator } from '@/components/sync/SyncIndicator';
 
 interface NavItem {
@@ -286,6 +287,9 @@ export function Layout() {
 
       {/* Welcome modal — fires once after free → paid activation */}
       <WelcomePaidTierModal />
+
+      {/* First-run guide — fires once after setup, introduces product value */}
+      <FirstRunGuide />
     </div>
   );
 }

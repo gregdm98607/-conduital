@@ -36,12 +36,16 @@ def _read_version_from_pyproject() -> str:
     Falls back to a hardcoded default in packaged builds where
     pyproject.toml is not available.
     """
-    _FALLBACK_VERSION = "1.2.0"
+    _FALLBACK_VERSION = "1.4.1"
 
     # In development: pyproject.toml is at backend/pyproject.toml
+    # In packaged builds: PyInstaller extracts bundled data to sys._MEIPASS
+    import sys
     candidates = [
         Path(__file__).resolve().parent.parent.parent / "pyproject.toml",
     ]
+    if hasattr(sys, "_MEIPASS"):
+        candidates.insert(0, Path(sys._MEIPASS) / "pyproject.toml")
     for path in candidates:
         if path.is_file():
             try:

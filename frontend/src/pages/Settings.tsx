@@ -2125,7 +2125,7 @@ export function Settings() {
                           Activate your license
                         </label>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                          Enter the license key from your Gumroad purchase email.
+                          Enter the license key from your purchase confirmation email.
                         </p>
                         <div className="flex gap-2">
                           <input
@@ -2133,7 +2133,7 @@ export function Settings() {
                             value={licenseKey}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => setLicenseKey(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleActivateLicense()}
-                            placeholder="gr_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                            placeholder="Paste your license key here"
                             className="input flex-1 font-mono text-sm"
                             disabled={licenseActivating}
                           />

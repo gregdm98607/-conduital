@@ -30,6 +30,7 @@ ALEMBIC_DIR = os.path.join(BACKEND_DIR, 'alembic')
 ALEMBIC_INI = os.path.join(BACKEND_DIR, 'alembic.ini')
 ASSETS_DIR = os.path.join(PROJECT_ROOT, 'assets')
 ICON_FILE = os.path.join(ASSETS_DIR, 'conduital.ico')
+PYPROJECT_TOML = os.path.join(BACKEND_DIR, 'pyproject.toml')
 
 # Check for required build inputs
 if not os.path.isdir(FRONTEND_DIST):
@@ -51,6 +52,10 @@ datas = [
 # Bundle assets if they exist
 if os.path.isdir(ASSETS_DIR):
     datas.append((ASSETS_DIR, 'assets'))
+
+# Bundle pyproject.toml so runtime _read_version_from_pyproject() can find it via sys._MEIPASS
+if os.path.isfile(PYPROJECT_TOML):
+    datas.append((PYPROJECT_TOML, '.'))
 
 # Hidden imports that PyInstaller can't auto-detect
 hiddenimports = [
