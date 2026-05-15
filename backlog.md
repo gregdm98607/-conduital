@@ -26,6 +26,8 @@ This backlog is organized by commercial release milestones. Each release builds 
 | **R3: Proactive Assistant** | + `memory_layer` + `ai_context` | AI-augmented users | Memory Layer admin shipped (v1.2.0); AI Context modules deferred |
 | **R4: Full Suite** | All modules | Power users | Default `COMMERCIAL_MODE=full` since v1.2.0 |
 | **R5: Monetization** | License + Telemetry + Feedback | Paying users | **v1.3.3 shipped** — Gumroad activation; Stripe webhook + Stripe inline activation (opaque receipt); PostHog frontend wired; trial expiry banners; in-app feedback widget + admin view. R5 Must-Have backlog clean. |
+| **R6: File Sync UX** | + sync broadcaster + conflict-resolution UI | Multi-device users | **v1.4.0 shipped** (S34) — BACKLOG-153 Phase 2 (Conflicts tab in `SyncDetailsPanel` + `useSyncConflicts` hook + `POST /sync/resolve/{id}`); shared `SyncEventList` renderer; Settings → Recent Sync Activity subsection. |
+| **R7: Paid-Tier Activation Flow** | + welcome modal + license event bus | Paying users | **v1.4.1 shipped** (S35) — BACKLOG-159 `WelcomePaidTierModal` mounted in `Layout`; `conduital:license-activated` event dispatched on free→paid; per-tier unlock list; `welcome_paid_tier` telemetry; BACKLOG-161 public download URL hosted on conduital.com; DEBT-078 closed. |
 
 ---
 
@@ -122,7 +124,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 
 | ID | Description | Status | Target | Notes |
 |----|-------------|--------|--------|-------|
-| ROADMAP-011 | **Conduital ↔ Board of Advisors Bi-Directional Local API** | Needs Design | R3+ | Both apps in `C:\Dev\`; share data & functions via local REST/IPC. Requires design doc first — define shared data model, auth model, API surface, sync conflict resolution. |
+| ROADMAP-011 | **Conduital ↔ Board of Advisors Bi-Directional Local API** | **Retired — 2026-05-09 (CPO grooming decision)** | — | Retired in 2026-05-09 CPO grooming session; no further design work warranted. |
 
 ### Storage & Sync
 
@@ -136,13 +138,13 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | ID | Description | Status | Target | Notes |
 |----|-------------|--------|--------|-------|
 | DIST-001 | Landing Page | Open | R1 | Product website |
-| DIST-002 | Pricing Model | Open | R1 | One-time purchase vs subscription |
-| DIST-003 | Payment Integration (Stripe/Gumroad) | Open | R1 | Direct download distribution |
+| DIST-002 | Pricing Model | **Done** | R1 | Tiered perpetual license (Free / GTD $49 / Full $79) — locked in v1.3.x; STRAT-002 decided |
+| DIST-003 | Payment Integration (Stripe/Gumroad) | **Done** | R1 | Gumroad activation MON-001 (v1.3.0); Stripe webhook MON-002 (v1.3.1); Stripe inline activation MON-008 (v1.3.3); ConvertKit signup live |
 | DIST-004 | Documentation Site | Open | R1 | User-facing docs |
-| DIST-005 | Email/Newsletter System | Open | R2 | Updates, onboarding |
+| DIST-005 | Email/Newsletter System | **Done** | R2 | ConvertKit live; trial nurture + paid-tier welcome email flows wired through MON-002/MON-008 fulfillment |
 | DIST-014 | Desktop wrapper (Tauri) | Deferred | Post-R4 | Inno Setup installer works well |
 | DIST-023 | Path resolution for packaged exe | Open | R1 | .env/config paths must resolve relative to executable |
-| DIST-030 | Windows code signing certificate | Open | R1 | Avoid "Unknown Publisher" warnings (~$70-200/yr) |
+| DIST-030 | Windows code signing certificate | **Cert in hand 2026-04-25; pipeline wiring status TBC** | R1 | Cert confirmed 2026-04-25; per CPO grooming 2026-05-09, build-pipeline wiring was overdue. CTO to verify current state at next signing step and update; intent: signed installer pre-v1.4.x distribution refresh. |
 | DIST-031 | Auto-update mechanism | Open | R2 | Version-check endpoint or Sparkle-style updater |
 | DIST-051 | Register conduital.app domain | Open | P1 | $19.99, confirmed available |
 
@@ -227,9 +229,9 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | ID | Description | Priority | Target |
 |----|-------------|----------|--------|
 | DOC-005 | Module system user documentation | High | R1 |
-| DOC-001 | Area mapping configuration guide | Medium | R1 |
-| DOC-002 | Folder watcher troubleshooting | Medium | R1 |
-| DOC-004 | Areas page user guide | Medium | R2 |
+| DOC-001 | Area mapping configuration guide | Medium | post-launch v1.4.x |
+| DOC-002 | Folder watcher troubleshooting | Medium | post-launch v1.4.x |
+| DOC-004 | Areas page user guide | Medium | post-launch v1.4.x |
 | DOC-003 | Area discovery API docs | Low | R2 |
 | DOC-006 | Memory layer API documentation | Medium | R3 |
 | DOC-007 | AI context API documentation | Medium | R3 |
@@ -242,7 +244,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | ID | Description | Status | Notes |
 |----|-------------|--------|-------|
 | STRAT-001 | **Distribution: Desktop-first** | Decided | Local-first personal productivity; SQLite + file sync; Gumroad |
-| STRAT-002 | **Monetization Model** | Open | TBD: Open Source, Book, SaaS, Certification |
+| STRAT-002 | **Monetization Model** | **Decided** — perpetual license, Gumroad + Stripe direct | Resolved v1.3.x (Gumroad fulfillment + Stripe webhook + inline activation all live; no SaaS/subscription path pursued for v1.x) |
 | STRAT-003 | **BYOS (Bring Your Own Storage)** | **Done** (Phase 1-5) | User-owned cloud storage — foundation shipped with local folder provider |
 | STRAT-004 | **Multi-AI Provider Support** | Decided | Claude, ChatGPT, provider-agnostic |
 | STRAT-005 | **Unified Codebase Architecture** | Implemented | Module system (2026-02-02) |
@@ -259,7 +261,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 |----|-------------|--------|-------|
 | DIFF-001 | **AI-Agnostic Design** | Decided | Works with any LLM provider |
 | DIFF-002 | **Data Portability (BYOS)** | Decided | User owns data, can export/migrate |
-| DIFF-003 | **Local-First Option** | Open | Self-hosted option for privacy |
+| DIFF-003 | **Local-First Option** | **Implemented** | Local-first since R1 — SQLite + local folder watcher + offline-capable; no cloud dependency for core functionality. BYOS Phase 5 (454 tests passing) extends with optional StorageProvider abstraction. |
 | DIFF-004 | **Cross-Platform Sync** | Open | Via BYOS (Google Drive, Dropbox) |
 
 ---
@@ -296,14 +298,11 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | BACKLOG-061 | Register Claude Code Skills | Developer tooling |
 | BACKLOG-066 | Automated Urgency Zone (Phase 3) | Zone lock capability |
 | BACKLOG-093 | Quick Capture Success Animation | Visual flash/animation feedback |
-| BACKLOG-095 | Collapsible Sections Pattern Extension | **Done** (S17) — Collapsible sections in WeeklyReviewPage (5 sections) + ProjectDetail (3 task sections) with localStorage persistence |
-| BACKLOG-099 | Archive Area Confirmation Dialog | **Done** (Session 1) — Already implemented with Modal + force archive |
 | BACKLOG-104 | Area Health Score Drill-Down + Improvements | Backend ready, frontend needed |
 | BACKLOG-110 | Auto-Discovery as Optional Setting | Toggle on/off independently in Settings |
 | BACKLOG-113 | Website Redesign & Product Launch Content | conduital.com marketing workstream |
 | BACKLOG-114 | Social Media & Marketing Content Plan | Multi-platform strategy, launch sequence |
 | BACKLOG-117 | Installer upgrade-in-place testing | Verify data preservation + DB migrations |
-| BACKLOG-118 | Clean Windows VM testing (Win10 + Win11) | **Done** (S30) — All 9 test sections passed on Win10 + Win11; installer uploaded to Gumroad; download validated |
 | BACKLOG-121 | Area Prefix Mapping UX Redesign | Clarify auto-discovery, progressive disclosure |
 | BACKLOG-128 | Badge Configuration & Today's Focus Layout | Standardize badge pattern, accent-bar style |
 | BACKLOG-133 | Smooth Card Reorder Transitions | FLIP / View Transitions API for card sorting |
@@ -312,17 +311,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | BACKLOG-148 | Import: export format version migration — handle older export schemas gracefully | Reliability |
 | BACKLOG-149 | Session Capture: pre-fill accomplishments from git log or task completions | Auto-populate from today's activity |
 | BACKLOG-150 | Health tab: sparkline trend charts for 7d/30d activity | Visual trends beyond raw numbers |
-| BACKLOG-151 | Display app version number in sidebar | **Done** (S25) — Version fetched from /health endpoint, displayed in sidebar footer |
-| BACKLOG-152 | **Ship all releases at "Full" commercial mode** — v1.2.0 shipped with limited module preset; future releases should enable all modules | **Done** (S29) — Default COMMERCIAL_MODE changed from "basic" to "full" in config.py + .env.example |
-| BACKLOG-153 | **File Sync UX** — Phase 1 (S33, v1.3.4): sync event broadcaster (`app/services/sync_broadcast.py`), `/ws/sync-status` WebSocket + `GET /api/v1/sync/events` HTTP fallback, `useSyncStatus` hook, `SyncIndicator` in sidebar footer + `SyncDetailsPanel` modal with manual "Sync now". Phase 2 (S34, v1.4.0): conflict-resolution UI (Conflicts tab in `SyncDetailsPanel` with "Use file" / "Use database" actions hitting `POST /sync/resolve/{id}`), `useSyncConflicts` hook, `id` field added to `/sync/conflicts` response, shared `SyncEventList` renderer, Settings → Recent Sync Activity subsection mirroring Discovery Activity pattern. **Done** (S34, v1.4.0). | UX + Architecture |
-| BACKLOG-154 | **File Sync auto-discovery UX** — projects/areas auto-discovered from Sync Folder Root but user can't see what happened; wire `/discovery/status` into Settings UI | **Done** (S26) — Discovery Activity panel in Settings with event log, error badges, auto-refresh |
-| BACKLOG-155 | **PostHog frontend wiring** — implement `/services/telemetry.ts` client; persist installation `distinct_id`; emit core funnel events (app_launched, gate_hit_*, license_activated, trial_*, feedback_submitted, purchase_completed); honor opt-out; add Settings → Privacy toggle | UX + Analytics — Tracks to MON-009 |
-| BACKLOG-156 | **Trial expiry banners** — Day-7 sticky banner ("7 days left, upgrade for X"); Day-11 banner with stronger CTA; Day-13 blocking modal with extension request CTA. Hook each to its telemetry event. Dismissable except Day-13 modal. | UX — Tracks to MON-010 |
-| BACKLOG-157 | Feedback admin view | **Done** (S32) — Tracks to MON-011 |
-| BACKLOG-158 | Stripe inline activation | **Done** (S32) — Tracks to MON-008 |
-| BACKLOG-159 | **Welcome / paid-tier post-activation flow** — `WelcomePaidTierModal` mounted in `Layout`; Settings → License activation path dispatches `conduital:license-activated` window event on free→paid transition; modal lists unlocked features per tier (GTD vs GTD+); fires `welcome_paid_tier` PostHog event; per-session via sessionStorage. | **Done** (S35, v1.4.1) |
 | BACKLOG-160 | **License status visibility in sidebar** — small tier badge ("Free Trial · 9d", "GTD", "Full") visible at all times; click → Settings → License. Currently visible only in Settings. | UX |
-| BACKLOG-161 | **Public download URL hosted** — `CONDUITAL_DOWNLOAD_URL` defaults to `https://conduital.com/downloads/ConduitalSetup-1.4.1.exe`; conduital-site serves the binary from `public/downloads/` with `vercel.json` redirects for `/download/v1.4.1` + `/download/latest`; new `/download` page exposes version, size, SHA256. | **Done** (S35, mid-session) — Stripe/Resend fulfillment URL is now live |
 
 ### Parking Lot — Completed (Archived)
 
@@ -331,7 +320,9 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | ID | Session | Summary |
 |----|---------|---------|
 | BACKLOG-090 | S14 | Data Import from JSON Backup |
+| BACKLOG-095 | S17 | Collapsible Sections Pattern Extension |
 | BACKLOG-099 | S1 | Archive Area Confirmation Dialog |
+| BACKLOG-118 | S30 | Clean Windows VM testing (Win10 + Win11) |
 | BACKLOG-130 | S10 | Momentum Pulse Ring |
 | BACKLOG-131 | S6 | Task Completion Celebration |
 | BACKLOG-132 | S10 | Streak Counter on Dashboard |
@@ -346,6 +337,16 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | BACKLOG-143 | S8 | CompleteTaskButton Accessibility |
 | BACKLOG-144 | S12 | MomentumHeatmap Mobile Touch |
 | BACKLOG-145 | S13 | AI Features End-to-End Validation |
+| BACKLOG-151 | S25 | Display app version number in sidebar |
+| BACKLOG-152 | S29 | Ship all releases at "Full" commercial mode |
+| BACKLOG-153 | S33–S34 (v1.3.4 + v1.4.0) | File Sync UX — Phase 1 sync broadcaster + Phase 2 conflict-resolution UI |
+| BACKLOG-154 | S26 | File Sync auto-discovery UX (Discovery Activity panel) |
+| BACKLOG-155 | v1.3.2 (S31) | PostHog frontend wiring (MON-009) |
+| BACKLOG-156 | v1.3.2 (S31) | Trial expiry banners — Day-7/11/13 (MON-010) |
+| BACKLOG-157 | S32 (v1.3.3) | Feedback admin view (MON-011) |
+| BACKLOG-158 | S32 (v1.3.3) | Stripe inline activation (MON-008) |
+| BACKLOG-159 | S35 (v1.4.1) | Welcome / paid-tier post-activation flow |
+| BACKLOG-161 | S35 (v1.4.1) | Public download URL hosted on conduital.com |
 
 ---
 
@@ -392,11 +393,11 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~64 (BACKLOG-159 + BACKLOG-161 shipped in S35 v1.4.1; BACKLOG-160 still open) |
+| Open backlog items | ~50 (after 2026-05-14 CPO grooming sweep — 13 items archived; BACKLOG-160 + ROADMAP-011 retired + DOC-001/002/004 retargeted) |
 | Open tech debt | 0 |
-| Open documentation | 6 |
-| Completed items (archived) | 200+ |
+| Open documentation | 4 (DOC-001/002/004 retargeted post-launch v1.4.x; DOC-005 deferred; DOC-006/007 Memory/AI Context) |
+| Completed items (archived) | 215+ |
 | Backend tests | 499 (498 pass, 1 skip) |
 
-*Last updated: 2026-05-05 (post-S35 — v1.4.1 R7 BACKLOG-159 paid-tier post-activation flow shipped; DEBT-078 closed; BACKLOG-161 download URL hosted on conduital.com)*
+*Last updated: 2026-05-14 (CPO grooming sweep applied by CTO — Release Overview gained R6/R7 rows; STRAT-002/DIST-002/DIST-003/DIST-005/DIFF-003 set to Done; DIST-030 status verified pending; ROADMAP-011 retired; DOC-001/002/004 retargeted to post-launch v1.4.x; 13 Done items archived to Parking Lot — Completed)*
 *Full history: `backlog-archive-2026-02-12.md`*
