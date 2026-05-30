@@ -616,3 +616,47 @@ export interface TokenResponse {
   token_type: string;
   expires_in: number;
 }
+
+// Starter Templates (BACKLOG-087)
+export interface TemplateSummary {
+  id: string;
+  name: string;
+  tagline: string;
+  icon: string;
+  description: string;
+  area_count: number;
+  project_count: number;
+  task_count: number;
+}
+
+export interface TemplateAreaPreview {
+  title: string;
+  description?: string | null;
+}
+
+export interface TemplateTaskPreview {
+  title: string;
+  is_next_action: boolean;
+}
+
+export interface TemplateProjectPreview {
+  title: string;
+  area_title: string;
+  outcome_statement?: string | null;
+  phase_template?: string | null;
+  phases: string[];
+  tasks: TemplateTaskPreview[];
+}
+
+export interface TemplateDetail extends TemplateSummary {
+  areas: TemplateAreaPreview[];
+  projects: TemplateProjectPreview[];
+}
+
+export interface TemplateApplyResult {
+  template_id: string;
+  areas_created: number;
+  projects_created: number;
+  tasks_created: number;
+  first_project_id: number | null;
+}

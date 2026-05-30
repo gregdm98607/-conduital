@@ -49,6 +49,9 @@ import type {
   Goal,
   Vision,
   Context,
+  TemplateSummary,
+  TemplateDetail,
+  TemplateApplyResult,
 } from '@/types';
 
 class APIClient {
@@ -1202,6 +1205,32 @@ class APIClient {
     payload: { resolved: boolean },
   ): Promise<FeedbackListItem> {
     const response = await this.client.patch(`/feedback/${id}`, payload);
+    return response.data;
+  }
+
+  // ============================================================================
+  // Starter Templates (BACKLOG-087)
+  // ============================================================================
+
+  async getTemplates(signal?: AbortSignal): Promise<TemplateSummary[]> {
+    const response = await this.client.get<{ templates: TemplateSummary[] }>(
+      '/templates',
+      { signal },
+    );
+    return response.data.templates;
+  }
+
+  async getTemplate(id: string, signal?: AbortSignal): Promise<TemplateDetail> {
+    const response = await this.client.get<TemplateDetail>(`/templates/${id}`, {
+      signal,
+    });
+    return response.data;
+  }
+
+  async applyTemplate(id: string): Promise<TemplateApplyResult> {
+    const response = await this.client.post<TemplateApplyResult>(
+      `/templates/${id}/apply`,
+    );
     return response.data;
   }
 }

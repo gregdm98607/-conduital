@@ -408,9 +408,14 @@ export function Projects() {
           title="No projects yet"
           description="Projects hold the work that moves forward together. Create your first one — it takes 10 seconds."
           action={
-            <button onClick={() => setIsCreateModalOpen(true)} className="btn btn-primary">
-              Create a project
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <button onClick={() => setIsCreateModalOpen(true)} className="btn btn-primary">
+                Create a project
+              </button>
+              <Link to="/templates" className="btn btn-secondary">
+                Start from a template
+              </Link>
+            </div>
           }
         />
       ) : (

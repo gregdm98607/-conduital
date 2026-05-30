@@ -47,6 +47,8 @@ KNOWN_EVENTS: set[str] = {
     # Activation
     "first_project_created", "first_task_created",
     "onboarding_step_completed", "onboarding_completed",
+    # Starter templates (BACKLOG-087)
+    "template_previewed", "template_applied",
     # Engagement
     "returned_day_3", "weekly_review_completed", "task_completed", "session_started",
     # Conversion funnel — gate hits

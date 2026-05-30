@@ -27,6 +27,7 @@ from app.api import (
     auth,
     projects,
     tasks,
+    templates,
     next_actions,
     areas,
     goals,
@@ -487,6 +488,8 @@ app.include_router(visions.router, prefix=f"{settings.API_V1_PREFIX}/visions", t
 # Projects: Projects, Tasks, Next Actions, Sync, Discovery, Intelligence
 app.include_router(projects.router, prefix=f"{settings.API_V1_PREFIX}/projects", tags=["Projects"])
 app.include_router(tasks.router, prefix=f"{settings.API_V1_PREFIX}/tasks", tags=["Tasks"])
+# Starter templates (BACKLOG-087): one-click persona scaffolds (areas + projects + tasks)
+app.include_router(templates.router, prefix=f"{settings.API_V1_PREFIX}/templates", tags=["Templates"])
 app.include_router(
     next_actions.router, prefix=f"{settings.API_V1_PREFIX}/next-actions", tags=["Next Actions"]
 )

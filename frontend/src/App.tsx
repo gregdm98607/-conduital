@@ -22,6 +22,7 @@ import { Settings } from './pages/Settings';
 import { MemoryPage } from './pages/MemoryPage';
 import { LoginPage } from './pages/LoginPage';
 import { OnboardingPage } from './pages/OnboardingPage';
+import { TemplatesPage } from './pages/TemplatesPage';
 import { Goals } from './pages/Goals';
 import { Visions } from './pages/Visions';
 import { Contexts } from './pages/Contexts';
@@ -119,6 +120,7 @@ function App() {
                 <Route path="areas/:id" element={<AreaDetail />} />
                 <Route path="projects" element={<Projects />} />
                 <Route path="projects/:id" element={<ProjectDetail />} />
+                <Route path="templates" element={<TemplatesPage />} />
                 <Route path="tasks" element={<AllTasks />} />
                 <Route path="next-actions" element={<NextActions />} />
                 <Route path="daily" element={<DailyDashboard />} />

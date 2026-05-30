@@ -7,6 +7,7 @@ import {
   Home,
   Inbox,
   FolderKanban,
+  LayoutTemplate,
   Layers,
   ListTodo,
   CheckSquare,
@@ -57,6 +58,7 @@ const ALL_NAV_SECTIONS: NavSection[] = [
     label: 'Manage',
     items: [
       { name: 'Projects', href: '/projects', icon: FolderKanban },
+      { name: 'Templates', href: '/templates', icon: LayoutTemplate },
       { name: 'Areas', href: '/areas', icon: Layers },
       { name: 'Next Actions', href: '/next-actions', icon: ListTodo },
       { name: 'All Tasks', href: '/tasks', icon: CheckSquare },
