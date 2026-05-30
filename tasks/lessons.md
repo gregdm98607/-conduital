@@ -868,4 +868,49 @@ For SQLAlchemy self-referential relationships:
 
 ---
 
+## 2026-05-30: Storage Settings save 500 — re.sub replacement-string backslash bug
+
+### Symptom
+"Failed to save storage settings" in the UI. Backend `PUT /api/v1/settings/storage`
+returned an unhandled **HTTP 500** (bare "Internal Server Error", not the handled
+`_persist_to_env` OSError path). GET worked; only the save (write) failed.
+
+### Root Cause
+`_persist_to_env` updated an existing `.env` key with
+`re.sub(pattern, replacement, content)` where `replacement` was the raw value
+string. The user's value was a Windows path `G:\My Drive\999_SECOND_BRAIN`. In a
+**regex replacement string**, backslash sequences are interpreted: `\M` → "bad
+escape", `\9` → "invalid group reference". This raises `re.error`, which is **not**
+an `OSError`, so the endpoint's `except OSError` didn't catch it → unhandled 500.
+
+### Why it hid
+- Triggered only on the **update-in-place** branch (key already exists in `.env`).
+  New keys use append (no `re.sub`) and worked fine.
+- Storage settings had **zero test coverage**, and existing settings tests
+  **mock `_persist_to_env`**, so the real write path was never exercised with a
+  realistic value.
+- Only values with `\` + a regex-special following char fail — Windows paths do;
+  API keys / numbers don't. So most settings saved fine.
+
+### Fix
+Pass a replacement **function** so the value is written literally:
+`re.sub(pattern, lambda _m: replacement, content, flags=re.MULTILINE)`.
+
+### Rules
+1. **Never pass an untrusted/data-derived string as the `repl` argument to
+   `re.sub`.** Use a lambda (`lambda _m: value`) or `str.replace`/manual splice.
+   `re.escape` only fixes the *pattern*, not the *replacement*.
+2. **Don't narrowly catch `OSError`** around file-write helpers that also do regex/
+   parsing — those raise `re.error`/`ValueError` too. Catch what can actually be
+   raised, or let a broad handler convert to a clean 500 *with detail*.
+3. **Test the real write path with realistic values** (Windows paths with spaces +
+   backslashes). Mocking the persistence helper hides escaping/serialization bugs.
+4. **Don't swallow errors in the UI** — `catch {}` → generic toast hides the real
+   cause. Surface `err.response.data.detail` (Settings.tsx storage handler now does).
+5. When a bug can't be reproduced in an isolated test, **diff the isolated setup vs.
+   the live one** — here the repro passed because it wrote to an *empty* temp `.env`
+   (append branch) instead of updating an existing key (re.sub branch).
+
+---
+
 *Review this file at session start for relevant project patterns.*
