@@ -847,4 +847,25 @@ For SQLAlchemy self-referential relationships:
 
 ---
 
+## 2026-05-30: Session 36 — BACKLOG-087 Starter Templates by Persona (v1.5.0)
+
+### What Went Well
+1. **Activated a dormant model cleanly** — `PhaseTemplate` had a table + a `Project.phase_template_id` FK but no API/UI for the whole v1.x series. Templates now get-or-create PhaseTemplate rows by their unique `name`, which both populates the model and makes re-applies idempotent. Reusing a unique constraint for get-or-create is the simplest idempotency mechanism.
+2. **No migration needed** — every table the feature touches (`phase_templates`, `project_phases`, etc.) already existed, so the whole feature shipped as hardcoded data + a service + a router with zero schema risk.
+3. **Live momentum on fresh scaffolds** — setting `last_activity_at=now`, adding a real next-action task, and calling `IntelligenceService.calculate_momentum_score` makes templated projects show ~0.6 momentum immediately instead of a dead 0%.
+
+### Lessons Learned
+
+#### 1. App Version ≠ Hosted Download URL — Bump Them Separately
+**Issue:** During the version bump (1.4.1 → 1.5.0), `config.py` and `webhooks.py` contain `ConduitalSetup-1.4.1.exe` strings — but these are the **hosted installer download URL** (`CONDUITAL_DOWNLOAD_URL`), not the app version. Blindly find/replacing `1.4.1` → `1.5.0` would point Stripe/Resend fulfillment emails at an installer that isn't hosted yet → 404 for buyers.
+**Fix:** Only bump the *app-version* locations: `backend/pyproject.toml` (single source of truth), `config.py` `_FALLBACK_VERSION`, `frontend/package.json`, `installer/conduital.iss` `MyAppVersion`, and `backend/version_info.txt` (filevers/prodvers tuples + StringStruct strings). Leave `CONDUITAL_DOWNLOAD_URL` at the last actually-built+hosted installer version until a new `.exe` is built and uploaded (see BACKLOG-161 follow-up in next-prompt).
+**Rule:** When bumping the version, treat the download URL as a separate artifact. Grep for the version, then classify each hit as "app version" (bump) vs "hosted asset reference" (leave until the asset exists).
+
+#### 2. Single-Transaction Bulk Scaffold — flush for IDs, commit once
+**Issue:** Creating Areas → Projects → Phases → Tasks where each layer references the previous needs generated PKs mid-transaction.
+**Fix:** `db.add(...)` then `db.flush()` after each layer to populate `.id`, but a single `db.commit()` at the end so a partial scaffold never persists. Autoflush is off in the test session, but explicit `flush()` before reading covers the momentum recalculation queries.
+**Rule:** For multi-entity creation with FK chains, flush per layer to get IDs, commit once at the end for atomicity.
+
+---
+
 *Review this file at session start for relevant project patterns.*

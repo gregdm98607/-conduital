@@ -1,13 +1,13 @@
 # Conduital — Release-Based Backlog
 
-> **R7 selection (S35):** **B. Paid-tier post-activation flow** (BACKLOG-159)
-> — **Done** in S35 (v1.4.1). New `WelcomePaidTierModal` (mounted in `Layout`)
-> shows once per free→paid activation with the unlock list for the new tier;
-> `welcome_paid_tier` PostHog event added to telemetry whitelist; activation
-> path in Settings dispatches a `conduital:license-activated` event.
-> Cleanup: DEBT-078 closed (added `[tool.poetry.scripts]` test entry to
-> `backend/pyproject.toml`). Deferred R6 candidate C (BACKLOG-087 persona
-> starter templates) and BACKLOG-160 (sidebar license badge) remain open.
+> **R8 selection (S36):** **Starter Templates by Persona** (BACKLOG-087)
+> — **Done** in S36 (v1.5.0). New `/templates` gallery + `TemplateService`
+> apply 3 persona scaffolds (Writer / Knowledge Worker / Engineer): one click
+> creates areas + projects (with phases via the now-activated `PhaseTemplate`
+> model) + starter next actions, each with a live momentum score. Discoverable
+> from the Projects empty state and the sidebar. `template_previewed` /
+> `template_applied` telemetry added; +10 backend tests (509 total).
+> Still open: BACKLOG-160 (sidebar license badge).
 
 This backlog is organized by commercial release milestones. Each release builds on the previous, enabling incremental delivery.
 
@@ -28,6 +28,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | **R5: Monetization** | License + Telemetry + Feedback | Paying users | **v1.3.3 shipped** — Gumroad activation; Stripe webhook + Stripe inline activation (opaque receipt); PostHog frontend wired; trial expiry banners; in-app feedback widget + admin view. R5 Must-Have backlog clean. |
 | **R6: File Sync UX** | + sync broadcaster + conflict-resolution UI | Multi-device users | **v1.4.0 shipped** (S34) — BACKLOG-153 Phase 2 (Conflicts tab in `SyncDetailsPanel` + `useSyncConflicts` hook + `POST /sync/resolve/{id}`); shared `SyncEventList` renderer; Settings → Recent Sync Activity subsection. |
 | **R7: Paid-Tier Activation Flow** | + welcome modal + license event bus | Paying users | **v1.4.1 shipped** (S35) — BACKLOG-159 `WelcomePaidTierModal` mounted in `Layout`; `conduital:license-activated` event dispatched on free→paid; per-tier unlock list; `welcome_paid_tier` telemetry; BACKLOG-161 public download URL hosted on conduital.com; DEBT-078 closed. |
+| **R8: Onboarding Templates** | + starter template gallery | New users | **v1.5.0 shipped** (S36) — BACKLOG-087 persona starter templates: `/templates` gallery + `TemplateService.apply_template`; activates the `PhaseTemplate` model; creates areas + projects (phases) + next actions with live momentum; empty-state + sidebar discovery. |
 
 ---
 
@@ -71,7 +72,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 
 | ID | Description | Status | Notes |
 |----|-------------|--------|-------|
-| BACKLOG-087 | Starter Templates by Persona | Open | Writer, Knowledge Worker, etc. |
+| BACKLOG-087 | Starter Templates by Persona | **Done** (S36, v1.5.0) | 3 personas (Writer / Knowledge Worker / Engineer); `/templates` gallery + `TemplateService.apply_template`; one-click areas + projects (phases) + next actions w/ live momentum; activates `PhaseTemplate` model |
 | BACKLOG-082 | Session Summary Capture | **Done** (S20) | End-of-session memory updates — structured capture form, Sessions tab, auto-namespace |
 | DOC-006 | Memory Layer API Documentation | Open | Developer docs |
 | DOC-007 | AI Context API Documentation | Open | Developer docs |
@@ -347,6 +348,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | BACKLOG-158 | S32 (v1.3.3) | Stripe inline activation (MON-008) |
 | BACKLOG-159 | S35 (v1.4.1) | Welcome / paid-tier post-activation flow |
 | BACKLOG-161 | S35 (v1.4.1) | Public download URL hosted on conduital.com |
+| BACKLOG-087 | S36 (v1.5.0) | Starter Templates by Persona — Writer / Knowledge Worker / Engineer one-click scaffolds (areas + projects + phases + next actions) |
 
 ---
 
@@ -393,11 +395,11 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~50 (after 2026-05-14 CPO grooming sweep — 13 items archived; BACKLOG-160 + ROADMAP-011 retired + DOC-001/002/004 retargeted) |
+| Open backlog items | ~49 (S36 closed BACKLOG-087 starter templates; BACKLOG-160 sidebar license badge still the headline loose end) |
 | Open tech debt | 0 |
 | Open documentation | 4 (DOC-001/002/004 retargeted post-launch v1.4.x; DOC-005 deferred; DOC-006/007 Memory/AI Context) |
-| Completed items (archived) | 215+ |
-| Backend tests | 499 (498 pass, 1 skip) |
+| Completed items (archived) | 216+ |
+| Backend tests | 509 (508 pass, 1 skip) |
 
-*Last updated: 2026-05-14 (CPO grooming sweep applied by CTO — Release Overview gained R6/R7 rows; STRAT-002/DIST-002/DIST-003/DIST-005/DIFF-003 set to Done; DIST-030 status verified pending; ROADMAP-011 retired; DOC-001/002/004 retargeted to post-launch v1.4.x; 13 Done items archived to Parking Lot — Completed)*
+*Last updated: 2026-05-30 (S36 — BACKLOG-087 Starter Templates by Persona shipped in v1.5.0; R8 row added to Release Overview; PhaseTemplate model activated; backend tests 499→509)*
 *Full history: `backlog-archive-2026-02-12.md`*
