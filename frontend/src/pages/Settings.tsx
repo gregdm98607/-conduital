@@ -424,8 +424,17 @@ export function Settings() {
       setSyncHealth(result.sync_health);
       setEntityCounts(result.entity_counts);
       toast.success('Storage settings saved');
-    } catch {
-      toast.error('Failed to save storage settings');
+    } catch (err: unknown) {
+      const e = err as { response?: { status?: number; data?: { detail?: string } } };
+      const detail = e?.response?.data?.detail;
+      const status = e?.response?.status;
+      const msg =
+        typeof detail === 'string'
+          ? detail
+          : status === 404
+            ? 'Storage settings aren’t available on this version of the app — please update to the latest build.'
+            : 'Failed to save storage settings';
+      toast.error(msg);
     }
     setStorageSaving(false);
   };

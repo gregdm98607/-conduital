@@ -199,7 +199,15 @@ def _persist_to_env(updates: dict[str, str]) -> None:
             pattern = rf"^{re.escape(key)}\s*=.*$"
             replacement = f"{key}={sanitized_value}"
             if re.search(pattern, content, re.MULTILINE):
-                content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
+                # Use a replacement *function* so the value is written
+                # literally. A replacement string would interpret backslash
+                # sequences in the value as regex escapes — Windows paths like
+                # G:\My Drive\999_SECOND_BRAIN raise re.error ("bad escape \\M",
+                # "invalid group reference 9"), which is not an OSError and
+                # surfaced as an unhandled 500 when saving storage/sync paths.
+                content = re.sub(
+                    pattern, lambda _m: replacement, content, flags=re.MULTILINE
+                )
             else:
                 if content and not content.endswith("\n"):
                     content += "\n"
