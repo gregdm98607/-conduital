@@ -913,4 +913,58 @@ Pass a replacement **function** so the value is written literally:
 
 ---
 
+## 2026-05-31: Non-hermetic tests wrote to the real vault + storage_first enum-serialization bug (S37)
+
+### What happened
+Starting BACKLOG-160 (a frontend-only badge), the full backend suite went from 513
+pass to **61 failed**. The failures were in unrelated areas (soft-delete, project CRUD,
+AI edge cases) — nothing the badge touched. Root cause was environmental, and it
+exposed a real product bug *and* polluted the user's Obsidian vault.
+
+### Root cause chain
+1. **Tests weren't hermetic w.r.t. storage.** `conftest.py` isolated the DB
+   (in-memory SQLite) but not storage. `StorageService` reads `STORAGE_MODE` from the
+   live `backend/.env`. While testing the storage-settings fix, the user had set
+   `STORAGE_MODE=storage_first` + a real `STORAGE_PATH` there. So every
+   project-creating test ran `persist_project` → wrote markdown into the **real vault**.
+2. **`persist_project` re-raises.** A failed write propagates (not swallowed), so the
+   tests failed *and* in the live app, creating a project would 500.
+3. **The write hit a latent serialization bug.** `_project_to_dict` emits
+   `project.status`, which SQLAlchemy returns as a `StatusEnum` (a `str`+`Enum`).
+   PyYAML's safe dumper has no representer for arbitrary Enums → `RepresenterError`.
+4. **Blast radius.** `write_entity` does `open("w")` (truncate) *before*
+   `frontmatter.dumps()` raises → 60+ empty `.md` files created in `05_Projects/`. The
+   user's overnight sync then re-ingested the leftovers into the **real Conduital DB**
+   (new tracker_ids), turning test fixtures into real projects.
+
+### Fixes
+- **Hermetic tests:** autouse `conftest` fixture forces `settings.STORAGE_MODE="legacy"`
+  for every test (writes become no-ops). Storage tests that need `storage_first`
+  already monkeypatch it themselves with a `tmp_path` root, so their override wins.
+- **Enum serialization:** a recursive `_yaml_safe()` at the write boundary
+  (`local_folder._build_write_metadata`) coerces `Enum→.value`, `datetime→isoformat`,
+  recursing into dicts/lists. Regression test sets `StatusEnum.ACTIVE` explicitly
+  (the existing storage test passed only because the in-session value was still a
+  plain `str` — the enum appears only via the API/refresh path).
+
+### Rules
+1. **Make tests hermetic against ALL external config, not just the DB.** Anything that
+   reads global `settings`/env (storage, sync, AI keys, paths) must be neutralized in
+   `conftest` so a developer's real `.env` can never change test behavior or, worse,
+   touch real user data. A green suite must not depend on `.env` contents.
+2. **Coerce to primitives at serialization boundaries.** ORM enums (esp. `str`+`Enum`)
+   and datetimes are not YAML/JSON-safe by default — sanitize where data leaves the app
+   (the write boundary), not field-by-field at each call site.
+3. **`open("w")` truncates before you write.** If serialization can fail, build the
+   string first (or write to a temp file and atomically replace) so a dump error can't
+   leave an empty/corrupt file.
+4. **A pipeline's exit code is the LAST command's.** `pytest ... | tail` reported exit
+   0 even with 61 failures — `tail` succeeded. Read the actual summary line; don't trust
+   the exit code of a piped command (or use `PIPESTATUS`/`-o pipefail`).
+5. **Unexplained test failures after an unrelated change → suspect the environment.**
+   Failures in code you didn't touch usually mean config/state drift, not your diff.
+   Diff the env (here: `.env` `STORAGE_MODE`) and run a suspect test in isolation.
+
+---
+
 *Review this file at session start for relevant project patterns.*

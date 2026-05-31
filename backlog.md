@@ -7,7 +7,12 @@
 > model) + starter next actions, each with a live momentum score. Discoverable
 > from the Projects empty state and the sidebar. `template_previewed` /
 > `template_applied` telemetry added; +10 backend tests (509 total).
-> Still open: BACKLOG-160 (sidebar license badge).
+> **S37 (v1.5.1):** BACKLOG-160 sidebar license badge **shipped**. The session also
+> fixed two pre-existing storage bugs surfaced by the test run: non-hermetic tests
+> (a `storage_first` setting in the live `.env` made tests write to the real vault)
+> and a `storage_first` enum-serialization bug that 500'd project creation. See
+> `tasks/lessons.md` (2026-05-31) and `next-prompt.md` carry items (incl. real-DB
+> propagation to verify).
 
 This backlog is organized by commercial release milestones. Each release builds on the previous, enabling incremental delivery.
 
@@ -312,7 +317,6 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | BACKLOG-148 | Import: export format version migration — handle older export schemas gracefully | Reliability |
 | BACKLOG-149 | Session Capture: pre-fill accomplishments from git log or task completions | Auto-populate from today's activity |
 | BACKLOG-150 | Health tab: sparkline trend charts for 7d/30d activity | Visual trends beyond raw numbers |
-| BACKLOG-160 | **License status visibility in sidebar** — small tier badge ("Free Trial · 9d", "GTD", "Full") visible at all times; click → Settings → License. Currently visible only in Settings. | UX |
 
 ### Parking Lot — Completed (Archived)
 
@@ -320,6 +324,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 
 | ID | Session | Summary |
 |----|---------|---------|
+| BACKLOG-160 | S37 | Always-visible sidebar license tier badge (links to Settings → License) |
 | BACKLOG-090 | S14 | Data Import from JSON Backup |
 | BACKLOG-095 | S17 | Collapsible Sections Pattern Extension |
 | BACKLOG-099 | S1 | Archive Area Confirmation Dialog |
@@ -395,11 +400,11 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~49 (S36 closed BACKLOG-087 starter templates; BACKLOG-160 sidebar license badge still the headline loose end) |
+| Open backlog items | ~48 (S37 closed BACKLOG-160 sidebar license badge; new debt: harden storage_first end-to-end — see next-prompt) |
 | Open tech debt | 0 |
 | Open documentation | 4 (DOC-001/002/004 retargeted post-launch v1.4.x; DOC-005 deferred; DOC-006/007 Memory/AI Context) |
 | Completed items (archived) | 216+ |
-| Backend tests | 509 (508 pass, 1 skip) |
+| Backend tests | 515 (514 pass, 1 skip) — S37 +1 storage_first enum-serialization regression; suite now hermetic (forces legacy storage) |
 
-*Last updated: 2026-05-30 (S36 — BACKLOG-087 Starter Templates by Persona shipped in v1.5.0; R8 row added to Release Overview; PhaseTemplate model activated; backend tests 499→509)*
+*Last updated: 2026-05-31 (S37 — BACKLOG-160 sidebar license badge shipped in v1.5.1; fixed non-hermetic tests writing to the real vault + storage_first enum-serialization bug; backend tests 513→514 pass)*
 *Full history: `backlog-archive-2026-02-12.md`*

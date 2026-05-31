@@ -1,133 +1,112 @@
-# Session 37 — next pick (post-v1.5.0)
+# Session 38 — next pick (post-v1.5.1)
 
 ## Context
 
-Session 36 (2026-05-30) shipped **v1.5.0** — **BACKLOG-087 Starter Templates by
-Persona**. A new user can now one-click scaffold a tailored starting structure
-instead of staring at an empty app. Two commits expected:
+Session 37 (2026-05-30 → 05-31) shipped **v1.5.1**. What started as a small UX
+feature (BACKLOG-160) turned up two serious pre-existing storage bugs and a vault
+pollution incident. Three commits expected:
 
-- `feat(BACKLOG-087)` Starter templates:
-  - **Backend** — hardcoded persona definitions in
-    [`template_data.py`](backend/app/services/template_data.py) (3 personas:
-    Writer / Knowledge Worker / Engineer); [`template_service.py`](backend/app/services/template_service.py)
-    (`list_templates` / `get_template` / `apply_template`); single-transaction
-    apply creates Areas (get-or-create by title) + Projects (with NPM fields +
-    live momentum via `IntelligenceService.calculate_momentum_score`) +
-    ProjectPhases + next-action Tasks. **Activates the dormant `PhaseTemplate`
-    model** via get-or-create on its unique `name`, linking `Project.phase_template_id`.
-    New [`schemas/template.py`](backend/app/schemas/template.py) +
-    [`api/templates.py`](backend/app/api/templates.py) (core router registered in
-    [main.py](backend/app/main.py) beside projects). `template_previewed` /
-    `template_applied` added to telemetry `KNOWN_EVENTS`.
-  - **Frontend** — `getTemplates/getTemplate/applyTemplate` in
-    [`api.ts`](frontend/src/services/api.ts); Template types in
-    [`types/index.ts`](frontend/src/types/index.ts);
-    [`useTemplates.ts`](frontend/src/hooks/useTemplates.ts) (mutation invalidates
-    projects/areas/tasks caches + fires telemetry);
-    [`TemplatesPage.tsx`](frontend/src/pages/TemplatesPage.tsx) gallery (persona
-    cards, expandable preview, apply → toast → navigate to first project);
-    `/templates` route in [App.tsx](frontend/src/App.tsx); sidebar nav entry +
-    "Start from a template" CTA on the Projects empty state
-    ([Projects.tsx](frontend/src/pages/Projects.tsx)).
-- `chore(S36)` v1.5.0 closeout — version bump, backlog refresh, lessons entry,
-  this prompt.
+1. `docs:` — committed the dangling S36 storage-fix lessons entry (`86e5977`).
+2. `feat(BACKLOG-160)` — **always-visible license tier badge** in the sidebar
+   footer: new [`LicenseBadge.tsx`](frontend/src/components/license/LicenseBadge.tsx)
+   (states: `GTD+` / `GTD` / `Free Trial · Nd` / `Free`, links → Settings);
+   [`useTrialStatus`](frontend/src/hooks/useTrialStatus.ts) extended with
+   `tier`/`effectiveTier`; mounted in [`Layout.tsx`](frontend/src/components/layout/Layout.tsx);
+   `license_badge_clicked` + the two previously-unregistered `trial_day_7/11_banner_dismissed`
+   events added to `KNOWN_EVENTS` ([telemetry.py](backend/app/api/telemetry.py)).
+3. `fix(storage)` — **test isolation + storage_first serialization** (see below).
 
-**Build / test status (post-S36):**
-- ✅ `pytest backend/tests/` — **509 passed (508 pass + 1 skip)**; +10 new
-  tests in `test_templates_api.py` (list/detail/404, apply creates
-  areas/projects/phases/tasks, PhaseTemplate linkage, next-action flags, live
-  momentum, idempotent re-apply).
-- ✅ `npm run build` clean (~4.7s, 833 kB / 208 kB gzip). eslint clean on new files.
-- ✅ Versions bumped `1.4.1 → 1.5.0`: `backend/pyproject.toml` (SoT),
-  `config.py` `_FALLBACK_VERSION`, `frontend/package.json`,
-  `installer/conduital.iss`, `backend/version_info.txt`.
+### The storage incident (what S37 actually spent its time on)
+Running the full backend suite went 513 pass → **61 failed**, all in code the badge
+never touched. Root cause chain:
+- Tests weren't hermetic: `StorageService` reads `STORAGE_MODE` from the live
+  `backend/.env`, which was set to **`storage_first`** (+ real `STORAGE_PATH`) while
+  testing the S36-followup storage fix. So project-creating tests wrote markdown into
+  the **real Obsidian vault** (`C:\Users\gregm\999_SECOND_BRAIN\_Obsidian\05_Projects`).
+- That exposed a real bug: `persist_project` serializes `project.status`, an ORM
+  `StatusEnum` (`str`+`Enum`), which PyYAML's safe dumper can't represent →
+  `RepresenterError`, re-raised → **`storage_first` project creation 500s in the live app.**
+- `write_entity` truncates (`open("w")`) before the dump raises → 60+ empty `.md` files
+  were created in the vault.
 
-> ⚠️ **Not done this session:** no live browser smoke of `/templates`. The
-> app lifespan binds to the real local DB (`%LOCALAPPDATA%\Conduital\tracker.db`),
-> so a live apply would pollute real data. Backend behavior is fully covered by
-> the 10 isolated integration tests. **Suggest a 5-min manual smoke next
-> session:** open `/templates`, apply a persona, confirm projects/areas/phases/
-> momentum render, then delete them.
+**Fixes shipped:** autouse `conftest` fixture forces `STORAGE_MODE=legacy` for every
+test (storage tests override with their own `tmp_path`); recursive `_yaml_safe()` at
+the write boundary ([local_folder.py](backend/app/storage/local_folder.py)) coerces
+enums/datetimes to primitives; regression test added. Full suite green again.
 
-## ⚠️ Distribution carry (important)
+**Vault cleanup:** all 67 test-fixture files removed from `05_Projects/` (55 had been
+swept by your overnight automation; I deleted the remaining 12). The real project
+`The_Coherence_Dashboard` was a false-positive in my scan — left untouched.
 
-**`CONDUITAL_DOWNLOAD_URL` still points to `ConduitalSetup-1.4.1.exe`.** The app
-version is now 1.5.0 but **no 1.5.0 installer has been built or hosted**. If you
-distribute v1.5.0, do the full BACKLOG-161 dance first or fulfillment emails 404:
-1. Rebuild the `.exe` (PyInstaller spec uses `backend/version_info.txt` — now
-   1.5.0; then Inno Setup `installer/conduital.iss` — now 1.5.0).
-2. Copy `ConduitalSetup-1.5.0.exe` into `conduital-site/public/downloads/`.
-3. Add `vercel.json` redirects for `/download/v1.5.0` + repoint `/download/latest`.
-4. Bump `CONDUITAL_DOWNLOAD_URL` in [config.py:320](backend/app/core/config.py)
-   (and the fallback in [webhooks.py:118](backend/app/api/webhooks.py)) to the
-   new asset.
-Until then, v1.5.0 runs fine locally; only the buy→email→download path serves 1.4.1.
+## ⚠️ Carry items (read before picking work)
+
+1. **Real-DB propagation (verify!).** At 2026-05-31 00:13 local, your vault's sync
+   re-ingested the leftover test `.md` files into the **real Conduital DB**
+   (`%LOCALAPPDATA%\Conduital\tracker.db`), assigning real tracker_ids (saw 3219
+   "With Area", 3220 "Neural Link Systems (Deprecated)"). **Your live app may now
+   contain junk test projects.** Since markdown is the source of truth in
+   `storage_first`, deleting the `.md` files (done) *should* let a sync/restart
+   reconcile them out — but **verify in the app** and hard-delete any stragglers.
+   Quick check: open Projects, filter for names like `*_Test`, `*_Ghost`, `Rebal_*`,
+   `Unstuck_*`, `TZ_*`, `With Area`, `Status Ghost`.
+2. **`storage_first` was never exercised end-to-end before today** — the enum bug
+   proves it. Other entity paths (areas, goals, tasks via `entity_markdown` handlers)
+   may have the same enum/datetime issue. Consider a `storage_first` integration sweep
+   (BACKLOG candidate below).
+3. **Your `backend/.env` is still `STORAGE_MODE=storage_first`.** With the enum fix it
+   now works, but if you don't want live file-sync, set it back to `legacy`.
+4. **Distribution carry (unchanged):** `CONDUITAL_DOWNLOAD_URL` still points to
+   `ConduitalSetup-1.4.1.exe`. App is 1.5.1; no 1.5.x installer built/hosted. Do the
+   BACKLOG-161 dance before distributing (rebuild `.exe` from `version_info.txt`/`conduital.iss`,
+   host, repoint `vercel.json` + `config.py:320` + `webhooks.py:118`).
 
 ## Pick the next swing
 
-Zero open tech debt; onboarding is now strong (FirstRunGuide + templates).
-
-### Recommended: **BACKLOG-160 — Sidebar license badge** (~2–3 hours)
-The long-standing small loose end. Always-visible tier pill (`Free Trial · 9d`,
-`GTD`, `GTD+`) in the sidebar footer, click → Settings → License. Reads
-`useTrialStatus`. Closes the license-visibility loop (Welcome modal handled the
-activation moment; this handles every other moment). Smallest finishing move
-before any non-Greg users.
+### Recommended: **Harden `storage_first` (new debt from S37)** (~2–4 hours)
+The enum bug means this mode shipped untested. Add an integration test that, in
+`storage_first` with a `tmp_path`, round-trips **every** entity type (project, area,
+goal, vision, task) through create→persist→read and asserts no serialization error +
+correct frontmatter. Fix any other enum/datetime leaks the sweep finds. Highest-value
+because it's a correctness gap in a mode you're actually running.
 
 ### Alternatives
-- **Wow-factor polish** — BACKLOG-093 quick-capture success animation (S,
-  reuse `animate-celebrate-ripple`) + BACKLOG-150 Health-tab sparkline trends (M).
-  Screenshot-worthy, low risk, frontend-only.
-- **Perf debt: route code-splitting** — bundle is 833 kB (> Vite's 500 kB warn).
-  `React.lazy` + `Suspense` on the page routes in `App.tsx` would cut initial
-  load meaningfully. Clean half-session win; first real perf debt of v1.x.
-- **Templates follow-ups** (extend BACKLOG-087): add a 4th persona
-  (Personal / Life Admin or Student); offer "Start from a template" inside
-  `FirstRunGuide` step 2; optionally persist templated projects through
-  `StorageService` so file-sync users get markdown immediately (currently
-  DB-only — see below).
-- **BACKLOG-085 Memory Diff View** / **BACKLOG-049/050** project workload +
-  blocked status — older R3/R4 quality items.
+- **Wow-factor polish** — BACKLOG-093 quick-capture success animation (S) +
+  BACKLOG-150 Health-tab sparkline trends (M). Screenshot-worthy, frontend-only.
+- **Perf debt: route code-splitting** — bundle is 834 kB (> Vite's 500 kB warn).
+  `React.lazy`+`Suspense` on `App.tsx` routes. Clean half-session win.
+- **Templates follow-ups** (BACKLOG-087) — 4th persona; "Start from a template" in
+  `FirstRunGuide`; persist templated projects via `StorageService` (now that the enum
+  bug is fixed, storage_first users would get markdown).
+- **BACKLOG-085 Memory Diff View** / **BACKLOG-049/050** workload + blocked status.
 
 ### Cleanup (always-on)
-- Frontend lint backlog (~18 errors / 16 warnings in older pages) — not
-  introduced by S36; `npm run lint -- --fix` + manual hook-rule pass (~1h).
+- Frontend lint backlog (~18 errors/16 warnings in older pages) — `npm run lint --fix`
+  + manual hook-rule pass (~1h). Not introduced by S37.
 
 ## Read First (regardless of pick)
 ```
-backlog.md                                                  # current state
-backend/app/services/template_service.py                    # S36 reference: bulk scaffold + dormant-model activation
-backend/app/services/template_data.py                       # persona content (easy to extend)
-frontend/src/pages/TemplatesPage.tsx                        # gallery UI pattern
-frontend/src/hooks/useTrialStatus.ts                        # for BACKLOG-160 sidebar badge
-frontend/src/components/layout/Layout.tsx                   # sidebar footer mount point (badge)
-tasks/lessons.md                                            # S36 entry: version-vs-download-URL gotcha
+backlog.md                                              # current state, Stats
+tasks/lessons.md                                        # S37 entry: hermetic tests + enum serialization
+backend/tests/conftest.py                               # the new autouse storage-isolation fixture
+backend/app/storage/local_folder.py                     # _yaml_safe write-boundary sanitizer
+backend/app/services/storage_service.py                 # _project_to_dict (status enum source)
+frontend/src/components/license/LicenseBadge.tsx        # S37 badge pattern
 ```
 
-## Known scope notes (S36 decisions)
-- Templates create **DB entities only** (no `StorageService.persist_project`
-  call) — clean + test-safe; default mode is SQLite-as-source-of-truth, so this
-  is correct. Only matters if a user runs `STORAGE_MODE=storage_first` (opt-in
-  BYOS), where templated projects won't get markdown until edited. Revisit if
-  storage_first becomes default.
-- Apply is **additive** for projects/tasks (re-applying makes more), but
-  **idempotent** for Areas + PhaseTemplates. Surfaced mainly from empty states,
-  so duplicate scaffolds are unlikely.
-- Per-tier persona content is **hardcoded** (like the WelcomePaidTierModal tier
-  list). Fine for 3 static personas; revisit if templates become user-authored.
-
 ## Phase 4 — Session Closeout (ritual)
-1. Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -x -q` (target 509+).
+1. Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -q`
+   (target ~514). **Note:** the suite is now hermetic — it forces legacy storage; do
+   NOT rely on `.env`. A bare `... | tail` masks failures (exit code is tail's) — read
+   the summary line.
 2. Frontend build: `cd frontend && cmd //c "npm run build"`.
-3. Update [backlog.md](backlog.md) — mark the pick done, refresh Stats.
-4. Bump version (patch/minor per scope). Remember: **app version ≠ download URL** (see lessons.md S36).
+3. Update [backlog.md](backlog.md) — mark pick done, refresh Stats.
+4. Bump version (patch/minor per scope). **App version ≠ download URL** (lessons S36).
 5. Commit (one feat per chunk; one closeout commit), then push.
-6. **Write Session 38 prompt → `next-prompt.md`** (MEMORY rule).
+6. **Write Session 39 prompt → `next-prompt.md`** (MEMORY rule).
 
 ## Shell Notes (Windows)
-- Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -x -q`
-- Single test file: `backend\venv\Scripts\python.exe -m pytest backend/tests/<name>.py -q`
+- Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -q`
+- Single test: `backend\venv\Scripts\python.exe -m pytest backend/tests/<name>.py -q`
 - Frontend build: `cd frontend && cmd //c "npm run build"`
 - Frontend lint (changed files): `cd frontend && cmd //c "npx eslint <path>"`
-- Inno Setup: `"$LOCALAPPDATA/Programs/Inno Setup 6/ISCC.exe" installer/conduital.iss`
 - git commit with special chars: write message to temp file, `git commit -F file.txt`
