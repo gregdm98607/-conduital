@@ -16,6 +16,10 @@ export interface TrialStatus {
   isPaid: boolean;
   daysRemaining: number | null;
   trialExpiresAt: Date | null;
+  /** Raw purchased tier: 'free' | 'gtd' | 'full'. Null until loaded / on error. */
+  tier: string | null;
+  /** Effective tier after trial resolution (trial grants 'full'). Null until loaded. */
+  effectiveTier: string | null;
 }
 
 const REFRESH_INTERVAL_MS = 1000 * 60 * 30; // 30 min — trial is day-granular
@@ -27,6 +31,8 @@ export function useTrialStatus(): TrialStatus {
     isPaid: false,
     daysRemaining: null,
     trialExpiresAt: null,
+    tier: null,
+    effectiveTier: null,
   });
 
   useEffect(() => {
@@ -46,6 +52,8 @@ export function useTrialStatus(): TrialStatus {
           isPaid: data.is_paid,
           daysRemaining,
           trialExpiresAt: expiresAt,
+          tier: data.tier,
+          effectiveTier: data.effective_tier,
         });
       } catch {
         if (!cancelled) {

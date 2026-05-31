@@ -28,6 +28,7 @@ import { KeyboardShortcutOverlay } from '@/components/common/KeyboardShortcutOve
 import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 import { TrialBanner } from '@/components/trial/TrialBanner';
 import { WelcomePaidTierModal } from '@/components/license/WelcomePaidTierModal';
+import { LicenseBadge } from '@/components/license/LicenseBadge';
 import { FirstRunGuide } from '@/components/onboarding/FirstRunGuide';
 import { SyncIndicator } from '@/components/sync/SyncIndicator';
 
@@ -221,8 +222,13 @@ export function Layout() {
         ))}
       </nav>
 
+      {/* License tier — always visible (BACKLOG-160) */}
+      <div className="px-3 py-2 border-t border-gray-800/60">
+        <LicenseBadge />
+      </div>
+
       {/* User Menu */}
-      <div className="px-3 py-3 border-t border-gray-800/60">
+      <div className="px-3 py-3">
         <UserMenu />
       </div>
 
