@@ -25,6 +25,23 @@ from app.models import Project, Task, Area, Goal, Vision, Context, InboxItem
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
 
+# =============================================================================
+# Storage isolation (autouse) — keep the suite hermetic
+# =============================================================================
+#
+# StorageService reads STORAGE_MODE from the live .env. With
+# STORAGE_MODE=storage_first set there, every project-creating test would
+# write markdown into the developer's REAL vault (and trip serialization
+# errors). Force legacy mode (writes are no-ops) for every test so the suite
+# never touches a real vault. Tests that exercise storage_first override this
+# with their own monkeypatch + a tmp_path storage root.
+@pytest.fixture(autouse=True)
+def _force_legacy_storage(monkeypatch):
+    monkeypatch.setattr(
+        "app.core.config.settings.STORAGE_MODE", "legacy", raising=False
+    )
+
+
 @pytest.fixture(scope="function")
 def in_memory_engine():
     """Create an in-memory SQLite engine for testing."""

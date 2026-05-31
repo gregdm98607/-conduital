@@ -155,6 +155,35 @@ class TestStorageFirstMode:
         assert sample_project.file_path is not None
         assert Path(sample_project.file_path).exists()
 
+    def test_persist_project_serializes_enum_status(
+        self, db_session, provider, storage_root, monkeypatch
+    ):
+        """Regression: the ORM hands back ``project.status`` as a ``StatusEnum``
+        (a str+Enum). PyYAML's safe dumper has no representer for it, so dumping
+        raised ``RepresenterError`` and 500'd project creation in storage_first
+        mode. The write boundary must coerce enums to their ``.value``."""
+        import frontmatter
+        from app.schemas.common import StatusEnum
+
+        monkeypatch.setattr("app.core.config.settings.STORAGE_MODE", "storage_first")
+
+        project = Project(title="Enum Status Project", status="active", priority=1)
+        db_session.add(project)
+        db_session.commit()
+        # Simulate the API/refresh path that hands back an Enum instance.
+        project.status = StatusEnum.ACTIVE
+
+        service = StorageService(db_session)
+        service._provider = provider
+
+        # Must not raise yaml.representer.RepresenterError
+        service.persist_project(project)
+
+        assert project.file_path is not None
+        post = frontmatter.load(project.file_path)
+        assert post["project_status"] == "active"
+        assert type(post["project_status"]) is str
+
     def test_persist_project_updates_existing_file(
         self, db_session, provider, storage_root, sample_md, monkeypatch
     ):
