@@ -34,6 +34,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | **R6: File Sync UX** | + sync broadcaster + conflict-resolution UI | Multi-device users | **v1.4.0 shipped** (S34) — BACKLOG-153 Phase 2 (Conflicts tab in `SyncDetailsPanel` + `useSyncConflicts` hook + `POST /sync/resolve/{id}`); shared `SyncEventList` renderer; Settings → Recent Sync Activity subsection. |
 | **R7: Paid-Tier Activation Flow** | + welcome modal + license event bus | Paying users | **v1.4.1 shipped** (S35) — BACKLOG-159 `WelcomePaidTierModal` mounted in `Layout`; `conduital:license-activated` event dispatched on free→paid; per-tier unlock list; `welcome_paid_tier` telemetry; BACKLOG-161 public download URL hosted on conduital.com; DEBT-078 closed. |
 | **R8: Onboarding Templates** | + starter template gallery | New users | **v1.5.0 shipped** (S36) — BACKLOG-087 persona starter templates: `/templates` gallery + `TemplateService.apply_template`; activates the `PhaseTemplate` model; creates areas + projects (phases) + next actions with live momentum; empty-state + sidebar discovery. |
+| **R9: Weekly Review Assistant** | + guided weekly-review workflow | GTD-tier solopreneurs | **Spec APPROVED 2026-05-19 — not yet built.** BACKLOG-162; spec at `Silver_Sage_Software\C-Suite\CPO\Specs\Conduital_Weekly_Review_Spec_Draft.md`; M (2–3 wk) sizing; impl window 2026-05-25→06-08; **target v1.6.0** (CPO spec labeled v1.4.0 — that version shipped as R6 File Sync UX; CTO retargeted to next minor after v1.5.1). |
 
 ---
 
@@ -44,7 +45,7 @@ This backlog is organized by commercial release milestones. Each release builds 
 | ID | Description | Status | Notes |
 |----|-------------|--------|-------|
 | BACKLOG-076 | **List View Design Standard** | **Done** (S12) | SortableHeader/StaticHeader components, wired in Projects + AllTasks pages |
-| DOC-005 | **Module System Documentation** | Deferred to R2 | User-facing docs |
+| DOC-005 | **Module System Documentation** | **Retired** (2026-05-31 grooming B2) | Covered by `backend/MODULE_SYSTEM.md`; no customer-signal demand across launch-week reviews. Re-introduce only if a signal surfaces module-system confusion. |
 
 ---
 
@@ -105,6 +106,8 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 
 ### Nice to Have (Future)
 
+> **Deferred to post-R4 / v2 evaluation; not on the current roadmap (2026-05-31 grooming B7).** IDs preserved for reactivation by a specific decision.
+
 | ID | Description | Status | Notes |
 |----|-------------|--------|-------|
 | BACKLOG-001 | Sub-Projects | Open | Hierarchical organization |
@@ -115,6 +118,21 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | BACKLOG-055 | Project Time Investment Tracking | Open | Hours estimation and logging |
 | BACKLOG-057 | Project Archive with History | Open | Lessons learned, retrospectives |
 | BACKLOG-060 | Delegation/Accountability Tracking | Open | Multi-user foundation |
+
+---
+
+## R9: Weekly Review Assistant — Spec Approved (target v1.6.0)
+
+Spec **APPROVED 2026-05-19** — all four gates closed: CTO M-sizing ✅ 5/14, CEO conditional ✅ 5/14, CRO §6/§8 tier-gating ✅ 5/14, CTO Gate 4 backlog mutation = this entry (✅ 2026-05-31). Source spec: `Silver_Sage_Software\C-Suite\CPO\Specs\Conduital_Weekly_Review_Spec_Draft.md`. Dispatched by SSS CPO 2026-05-19 (Gate 4 dispatch + `CPO/Conduital_Backlog_Grooming_2026-05-19.md` §B10).
+
+**Version note (CTO):** the spec designates this "v1.4.0," but v1.4.0 shipped as R6 (File Sync UX, S34) and the product is now at v1.5.1. Retargeted to **v1.6.0** (next minor). Spec content unchanged; only the release label is reconciled — CPO to mark the spec in-development at v1.6.0.
+
+### Should Have (Approved — not yet built)
+
+| ID | Description | Status | Notes |
+|----|-------------|--------|-------|
+| BACKLOG-162 | **Weekly Review Assistant** | Approved (spec) | Timed, sequenced six-step weekly-review workflow with momentum scoring as an active filter at the Projects step; 8 acceptance criteria incl. telemetry. GTD-tier ($49) gated; Basic-tier teaser. M (2–3 wk). Impl window 2026-05-25→06-08 (subject to Mac-build sequencing). **CTO architectural notes folded into spec:** (1) session-state single-day in v1.6.0, cross-day deferred; (2) telemetry event naming `weekly_review.{step_name}.completed`; (3) reuse `WelcomePaidTierModal` for the Basic-tier teaser. |
+| BACKLOG-163 | **FirstRunGuide onboarding deltas** (companion to BACKLOG-162) | Approved (spec) | Three heuristic-review spec deltas from `CPO/Conduital_Onboarding_Usability_Heuristic_2026-05-19.md`: (1) Step 1 "I'm not sure" branch → Basic-tier-friendly path (no methodology lecture); (2) Step 2 example chips (3 methodology-aware + "write my own"); (3) Step 4 worked example on the user's just-created project (binds Momentum Score to behavior). Plus three `first_run_guide.*` telemetry events per §5. No existing v1.4.0 onboarding ticket existed, so filed as a sibling row per the dispatch. |
 
 ---
 
@@ -137,13 +155,13 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | ID | Description | Status | Target |
 |----|-------------|--------|--------|
 | ROADMAP-010 | BYOS Foundation (Bring Your Own Storage) | **Done** (Phase 1-5) | R1/R2 — StorageProvider ABC, LocalFolderProvider, StorageService write-through, full test suite |
-| DEBT-020 | SyncEngine area markdown handling | Open | R1 |
+| DEBT-020 | SyncEngine area markdown handling | Open (verify) | R1 — flagged 2026-05-31 grooming (B1); **not closed without a sync-engine verification pass.** Stats reconciled to 1. |
 
 ### Distribution & Marketing
 
 | ID | Description | Status | Target | Notes |
 |----|-------------|--------|--------|-------|
-| DIST-001 | Landing Page | Open | R1 | Product website |
+| DIST-001 | Landing Page | **Closed** (2026-05-31 grooming B3) | R1 | Subsumed by live conduital.com + public download endpoint (BACKLOG-161, S35). PPC landing-page work tracked separately (`CPO/Capterra_PPC_Landing_Page_Concept_2026-05-19.md`). |
 | DIST-002 | Pricing Model | **Done** | R1 | Tiered perpetual license (Free / GTD $49 / Full $79) — locked in v1.3.x; STRAT-002 decided |
 | DIST-003 | Payment Integration (Stripe/Gumroad) | **Done** | R1 | Gumroad activation MON-001 (v1.3.0); Stripe webhook MON-002 (v1.3.1); Stripe inline activation MON-008 (v1.3.3); ConvertKit signup live |
 | DIST-004 | Documentation Site | Open | R1 | User-facing docs |
@@ -152,7 +170,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | DIST-023 | Path resolution for packaged exe | Open | R1 | .env/config paths must resolve relative to executable |
 | DIST-030 | Windows code signing certificate | **Cert in hand 2026-04-25; pipeline wiring status TBC** | R1 | Cert confirmed 2026-04-25; per CPO grooming 2026-05-09, build-pipeline wiring was overdue. CTO to verify current state at next signing step and update; intent: signed installer pre-v1.4.x distribution refresh. |
 | DIST-031 | Auto-update mechanism | Open | R2 | Version-check endpoint or Sparkle-style updater |
-| DIST-051 | Register conduital.app domain | Open | P1 | $19.99, confirmed available |
+| DIST-051 | Register conduital.app domain | **Retired** (2026-05-31 grooming B5) | — | No documented strategic intent; a brand-defense domain purchase is a CRO/Chairman call, not a Conduital backlog item. Reopen if intent is documented. |
 
 ### CI/CD
 
@@ -234,7 +252,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 
 | ID | Description | Priority | Target |
 |----|-------------|----------|--------|
-| DOC-005 | Module system user documentation | High | R1 |
+| DOC-005 | Module system user documentation | Retired | **Retired** 2026-05-31 grooming (B2) — see R1.1 table |
 | DOC-001 | Area mapping configuration guide | Medium | post-launch v1.4.x |
 | DOC-002 | Folder watcher troubleshooting | Medium | post-launch v1.4.x |
 | DOC-004 | Areas page user guide | Medium | post-launch v1.4.x |
@@ -268,7 +286,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | DIFF-001 | **AI-Agnostic Design** | Decided | Works with any LLM provider |
 | DIFF-002 | **Data Portability (BYOS)** | Decided | User owns data, can export/migrate |
 | DIFF-003 | **Local-First Option** | **Implemented** | Local-first since R1 — SQLite + local folder watcher + offline-capable; no cloud dependency for core functionality. BYOS Phase 5 (454 tests passing) extends with optional StorageProvider abstraction. |
-| DIFF-004 | **Cross-Platform Sync** | Open | Via BYOS (Google Drive, Dropbox) |
+| DIFF-004 | **Cross-Platform Sync** | **Done** (2026-05-31 grooming B4) | Implemented via BYOS Phase 1–5 (STRAT-003 Done). Direct cloud integration beyond local-folder BYOS would spec as a STORAGE-* concept. |
 
 ---
 
@@ -286,6 +304,8 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 
 *Items not assigned to a release yet*
 
+> **Age-sweep scheduled (2026-05-31 grooming B9):** joint CTO + CPO retire-or-promote pass on all Parking Lot items >60 days old at the next grooming touchpoint (~2026-06-15, post-HVAC go/no-go).
+
 | ID | Description | Notes |
 |----|-------------|-------|
 | BACKLOG-003 | Bulk/Mass task creation | Nice-to-have |
@@ -301,7 +321,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | BACKLOG-053 | Project Notes/Reference Material | In-app storage |
 | BACKLOG-054 | Project Energy/Context | Filter enhancement |
 | BACKLOG-059 | Stuck Task Identification | Beyond stalled projects |
-| BACKLOG-061 | Register Claude Code Skills | Developer tooling |
+| BACKLOG-061 | Register Claude Code Skills | **Retired** (2026-05-31 grooming B6) — out of CPO Charter v2 §3 scope (developer tooling, no external commercial value); lives in `11_Systems\` / `.claude\Scheduled\`. |
 | BACKLOG-066 | Automated Urgency Zone (Phase 3) | Zone lock capability |
 | BACKLOG-093 | Quick Capture Success Animation | Visual flash/animation feedback |
 | BACKLOG-104 | Area Health Score Drill-Down + Improvements | Backend ready, frontend needed |
@@ -357,7 +377,9 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 
 ---
 
-## Future Storage Providers
+## Future Storage Providers — Concepts (Not Roadmapped)
+
+> Aspirational concepts, not committed roadmap work (re-titled 2026-05-31 grooming B8 to disambiguate from committed items).
 
 Ideas for additional `StorageProvider` implementations (see `docs/storage-providers.md` for the architecture):
 
@@ -400,11 +422,12 @@ For each release, verify:
 
 | Metric | Count |
 |--------|-------|
-| Open backlog items | ~48 (S37 closed BACKLOG-160 sidebar license badge; new debt: harden storage_first end-to-end — see next-prompt) |
-| Open tech debt | 0 |
-| Open documentation | 4 (DOC-001/002/004 retargeted post-launch v1.4.x; DOC-005 deferred; DOC-006/007 Memory/AI Context) |
+| Open backlog items | ~47 (2026-05-31 CTO grooming: +2 approved — BACKLOG-162 Weekly Review Assistant + BACKLOG-163 onboarding deltas; −5 closed/retired via CPO 10-delta sweep — DIST-001, DIFF-004, DIST-051, DOC-005, BACKLOG-061) |
+| Open tech debt | 1 (DEBT-020 SyncEngine area markdown handling — surfaced grooming B1; retained Open pending a sync-engine verification pass, not closed without evidence) |
+| Open documentation | 3 (DOC-001/002/004 retargeted post-launch v1.4.x; DOC-005 retired 2026-05-31 grooming B2; DOC-006/007 Memory/AI Context open) |
 | Completed items (archived) | 216+ |
 | Backend tests | 515 (514 pass, 1 skip) — S37 +1 storage_first enum-serialization regression; suite now hermetic (forces legacy storage) |
 
-*Last updated: 2026-05-31 (S37 — BACKLOG-160 sidebar license badge shipped in v1.5.1; fixed non-hermetic tests writing to the real vault + storage_first enum-serialization bug; backend tests 513→514 pass)*
+*Last updated: 2026-05-31 (CTO Cowork — Gate 4 Weekly Review Assistant backlog mutation filed as R9 / BACKLOG-162 + BACKLOG-163 onboarding deltas; applied SSS CPO 10-delta grooming sweep B1–B9: DEBT-020 Stats reconciled, DOC-005 retired, DIST-001 + DIFF-004 closed, DIST-051 + BACKLOG-061 retired, R4 Nice-to-Have deferred-banner, Storage Providers re-titled, Parking Lot age-sweep scheduled ~6/15. Commit + push remain Greg-side.)*
+*Prior: 2026-05-31 (S37 — BACKLOG-160 sidebar license badge shipped in v1.5.1; fixed non-hermetic tests writing to the real vault + storage_first enum-serialization bug; backend tests 513→514 pass)*
 *Full history: `backlog-archive-2026-02-12.md`*
