@@ -3,6 +3,19 @@ Stripe Webhook Handler
 
 Handles incoming Stripe webhook events for Conduital purchase fulfillment.
 
+PRODUCTION NOTE (MON-013)
+-------------------------
+This handler lives in the DESKTOP backend, which in production runs only on the
+buyer's localhost (127.0.0.1:52140) — Stripe can never reach it there. The
+*canonical* production fulfillment endpoint is the standalone Vercel function:
+
+    conduital-site/api/stripe-webhook.js  →  POST https://conduital.com/api/stripe-webhook
+
+That function is a faithful, stateless port of this logic (verify signature →
+generate key → email via Resend; the app activates the key offline). Keep the two
+in sync — the key format here MUST match license.py::_STRIPE_WEBHOOK_KEY_RE. This
+module is retained as the reference implementation and for local/dev testing.
+
 Flow on checkout.session.completed:
   1. Verify Stripe webhook signature (STRIPE_WEBHOOK_SECRET)
   2. Extract buyer email + tier from session metadata

@@ -1,121 +1,80 @@
-# Session 38 — next pick (post-v1.5.1)
+# Session 39 — next pick (post-S38)
 
 ## Context
 
-Session 37 (2026-05-30 → 05-31) shipped **v1.5.1**. What started as a small UX
-feature (BACKLOG-160) turned up two serious pre-existing storage bugs and a vault
-pollution incident. Three commits expected:
+Session 38 (2026-06-02) took the **MON-013 launch blocker** from "broken in prod" to
+**code complete**. The decision (via plan mode) was *code + runbook* with a *Vercel function
+beside the site*. Two repos changed:
 
-1. `docs:` — committed the dangling S36 storage-fix lessons entry (`86e5977`).
-2. `feat(BACKLOG-160)` — **always-visible license tier badge** in the sidebar
-   footer: new [`LicenseBadge.tsx`](frontend/src/components/license/LicenseBadge.tsx)
-   (states: `GTD+` / `GTD` / `Free Trial · Nd` / `Free`, links → Settings);
-   [`useTrialStatus`](frontend/src/hooks/useTrialStatus.ts) extended with
-   `tier`/`effectiveTier`; mounted in [`Layout.tsx`](frontend/src/components/layout/Layout.tsx);
-   `license_badge_clicked` + the two previously-unregistered `trial_day_7/11_banner_dismissed`
-   events added to `KNOWN_EVENTS` ([telemetry.py](backend/app/api/telemetry.py)).
-3. `fix(storage)` — **test isolation + storage_first serialization** (see below).
+- **`conduital-site`** (Astro/Vercel, branch `main`): NEW stateless fulfillment function
+  [`api/stripe-webhook.js`](../conduital-site/api/stripe-webhook.js) — verify Stripe signature →
+  generate 8×8-hex key → email via Resend. Zero deps (node:crypto + fetch). 20 `node --test`
+  (`test/stripe-webhook.test.mjs`). `.env.example` + README documented.
+- **`conduital`** (branch `master`): `config.py` — baked PostHog prod key (`phc_…`, publishable)
+  + `CONDUITAL_DOWNLOAD_URL` → stable `https://conduital.com/download/latest`; `webhooks.py`
+  production-note (local handler is now dev/reference only — Stripe can't reach localhost);
+  `test_license_api.py::TestStripeWebhookKeyContract` pins the key format across both repos;
+  `docs/MON-013-fulfillment-runbook.md`; version **1.5.1 → 1.5.2**. Backend **518 pass / 1 skip**.
 
-### The storage incident (what S37 actually spent its time on)
-Running the full backend suite went 513 pass → **61 failed**, all in code the badge
-never touched. Root cause chain:
-- Tests weren't hermetic: `StorageService` reads `STORAGE_MODE` from the live
-  `backend/.env`, which was set to **`storage_first`** (+ real `STORAGE_PATH`) while
-  testing the S36-followup storage fix. So project-creating tests wrote markdown into
-  the **real Obsidian vault** (`C:\Users\gregm\999_SECOND_BRAIN\_Obsidian\05_Projects`).
-- That exposed a real bug: `persist_project` serializes `project.status`, an ORM
-  `StatusEnum` (`str`+`Enum`), which PyYAML's safe dumper can't represent →
-  `RepresenterError`, re-raised → **`storage_first` project creation 500s in the live app.**
-- `write_entity` truncates (`open("w")`) before the dump raises → 60+ empty `.md` files
-  were created in the vault.
+**Key architecture fact (don't re-discover):** the desktop backend's `webhooks.py` only runs on the
+buyer's `127.0.0.1` — Stripe can't reach it. The app activates Stripe keys **offline** (format-only,
+`license.py::_activate_stripe_opaque`, MON-008), so the public function is stateless (no DB).
 
-**Fixes shipped:** autouse `conftest` fixture forces `STORAGE_MODE=legacy` for every
-test (storage tests override with their own `tmp_path`); recursive `_yaml_safe()` at
-the write boundary ([local_folder.py](backend/app/storage/local_folder.py)) coerces
-enums/datetimes to primitives; regression test added. Full suite green again.
+## ⭐ Recommended pick — DRIVE MON-013 TO ACTUALLY-DONE (external ops)
 
-**Vault cleanup:** all 67 test-fixture files removed from `05_Projects/` (55 had been
-swept by your overnight automation; I deleted the remaining 12). The real project
-`The_Coherence_Dashboard` was a false-positive in my scan — left untouched.
+The code is done but **buyers still get no email until the external steps run.** This is still the
+launch blocker. Work the runbook: **[`docs/MON-013-fulfillment-runbook.md`](docs/MON-013-fulfillment-runbook.md)**.
+These need dashboards/secrets/DNS (Greg's hands; agent can deploy + verify):
+1. **Deploy** the function (`cd conduital-site && git push` if Vercel-connected, else `vercel --prod`).
+   Verify: `curl -i -X POST https://conduital.com/api/stripe-webhook` → 400 (once secret set) or 200.
+2. **Vercel env vars**: `RESEND_API_KEY` (vault → Silver_Sage_Media → Account Information),
+   `STRIPE_WEBHOOK_SECRET` (from step 4). Redeploy after setting.
+3. **Resend domain + DNS** for `conduital.com` (sender `licenses@conduital.com`). **Snapshot the
+   Cloudflare zone FIRST** (2026-04-18 incident).
+4. **Stripe webhook** → `https://conduital.com/api/stripe-webhook`, event `checkout.session.completed`,
+   copy signing secret → Vercel. Set checkout `metadata.conduital_tier`.
+5. **PostHog**: confirm events flow (funnel `/insights/O3Fm24tR`) — needs the v1.5.2 build to ship first.
+6. **End-to-end test purchase** (test mode) → delivered email → paste key → tier unlocks.
+7. Close **MON-013** + flip **MON-002** to verified, with evidence.
 
-## ⚠️ Carry items (read before picking work)
+## Carry items
+1. **Push pending?** S38 committed both repos but may not have pushed (Greg said "commit").
+   `git push` in `conduital` (master) and `conduital-site` (main) if not already synced. (Auto-sync
+   may push the existing commits on its own — they already have proper messages.)
+2. **No 1.5.x installer is hosted yet (BACKLOG-161).** The `/download/latest` redirect still targets
+   `ConduitalSetup-1.4.1.exe` in `conduital-site/vercel.json`. After building/hosting the 1.5.2 `.exe`,
+   **bump that redirect target** (no app rebuild needed for the URL). The v1.5.2 build is also what
+   ships the baked PostHog key + new download URL to users.
+3. **`backend/.env` may still be `STORAGE_MODE=storage_first`** (S37 carry). Tests are hermetic
+   regardless; set back to `legacy` if you don't want live file-sync locally.
 
-1. **Real-DB propagation (verify!).** At 2026-05-31 00:13 local, your vault's sync
-   re-ingested the leftover test `.md` files into the **real Conduital DB**
-   (`%LOCALAPPDATA%\Conduital\tracker.db`), assigning real tracker_ids (saw 3219
-   "With Area", 3220 "Neural Link Systems (Deprecated)"). **Your live app may now
-   contain junk test projects.** Since markdown is the source of truth in
-   `storage_first`, deleting the `.md` files (done) *should* let a sync/restart
-   reconcile them out — but **verify in the app** and hard-delete any stragglers.
-   Quick check: open Projects, filter for names like `*_Test`, `*_Ghost`, `Rebal_*`,
-   `Unstuck_*`, `TZ_*`, `With Area`, `Status Ghost`.
-2. **`storage_first` was never exercised end-to-end before today** — the enum bug
-   proves it. Other entity paths (areas, goals, tasks via `entity_markdown` handlers)
-   may have the same enum/datetime issue. Consider a `storage_first` integration sweep
-   (BACKLOG candidate below).
-3. **Your `backend/.env` is still `STORAGE_MODE=storage_first`.** With the enum fix it
-   now works, but if you don't want live file-sync, set it back to `legacy`.
-4. **Distribution carry (unchanged):** `CONDUITAL_DOWNLOAD_URL` still points to
-   `ConduitalSetup-1.4.1.exe`. App is 1.5.1; no 1.5.x installer built/hosted. Do the
-   BACKLOG-161 dance before distributing (rebuild `.exe` from `version_info.txt`/`conduital.iss`,
-   host, repoint `vercel.json` + `config.py:320` + `webhooks.py:118`).
+## Alternatives (if MON-013 ops are blocked on Greg)
+- **Harden `storage_first`** (the S38 deferred alt) — integration test round-tripping every entity type
+  (project/area/goal/vision/task) through create→persist→read in `storage_first` w/ `tmp_path`; fix any
+  remaining enum/datetime serialization leaks. Pure in-repo, fully verifiable.
+- **Perf: route code-splitting** — bundle is 834 kB (> Vite 500 kB warn). `React.lazy`+`Suspense` on
+  `App.tsx` routes. Clean half-session win.
+- **Wow-factor polish** — BACKLOG-093 quick-capture animation (S) + BACKLOG-150 Health sparklines (M).
+- **Frontend lint backlog** (~18 errors/16 warnings in older pages).
 
-## Pick the next swing
-
-### ⭐ Recommended (NEW — 🚨 LAUNCH BLOCKER, logged 2026-06-01 by CTO): Fix paid-purchase fulfillment (Stripe→Resend) + stand up telemetry (~half-day)
-**Symptom:** paying buyers most likely receive **no license-key email**. Root causes (all verified this session):
-1. **No public deployment for the webhook backend.** `backend/app/api/webhooks.py` implements `POST /api/v1/webhooks/stripe` (verify sig → gen 32-byte key → activate → Resend email), but there is **no Dockerfile/Procfile/render/fly/host config in-repo** — only the static site is hosted. Stripe has nowhere to deliver `checkout.session.completed`. **First task:** confirm whether a hosted instance exists at conduital.com; if not, stand one up (or port fulfillment to a serverless function beside the site).
-2. **`RESEND_API_KEY` unset** (`config.py:319`) → `webhooks.py:113-114` logs a warning and skips the email. A key already exists in the vault credential store (**Silver_Sage_Media → Account Information**) — wire it into the hosted env (do **not** commit it to the repo).
-3. **Resend domain not verified.** Add `conduital.com` in resend.com, verify DNS, verify sender `licenses@conduital.com`. **DNS changes are snapshot-first** — export the Cloudflare zone first (2026-04-18 incident).
-4. **PostHog is also dark** (`POSTHOG_WRITE_KEY=None`, `.env.example` has no entry). Wire `POSTHOG_WRITE_KEY=phc_ygx9UwhNNRCrQPhx98zeBuTcezc3W5zr3sMrMiEV3Cm8` (host `https://us.i.posthog.com` — already correct in `telemetry_service.py`). Bundle into the v1.5.x rebuild while you're in `config.py`.
-
-**Definition of done:** a real Stripe test purchase triggers a **delivered** Resend email containing a working key + correct download URL; PostHog Activity shows live events (funnel `/insights/O3Fm24tR` populates); backlog **MON-013** closed with evidence. Full handoff: vault `C-Suite/CTO/CTO_Conduital_Telemetry_StandUp_PostHog_Resend_2026-06-01.md`.
-
-### Alternative: **Harden `storage_first` (new debt from S37)** (~2–4 hours)
-The enum bug means this mode shipped untested. Add an integration test that, in
-`storage_first` with a `tmp_path`, round-trips **every** entity type (project, area,
-goal, vision, task) through create→persist→read and asserts no serialization error +
-correct frontmatter. Fix any other enum/datetime leaks the sweep finds. Highest-value
-because it's a correctness gap in a mode you're actually running.
-
-### Alternatives
-- **Wow-factor polish** — BACKLOG-093 quick-capture success animation (S) +
-  BACKLOG-150 Health-tab sparkline trends (M). Screenshot-worthy, frontend-only.
-- **Perf debt: route code-splitting** — bundle is 834 kB (> Vite's 500 kB warn).
-  `React.lazy`+`Suspense` on `App.tsx` routes. Clean half-session win.
-- **Templates follow-ups** (BACKLOG-087) — 4th persona; "Start from a template" in
-  `FirstRunGuide`; persist templated projects via `StorageService` (now that the enum
-  bug is fixed, storage_first users would get markdown).
-- **BACKLOG-085 Memory Diff View** / **BACKLOG-049/050** workload + blocked status.
-
-### Cleanup (always-on)
-- Frontend lint backlog (~18 errors/16 warnings in older pages) — `npm run lint --fix`
-  + manual hook-rule pass (~1h). Not introduced by S37.
-
-## Read First (regardless of pick)
+## Read First
 ```
-backlog.md                                              # current state, Stats
-tasks/lessons.md                                        # S37 entry: hermetic tests + enum serialization
-backend/tests/conftest.py                               # the new autouse storage-isolation fixture
-backend/app/storage/local_folder.py                     # _yaml_safe write-boundary sanitizer
-backend/app/services/storage_service.py                 # _project_to_dict (status enum source)
-frontend/src/components/license/LicenseBadge.tsx        # S37 badge pattern
+docs/MON-013-fulfillment-runbook.md          # the external-ops checklist (primary)
+backlog.md                                    # MON-013 / MON-002 / Stats
+task_plan.md, findings.md, progress.md        # S38 plan + verified findings + session log
+conduital-site/api/stripe-webhook.js          # the function (+ test/stripe-webhook.test.mjs)
+backend/app/api/license.py                    # _activate_stripe_opaque + _STRIPE_WEBHOOK_KEY_RE
 ```
 
 ## Phase 4 — Session Closeout (ritual)
-1. Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -q`
-   (target ~514). **Note:** the suite is now hermetic — it forces legacy storage; do
-   NOT rely on `.env`. A bare `... | tail` masks failures (exit code is tail's) — read
-   the summary line.
-2. Frontend build: `cd frontend && cmd //c "npm run build"`.
-3. Update [backlog.md](backlog.md) — mark pick done, refresh Stats.
-4. Bump version (patch/minor per scope). **App version ≠ download URL** (lessons S36).
-5. Commit (one feat per chunk; one closeout commit), then push.
-6. **Write Session 39 prompt → `next-prompt.md`** (MEMORY rule).
+1. Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -q` (target ~519; hermetic).
+2. Frontend build: `cd frontend && cmd //c "npm run build"`. Site fn tests: `cd conduital-site && npm test`.
+3. Update `backlog.md` (mark pick, refresh Stats). Bump version per scope (**app version ≠ download URL**).
+4. Commit (one feat per chunk; closeout commit), then push. **Two repos** if you touch `conduital-site`.
+5. Write Session 40 prompt → `next-prompt.md` (MEMORY rule).
 
 ## Shell Notes (Windows)
 - Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -q`
-- Single test: `backend\venv\Scripts\python.exe -m pytest backend/tests/<name>.py -q`
 - Frontend build: `cd frontend && cmd //c "npm run build"`
-- Frontend lint (changed files): `cd frontend && cmd //c "npx eslint <path>"`
-- git commit with special chars: write message to temp file, `git commit -F file.txt`
+- Site function tests: `node --test C:/Dev/conduital-site/test/stripe-webhook.test.mjs`
+- Other repo git: `git -C C:/Dev/conduital-site <cmd>` (branch `main`; conduital is `master`)

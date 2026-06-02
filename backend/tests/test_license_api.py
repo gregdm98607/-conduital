@@ -310,6 +310,65 @@ class TestActivateStripeInline:
         assert status_resp["tier"] == "gtd"
 
 
+class TestStripeWebhookKeyContract:
+    """
+    MON-013 — pin the Stripe license-key format contract.
+
+    Three parties MUST agree on the 8×8 uppercase-hex shape, or buyers can't activate:
+      1. backend webhooks.py::_generate_license_key  — legacy/reference generator
+      2. backend license.py::_STRIPE_WEBHOOK_KEY_RE   — activation validator
+      3. conduital-site/api/stripe-webhook.js          — PRODUCTION generator
+         (generateLicenseKey + STRIPE_WEBHOOK_KEY_RE)
+
+    (1)↔(2) are asserted directly below. (3) mirrors the identical algorithm
+    (crypto.randomBytes(32).hex.toUpperCase grouped 8×8) and is covered by that
+    repo's `npm test` against the same regex literal.
+    """
+
+    CANONICAL = "AAAAAAAA-BBBBBBBB-CCCCCCCC-DDDDDDDD-EEEEEEEE-FFFFFFFF-00000000-11111111"
+
+    def test_regex_matches_canonical_format(self):
+        from app.api.license import _STRIPE_WEBHOOK_KEY_RE
+        assert _STRIPE_WEBHOOK_KEY_RE.match(self.CANONICAL)
+        # hex class is case-insensitive — a lowercase key must also match
+        assert _STRIPE_WEBHOOK_KEY_RE.match(self.CANONICAL.lower())
+
+    def test_generator_output_matches_validator(self):
+        """The reference generator's output always satisfies the activation regex."""
+        from app.api.license import _STRIPE_WEBHOOK_KEY_RE
+        from app.api.webhooks import _generate_license_key
+        for _ in range(100):
+            key = _generate_license_key()
+            assert _STRIPE_WEBHOOK_KEY_RE.match(key), f"generated key violates contract: {key}"
+            assert key == key.upper()
+            assert len(key) == 71  # 64 hex + 7 dashes
+
+    def test_regex_rejects_gumroad_and_near_misses(self):
+        from app.api.license import _STRIPE_WEBHOOK_KEY_RE
+        # 4-group Gumroad format must NOT match the 8-group Stripe regex (no dispatch collision)
+        assert not _STRIPE_WEBHOOK_KEY_RE.match("12345678-ABCDEF12-34567890-ABCDEF12")
+        # 7 groups (one short)
+        assert not _STRIPE_WEBHOOK_KEY_RE.match(
+            "AAAAAAAA-BBBBBBBB-CCCCCCCC-DDDDDDDD-EEEEEEEE-FFFFFFFF-00000000"
+        )
+        # first group only 7 chars wide
+        assert not _STRIPE_WEBHOOK_KEY_RE.match(
+            "AAAAAAA-BBBBBBBB-CCCCCCCC-DDDDDDDD-EEEEEEEE-FFFFFFFF-00000000-11111111"
+        )
+        # non-hex character (G)
+        assert not _STRIPE_WEBHOOK_KEY_RE.match(
+            "GGGGGGGG-BBBBBBBB-CCCCCCCC-DDDDDDDD-EEEEEEEE-FFFFFFFF-00000000-11111111"
+        )
+
+    def test_generated_key_activates_gtd_via_endpoint(self, client):
+        """A key from the canonical generator activates gtd through the real endpoint."""
+        from app.api.webhooks import _generate_license_key
+        key = _generate_license_key()
+        resp = client.post("/api/v1/license/activate", json={"license_key": key})
+        assert resp.status_code == 200
+        assert resp.json()["tier"] == "gtd"
+
+
 class TestActivateOtherFormats:
     def test_unknown_prefix_returns_400(self, client):
         resp = client.post(

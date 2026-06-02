@@ -1,5 +1,60 @@
 # Progress Log
 
+## Session: 2026-06-02 — S38: MON-013 launch blocker — PLAN
+
+### Decide-the-session (per user request)
+- Identified the new item in next steps: **MON-013** (Stripe→Resend fulfillment broken in prod +
+  PostHog dark), logged 2026-06-01 by CTO; now the ⭐ recommended pick, demoting "Harden storage_first".
+- Verified every MON-013 claim against source (see findings.md) — all TRUE.
+- **AskUserQuestion decisions:** (1) spend session on **MON-013 code + runbook**;
+  (2) deploy via **Vercel serverless function beside the site**.
+
+### Discovery
+- `webhooks.py` is in the desktop backend → unreachable by Stripe in prod (localhost only).
+- Site is a **separate repo `C:\Dev\conduital-site`** (Astro 6 static on Vercel) — function goes there.
+- App activates Stripe keys **offline** (`_activate_stripe_opaque`, MON-008) ⇒ **stateless function**.
+- Refreshed stale v1.1.0/S14 planning files (task_plan.md, findings.md) for S38.
+
+### Phase 1 ✅ — Serverless fulfillment function (conduital-site)
+Confirmed Vercel function contract from official docs before writing (raw body via
+`await request.text()`, web-signature `export async function POST`, `node:crypto` ⇒ Node runtime,
+non-Next `/api/*.js` auto-deployed). Files created in `C:\Dev\conduital-site`:
+- `api/stripe-webhook.js` — stateless Stripe→Resend fulfillment, ported faithfully from `webhooks.py`.
+  Zero deps. Pure helpers exported for tests. Never logs the key. Email failure → still 200 (no dup keys).
+- `.env.example` — all six env vars + safe defaults.
+- `test/stripe-webhook.test.mjs` — **20/20 pass** (`node --test`). Pinned the 8×8-hex key contract
+  against the app's `_STRIPE_WEBHOOK_KEY_RE`. Tests live outside `/api` (every `/api` file = endpoint).
+- `package.json` — added `"test": "node --test test/"`. `README.md` — fulfillment section.
+- Node on this box = v24.13.1 (satisfies site's >=22.12; Vercel uses Node 22 — same stable APIs).
+
+### Phase 2 ✅ — Desktop-app config + contract (conduital)
+- `config.py`: baked PostHog prod key (`phc_…`, publishable/send-only — safe); `CONDUITAL_DOWNLOAD_URL`
+  → stable `https://conduital.com/download/latest` (decouples app version from URL). Both commented.
+- `webhooks.py`: PRODUCTION-NOTE docstring pointing to the canonical Vercel function; kept as reference/dev.
+- `backend/.env.example`: added Telemetry (PostHog) section + Stripe/Resend "legacy local webhook only" note.
+- `test_license_api.py`: new `TestStripeWebhookKeyContract` (4 tests) pins the 8×8-hex contract — incl.
+  reference generator output vs validator regex (×100) and a real-endpoint activation. **26/26 pass (exit 0).**
+- Frontend: confirmed NO key needed (telemetry.ts → backend → PostHog).
+
+### Phase 3 ✅ — Runbook
+- `docs/MON-013-fulfillment-runbook.md`: full human-only checklist (deploy, Vercel env, Resend+DNS
+  snapshot-first, Stripe endpoint+secret+metadata, PostHog verify, test-mode E2E, close-out, limitations,
+  troubleshooting).
+
+### Phase 4 ✅ — Verify + closeout
+- Verification: site `node --test` 20/20 (exit 0); frontend build clean (tsc+vite, 2080 modules, 5.79s,
+  pre-existing 834 kB chunk warning); backend pytest **518 pass / 1 skip** in 279s (519 total, +4 contract).
+  Confirmed no telemetry tests exist → baking the PostHog key breaks nothing.
+- Version 1.5.1 → 1.5.2 (pyproject SSoT + `sync_version.py` → package.json, conduital.iss, config fallback; `--check` ok).
+- backlog.md: launch-blocker callout rewritten to "code complete / external ops remain"; MON-013 + MON-002
+  updated; Stats → 519 tests + S38 last-updated note.
+- Wrote S39 `next-prompt.md` — primary pick = drive `docs/MON-013-fulfillment-runbook.md` external ops to done.
+- Committing both repos per Greg's go (conduital @ master, conduital-site @ main). Push held unless requested.
+
+### SESSION COMPLETE — MON-013 code shipped; external deploy/DNS/Stripe ops remain (runbook handed off).
+
+---
+
 ## Session: 2026-02-19 — v1.1.0 Session 14: Debt Sweep + Data Import (BACKLOG-090)
 
 ### Warmup: Debt Sweep (DEBT-125/126/128/129/132)

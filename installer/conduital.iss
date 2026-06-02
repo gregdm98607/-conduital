@@ -17,11 +17,11 @@
 ;   Or from command line: iscc installer\conduital.iss
 ;
 ; Output:
-;   installer\Output\ConduitalSetup-1.2.0.exe
+;   installer\Output\ConduitalSetup-1.5.2.exe
 ; ============================================================================
 
 #define MyAppName "Conduital"
-#define MyAppVersion "1.5.1"
+#define MyAppVersion "1.5.2"
 #define MyAppPublisher "Conduital"
 #define MyAppURL "https://conduital.com"
 #define MyAppExeName "Conduital.exe"

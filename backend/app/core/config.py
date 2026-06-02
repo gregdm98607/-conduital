@@ -36,7 +36,7 @@ def _read_version_from_pyproject() -> str:
     Falls back to a hardcoded default in packaged builds where
     pyproject.toml is not available.
     """
-    _FALLBACK_VERSION = "1.5.1"
+    _FALLBACK_VERSION = "1.5.2"
 
     # In development: pyproject.toml is at backend/pyproject.toml
     # In packaged builds: PyInstaller extracts bundled data to sys._MEIPASS
@@ -316,11 +316,18 @@ class Settings(BaseSettings):
     STRIPE_FULL_PRICE_ID: Optional[str] = None        # price_* for Full tier
 
     # Resend (transactional email — fulfillment + license delivery)
+    # NOTE: production fulfillment now runs in the Vercel function (conduital-site/
+    # api/stripe-webhook.js), not this desktop backend. RESEND_API_KEY here is only
+    # consumed by the legacy local webhook handler (dev/reference). See MON-013.
     RESEND_API_KEY: Optional[str] = None              # re_* (from resend.com)
-    CONDUITAL_DOWNLOAD_URL: str = "https://conduital.com/downloads/ConduitalSetup-1.4.1.exe"
+    # Stable redirect (target lives in conduital-site/vercel.json) so the app version
+    # and the download URL stay decoupled — bump the redirect target, not this string.
+    CONDUITAL_DOWNLOAD_URL: str = "https://conduital.com/download/latest"
 
     # PostHog (analytics telemetry)
-    POSTHOG_WRITE_KEY: Optional[str] = None           # Production PostHog write key
+    # phc_* is a *publishable* client write key (send-only, cannot read project data),
+    # so it is safe to bake in as a default and ship in the build. Override via env.
+    POSTHOG_WRITE_KEY: Optional[str] = "phc_ygx9UwhNNRCrQPhx98zeBuTcezc3W5zr3sMrMiEV3Cm8"  # Production PostHog write key
     POSTHOG_DEV_WRITE_KEY: Optional[str] = None       # Development PostHog write key
     ANALYTICS_ENABLED: bool = True                    # Master enable/disable for telemetry
 

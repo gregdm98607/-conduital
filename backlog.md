@@ -14,12 +14,17 @@
 > `tasks/lessons.md` (2026-05-31) and `next-prompt.md` carry items (incl. real-DB
 > propagation to verify).
 
-> **🚨 LAUNCH BLOCKER (logged 2026-06-01, CTO) — NEXT SESSION PICK. Paid buyers likely receive NO license email.**
-> The Stripe→Resend fulfillment path is coded (`backend/app/api/webhooks.py`) but **non-functional in production**:
-> (1) **no public deploy config for the webhook backend** exists in-repo (no Dockerfile / Procfile / render / fly — only the static site is hosted), so Stripe has no endpoint to deliver `POST /api/v1/webhooks/stripe`; and
-> (2) **`RESEND_API_KEY` is unset** (`config.py:319`), so even when invoked the handler logs a warning and **silently skips** the fulfillment email (`webhooks.py:113-114`); and
-> (3) **Resend domain `conduital.com` was never verified** (sender `licenses@conduital.com` unverified). PostHog telemetry was also never configured (`POSTHOG_WRITE_KEY=None`) — wire it in the same pass.
-> A `RESEND_API_KEY` already exists in the vault credential store (Silver_Sage_Media → *Account Information*). See **MON-013** and `next-prompt.md`. Full context: vault `C-Suite/CTO/CTO_Conduital_Telemetry_StandUp_PostHog_Resend_2026-06-01.md`.
+> **🚨 LAUNCH BLOCKER (logged 2026-06-01, CTO) — S38 (2026-06-02): CODE COMPLETE; external ops remain.**
+> Root cause: the Stripe→Resend fulfillment handler lived only in the **desktop** backend
+> (`backend/app/api/webhooks.py`) — in prod it runs on the buyer's `127.0.0.1`, which Stripe can never
+> reach; `RESEND_API_KEY` was unset; the Resend domain was unverified; PostHog was dark.
+> **S38 shipped the code fix:** fulfillment relocated to a **stateless Vercel function beside the site**
+> (`conduital-site/api/stripe-webhook.js`, 20 `node --test`); PostHog prod key wired into `config.py`;
+> `CONDUITAL_DOWNLOAD_URL` → stable `/download/latest`; key-format contract pinned on both sides.
+> **Remaining = human-only ops:** deploy the function, set Vercel env (incl. `RESEND_API_KEY` from vault
+> *Silver_Sage_Media → Account Information*), verify Resend DNS (**snapshot-first**, 2026-04-18 incident),
+> register the Stripe endpoint, run a test purchase. Step-by-step: **`docs/MON-013-fulfillment-runbook.md`**.
+> See **MON-013** and vault `C-Suite/CTO/CTO_Conduital_Telemetry_StandUp_PostHog_Resend_2026-06-01.md`.
 
 This backlog is organized by commercial release milestones. Each release builds on the previous, enabling incremental delivery.
 
@@ -65,7 +70,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | ID | Description | Status | Notes |
 |----|-------------|--------|-------|
 | MON-001 | Gumroad license activation | **Done** (v1.3.0) | `POST /api/v1/license/activate` — UUID key format, /v2/licenses/verify call, 8HEX-8HEX-8HEX-8HEX strict regex |
-| MON-002 | Stripe webhook fulfillment | **Done (code) — ⚠️ UNVERIFIED IN PROD** | `POST /api/v1/webhooks/stripe` — checkout.session.completed → key gen → Resend email. **2026-06-01 (CTO):** code present but no public deploy found for this endpoint and `RESEND_API_KEY` unset → fulfillment email not actually delivered in prod. See **MON-013**. |
+| MON-002 | Stripe webhook fulfillment | **Done (code) — ⚠️ UNVERIFIED IN PROD** | `POST /api/v1/webhooks/stripe` — checkout.session.completed → key gen → Resend email. **2026-06-01 (CTO):** code present but no public deploy + `RESEND_API_KEY` unset → email not delivered in prod. **S38 (2026-06-02):** fulfillment relocated to the public Vercel function (see **MON-013**); this local handler retained as dev/reference. Prod delivery still pending the external deploy/DNS steps. |
 | MON-003 | Trial system + daily expiry job | **Done** (v1.3.0) | 3AM scheduler downgrades expired trials |
 | MON-004 | Settings → License panel | **Done** (v1.3.0) | Tier badge, key entry, activate button, inline feedback |
 | MON-005 | App-level gate-hit handling | **Done** (v1.3.0) | 403 → toast + redirect to Settings |
@@ -76,7 +81,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | MON-010 | Trial expiry banners (Day 7/11/13) | **Done** (v1.3.2, S31) | `useTrialStatus` hook + `TrialBanner` component. Day-7 amber sticky, Day-11 red sticky, Day-13 blocking modal with extension request. Per-session dismissal via sessionStorage. |
 | MON-011 | Feedback admin view | **Done** (v1.3.3, S32) | Settings → Feedback section: filter chips (All / Bug / Feature / General / Unresolved), inline expand, resolve checkbox (PATCH `/feedback/{id}`), CSV export. New `resolved` column on `feedback` table (Alembic 018). |
 | MON-012 | Auth-mode license activation | Deferred | Returns 501. Single-user desktop is the only supported path; multi-user is post-R4. |
-| MON-013 | **🚨 Stripe→Resend fulfillment broken in prod (license email not delivered)** | **Open — LAUNCH BLOCKER** (logged 2026-06-01, CTO) | Code exists (`backend/app/api/webhooks.py`) but: (a) **no public deploy** for the webhook endpoint — Stripe can't reach `POST /api/v1/webhooks/stripe` (no Dockerfile/Procfile/render/fly in-repo); (b) **`RESEND_API_KEY` unset** (`config.py:319`) → email step skipped (`webhooks.py:113-114`); (c) **Resend domain `conduital.com` never verified**; sender `licenses@conduital.com` unverified. Buyers fall back to manual receipt-paste activation; no key email is sent. **DoD:** real Stripe test purchase → delivered Resend email with a working key + correct download URL. `RESEND_API_KEY` is in vault *Account Information*. DNS = snapshot-first (2026-04-18 incident). Bundle PostHog `POSTHOG_WRITE_KEY=phc_ygx9UwhNNRCrQPhx98zeBuTcezc3W5zr3sMrMiEV3Cm8` (host `https://us.i.posthog.com`) in the same rebuild. |
+| MON-013 | **🚨 Stripe→Resend fulfillment broken in prod (license email not delivered)** | **Code complete (S38, 2026-06-02) — blocked on external ops** | Root cause: handler lived only in the desktop backend (localhost → Stripe unreachable); `RESEND_API_KEY` unset; Resend domain unverified; PostHog dark. **S38 fix (code, all unit-verified):** stateless **Vercel function** `conduital-site/api/stripe-webhook.js` (verify sig → gen 8×8 key → Resend email; 20 `node --test`); PostHog prod key baked into `config.py` (publishable, send-only); `CONDUITAL_DOWNLOAD_URL` → stable `/download/latest`; `webhooks.py` prod-note; cross-repo key-format contract test (`test_license_api.py::TestStripeWebhookKeyContract`). **Remaining (human-only — `docs/MON-013-fulfillment-runbook.md`):** deploy function; set Vercel env (`RESEND_API_KEY` from vault *Account Information*); verify Resend DNS (snapshot-first, 2026-04-18); register Stripe endpoint + signing secret; test-mode purchase. **DoD:** real Stripe test purchase → delivered Resend email with a working key + correct download URL. |
 
 ---
 
@@ -434,8 +439,9 @@ For each release, verify:
 | Open tech debt | 1 (DEBT-020 SyncEngine area markdown handling — surfaced grooming B1; retained Open pending a sync-engine verification pass, not closed without evidence) |
 | Open documentation | 3 (DOC-001/002/004 retargeted post-launch v1.4.x; DOC-005 retired 2026-05-31 grooming B2; DOC-006/007 Memory/AI Context open) |
 | Completed items (archived) | 216+ |
-| Backend tests | 515 (514 pass, 1 skip) — S37 +1 storage_first enum-serialization regression; suite now hermetic (forces legacy storage) |
+| Backend tests | 519 (518 pass, 1 skip) — S38 +4 MON-013 cross-repo key-format contract tests; suite hermetic (forces legacy storage). Plus conduital-site `api/stripe-webhook.js`: 20 `node --test`. |
 
-*Last updated: 2026-05-31 (CTO Cowork — Gate 4 Weekly Review Assistant backlog mutation filed as R9 / BACKLOG-162 + BACKLOG-163 onboarding deltas; applied SSS CPO 10-delta grooming sweep B1–B9: DEBT-020 Stats reconciled, DOC-005 retired, DIST-001 + DIFF-004 closed, DIST-051 + BACKLOG-061 retired, R4 Nice-to-Have deferred-banner, Storage Providers re-titled, Parking Lot age-sweep scheduled ~6/15. Commit + push remain Greg-side.)*
+*Last updated: 2026-06-02 (S38 — MON-013 launch blocker CODE COMPLETE: relocated Stripe→Resend fulfillment to a stateless Vercel function (`conduital-site/api/stripe-webhook.js`, 20 `node --test`); wired PostHog prod key + stable `/download/latest` URL in `config.py`; added cross-repo key-format contract test; authored `docs/MON-013-fulfillment-runbook.md` for the external ops; v1.5.1→1.5.2. Backend 518 pass / 1 skip. External deploy/DNS/Stripe steps + push remain Greg-side.)*
+*Prior: 2026-05-31 (CTO Cowork — Gate 4 Weekly Review Assistant backlog mutation filed as R9 / BACKLOG-162 + BACKLOG-163 onboarding deltas; applied SSS CPO 10-delta grooming sweep B1–B9: DEBT-020 Stats reconciled, DOC-005 retired, DIST-001 + DIFF-004 closed, DIST-051 + BACKLOG-061 retired, R4 Nice-to-Have deferred-banner, Storage Providers re-titled, Parking Lot age-sweep scheduled ~6/15. Commit + push remain Greg-side.)*
 *Prior: 2026-05-31 (S37 — BACKLOG-160 sidebar license badge shipped in v1.5.1; fixed non-hermetic tests writing to the real vault + storage_first enum-serialization bug; backend tests 513→514 pass)*
 *Full history: `backlog-archive-2026-02-12.md`*
