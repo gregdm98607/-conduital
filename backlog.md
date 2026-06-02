@@ -14,6 +14,13 @@
 > `tasks/lessons.md` (2026-05-31) and `next-prompt.md` carry items (incl. real-DB
 > propagation to verify).
 
+> **🚨 LAUNCH BLOCKER (logged 2026-06-01, CTO) — NEXT SESSION PICK. Paid buyers likely receive NO license email.**
+> The Stripe→Resend fulfillment path is coded (`backend/app/api/webhooks.py`) but **non-functional in production**:
+> (1) **no public deploy config for the webhook backend** exists in-repo (no Dockerfile / Procfile / render / fly — only the static site is hosted), so Stripe has no endpoint to deliver `POST /api/v1/webhooks/stripe`; and
+> (2) **`RESEND_API_KEY` is unset** (`config.py:319`), so even when invoked the handler logs a warning and **silently skips** the fulfillment email (`webhooks.py:113-114`); and
+> (3) **Resend domain `conduital.com` was never verified** (sender `licenses@conduital.com` unverified). PostHog telemetry was also never configured (`POSTHOG_WRITE_KEY=None`) — wire it in the same pass.
+> A `RESEND_API_KEY` already exists in the vault credential store (Silver_Sage_Media → *Account Information*). See **MON-013** and `next-prompt.md`. Full context: vault `C-Suite/CTO/CTO_Conduital_Telemetry_StandUp_PostHog_Resend_2026-06-01.md`.
+
 This backlog is organized by commercial release milestones. Each release builds on the previous, enabling incremental delivery.
 
 **Module System:** See `backend/MODULE_SYSTEM.md` for technical details.
@@ -58,7 +65,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | ID | Description | Status | Notes |
 |----|-------------|--------|-------|
 | MON-001 | Gumroad license activation | **Done** (v1.3.0) | `POST /api/v1/license/activate` — UUID key format, /v2/licenses/verify call, 8HEX-8HEX-8HEX-8HEX strict regex |
-| MON-002 | Stripe webhook fulfillment | **Done** (v1.3.1) | `POST /api/v1/webhooks/stripe` — checkout.session.completed → key gen → Resend email |
+| MON-002 | Stripe webhook fulfillment | **Done (code) — ⚠️ UNVERIFIED IN PROD** | `POST /api/v1/webhooks/stripe` — checkout.session.completed → key gen → Resend email. **2026-06-01 (CTO):** code present but no public deploy found for this endpoint and `RESEND_API_KEY` unset → fulfillment email not actually delivered in prod. See **MON-013**. |
 | MON-003 | Trial system + daily expiry job | **Done** (v1.3.0) | 3AM scheduler downgrades expired trials |
 | MON-004 | Settings → License panel | **Done** (v1.3.0) | Tier badge, key entry, activate button, inline feedback |
 | MON-005 | App-level gate-hit handling | **Done** (v1.3.0) | 403 → toast + redirect to Settings |
@@ -69,6 +76,7 @@ This block tracks the v1.3.x monetization workstream and what remains for v1.4.
 | MON-010 | Trial expiry banners (Day 7/11/13) | **Done** (v1.3.2, S31) | `useTrialStatus` hook + `TrialBanner` component. Day-7 amber sticky, Day-11 red sticky, Day-13 blocking modal with extension request. Per-session dismissal via sessionStorage. |
 | MON-011 | Feedback admin view | **Done** (v1.3.3, S32) | Settings → Feedback section: filter chips (All / Bug / Feature / General / Unresolved), inline expand, resolve checkbox (PATCH `/feedback/{id}`), CSV export. New `resolved` column on `feedback` table (Alembic 018). |
 | MON-012 | Auth-mode license activation | Deferred | Returns 501. Single-user desktop is the only supported path; multi-user is post-R4. |
+| MON-013 | **🚨 Stripe→Resend fulfillment broken in prod (license email not delivered)** | **Open — LAUNCH BLOCKER** (logged 2026-06-01, CTO) | Code exists (`backend/app/api/webhooks.py`) but: (a) **no public deploy** for the webhook endpoint — Stripe can't reach `POST /api/v1/webhooks/stripe` (no Dockerfile/Procfile/render/fly in-repo); (b) **`RESEND_API_KEY` unset** (`config.py:319`) → email step skipped (`webhooks.py:113-114`); (c) **Resend domain `conduital.com` never verified**; sender `licenses@conduital.com` unverified. Buyers fall back to manual receipt-paste activation; no key email is sent. **DoD:** real Stripe test purchase → delivered Resend email with a working key + correct download URL. `RESEND_API_KEY` is in vault *Account Information*. DNS = snapshot-first (2026-04-18 incident). Bundle PostHog `POSTHOG_WRITE_KEY=phc_ygx9UwhNNRCrQPhx98zeBuTcezc3W5zr3sMrMiEV3Cm8` (host `https://us.i.posthog.com`) in the same rebuild. |
 
 ---
 

@@ -62,7 +62,16 @@ swept by your overnight automation; I deleted the remaining 12). The real projec
 
 ## Pick the next swing
 
-### Recommended: **Harden `storage_first` (new debt from S37)** (~2–4 hours)
+### ⭐ Recommended (NEW — 🚨 LAUNCH BLOCKER, logged 2026-06-01 by CTO): Fix paid-purchase fulfillment (Stripe→Resend) + stand up telemetry (~half-day)
+**Symptom:** paying buyers most likely receive **no license-key email**. Root causes (all verified this session):
+1. **No public deployment for the webhook backend.** `backend/app/api/webhooks.py` implements `POST /api/v1/webhooks/stripe` (verify sig → gen 32-byte key → activate → Resend email), but there is **no Dockerfile/Procfile/render/fly/host config in-repo** — only the static site is hosted. Stripe has nowhere to deliver `checkout.session.completed`. **First task:** confirm whether a hosted instance exists at conduital.com; if not, stand one up (or port fulfillment to a serverless function beside the site).
+2. **`RESEND_API_KEY` unset** (`config.py:319`) → `webhooks.py:113-114` logs a warning and skips the email. A key already exists in the vault credential store (**Silver_Sage_Media → Account Information**) — wire it into the hosted env (do **not** commit it to the repo).
+3. **Resend domain not verified.** Add `conduital.com` in resend.com, verify DNS, verify sender `licenses@conduital.com`. **DNS changes are snapshot-first** — export the Cloudflare zone first (2026-04-18 incident).
+4. **PostHog is also dark** (`POSTHOG_WRITE_KEY=None`, `.env.example` has no entry). Wire `POSTHOG_WRITE_KEY=phc_ygx9UwhNNRCrQPhx98zeBuTcezc3W5zr3sMrMiEV3Cm8` (host `https://us.i.posthog.com` — already correct in `telemetry_service.py`). Bundle into the v1.5.x rebuild while you're in `config.py`.
+
+**Definition of done:** a real Stripe test purchase triggers a **delivered** Resend email containing a working key + correct download URL; PostHog Activity shows live events (funnel `/insights/O3Fm24tR` populates); backlog **MON-013** closed with evidence. Full handoff: vault `C-Suite/CTO/CTO_Conduital_Telemetry_StandUp_PostHog_Resend_2026-06-01.md`.
+
+### Alternative: **Harden `storage_first` (new debt from S37)** (~2–4 hours)
 The enum bug means this mode shipped untested. Add an integration test that, in
 `storage_first` with a `tmp_path`, round-trips **every** entity type (project, area,
 goal, vision, task) through create→persist→read and asserts no serialization error +
