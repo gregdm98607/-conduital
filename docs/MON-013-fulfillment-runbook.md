@@ -59,12 +59,15 @@ cd C:\Dev\conduital-site
 vercel --prod
 ```
 
-**Verify the endpoint exists** (a *healthy* response is HTTP 400 with a JSON error, because no
-valid signature is attached — that proves the function is live and verifying):
+**Verify the endpoint is live.** The apex domain 307-redirects to `www`, so hit the canonical host
+(or `curl -L`). The function is **fail-closed**, so the response tells you whether the secret is set:
 ```
-curl -i -X POST https://conduital.com/api/stripe-webhook -H "content-type: application/json" -d "{}"
-# Expect: HTTP/1.1 400  {"error":"Missing stripe-signature header"}   (once STRIPE_WEBHOOK_SECRET is set)
-# Before the secret is set you'll instead get 200 {"status":"ignored",...} — also fine.
+curl -i -X POST https://www.conduital.com/api/stripe-webhook -H "content-type: application/json" -d "{}"
+# BEFORE the secret is set:  HTTP 200  {"status":"unconfigured"}
+#   → live, but fail-closed: it refuses to fulfill until STRIPE_WEBHOOK_SECRET is set. This is your
+#     "secret not set yet" signal.
+# AFTER the secret is set, an unsigned request:  HTTP 400  {"error":"Missing stripe-signature header"}
+# A 404 means the function is not deployed.
 ```
 
 ---
@@ -82,6 +85,11 @@ Vercel → conduital-site → **Settings → Environment Variables** (Production
 | `STRIPE_FULL_PRICE_ID` | `price_…` | Optional. |
 
 **Redeploy** after changing env vars (Vercel does not apply them to existing deployments).
+
+> **Security — the signing secret is mandatory.** The function is **fail-closed**: with no
+> `STRIPE_WEBHOOK_SECRET` it returns `{"status":"unconfigured"}` and fulfills nothing. So adding
+> `RESEND_API_KEY` alone can never make it an open "email a key to anyone" relay — but it also means
+> **no fulfillment happens until `STRIPE_WEBHOOK_SECRET` is set** (Step 4). Set both before going live.
 
 ---
 
@@ -162,6 +170,7 @@ If all six hold in test mode, repeat Steps 2/4 for **live mode** (live `whsec_`,
 ## Troubleshooting
 | Symptom | Likely cause / fix |
 |---|---|
+| 200 `{"status":"unconfigured"}` | Fail-closed: `STRIPE_WEBHOOK_SECRET` not set on Vercel. Set it (Step 4) + redeploy. |
 | Stripe shows 400 on delivery | Signature mismatch → `STRIPE_WEBHOOK_SECRET` wrong or not redeployed; ensure raw body (already handled). |
 | 200 but `email_sent:"false"` | `RESEND_API_KEY` unset on Vercel, or buyer email missing on the session. |
 | Email sent but not delivered | Resend domain/sender not verified (Step 3), or in spam — check Resend logs. |
