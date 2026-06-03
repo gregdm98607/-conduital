@@ -1,16 +1,73 @@
-﻿"""
-Populate Conduital with fresh, realistic demo data for screenshots.
-Uses April 2026 dates to look current.
 """
+Populate Conduital with fresh, realistic demo data for screenshots.
+
+DATE-RELATIVE: every date is shifted so that "now" lands on TODAY, which keeps
+momentum scores, trend lines, stalled-detection, due dates, and the activity feed
+looking current no matter when the script is run. The original data set was authored
+against an effective "now" of 2026-04-01; we compute a single SHIFT from that anchor
+to date.today() and apply it uniformly to every date value at insert time.
+
+Safety: the target database is backed up (timestamped copy) before any data is cleared.
+
+Override the target DB for testing with the CONDUITAL_DB environment variable.
+"""
+import os
+import re
+import shutil
 import sqlite3
 import json
 import random
 from datetime import datetime, timedelta, date
 
-DB_PATH = r'C:\Users\gregm\AppData\Local\Conduital\tracker.db'
+# --- Target database -------------------------------------------------------
+DB_PATH = os.environ.get(
+    "CONDUITAL_DB",
+    r'C:\Users\gregm\AppData\Local\Conduital\tracker.db',
+)
+
+# --- Date-relative shift ---------------------------------------------------
+# Original data was authored with this effective "now".
+ANCHOR_NOW = date(2026, 4, 1)
+# Allow a fixed target for reproducible screenshots; default is the real today.
+_target = os.environ.get("CONDUITAL_TARGET_TODAY")
+TARGET_TODAY = datetime.strptime(_target, "%Y-%m-%d").date() if _target else date.today()
+SHIFT_DAYS = (TARGET_TODAY - ANCHOR_NOW).days
+print(f"Anchoring demo data to {TARGET_TODAY} (shift {SHIFT_DAYS:+d} days)")
+
+_DATE_ONLY_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+_DATETIME_RE = re.compile(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$')
+
+
+def maybe_shift(value):
+    """Shift any date-like string by SHIFT_DAYS, preserving its format.
+    Non-date values (numbers, None, JSON blobs, plain text) pass through untouched."""
+    if not isinstance(value, str):
+        return value
+    if _DATETIME_RE.match(value):
+        dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S") + timedelta(days=SHIFT_DAYS)
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    if _DATE_ONLY_RE.match(value):
+        dt = datetime.strptime(value, "%Y-%m-%d") + timedelta(days=SHIFT_DAYS)
+        return dt.strftime("%Y-%m-%d")
+    return value
+
+
+# --- Connect (with backup) -------------------------------------------------
+if os.path.exists(DB_PATH):
+    backup_path = f"{DB_PATH}.backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    shutil.copy2(DB_PATH, backup_path)
+    print(f"Backed up existing database -> {backup_path}")
+else:
+    print(f"No existing database at {DB_PATH}; a new one will be created.")
 
 conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
+
+
+def ex(sql, params):
+    """Parameterized insert with automatic date shifting on every bound value."""
+    cursor.execute(sql, tuple(maybe_shift(p) for p in params))
+
 
 # ============================================================
 # STEP 1: Clear existing data (order matters for FK constraints)
@@ -45,7 +102,7 @@ for t in tables_to_clear:
 # Reset autoincrement counters
 try:
     cursor.execute("DELETE FROM sqlite_sequence WHERE 1=1")
-except:
+except Exception:
     pass
 
 # ============================================================
@@ -61,7 +118,7 @@ contexts = [
 ]
 now_str = '2026-04-01 09:00:00'
 for c in contexts:
-    cursor.execute("""
+    ex("""
         INSERT INTO contexts (id, name, context_type, description, icon, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (c[0], c[1], c[2], c[3], c[4], now_str, now_str))
@@ -96,8 +153,8 @@ for a in areas:
     created = (base_date + timedelta(days=random.randint(0, 10))).strftime('%Y-%m-%d %H:%M:%S')
     updated = '2026-03-31 14:30:00'
     reviewed = '2026-03-28 09:00:00'
-    cursor.execute("""
-        INSERT INTO areas (id, title, description, folder_path, standard_of_excellence, 
+    ex("""
+        INSERT INTO areas (id, title, description, folder_path, standard_of_excellence,
                           review_frequency, created_at, updated_at, last_reviewed_at,
                           user_id, health_score, is_archived, archived_at, deleted_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, NULL, NULL)
@@ -108,19 +165,19 @@ print("Inserted areas")
 # STEP 4: Goals & Visions
 # ============================================================
 goals = [
-    (1, 'Launch Conduital v2.0', 'Ship the major v2.0 release with AI-powered weekly reviews, momentum tracking, and calendar integration.', 
-     '1-3_years', '2026-06-30', 'active', None),
+    (1, 'Launch Conduital v2.0', 'Ship the major v2.0 release with AI-powered weekly reviews, momentum tracking, and calendar integration.',
+     '1-3_years', '2026-08-31', 'active', None),
     (2, 'Reach 1,000 paying users', 'Grow the subscriber base to 1,000 active paying users through organic marketing and product-led growth.',
-     '1-3_years', '2026-12-31', 'active', None),
+     '1-3_years', '2027-02-28', 'active', None),
     (3, 'Complete half-marathon', 'Train for and complete a half-marathon by fall 2026.',
-     '1-3_years', '2026-10-15', 'active', None),
+     '1-3_years', '2026-12-15', 'active', None),
     (4, 'Read 12 books this year', 'One book per month across business, fiction, and personal development.',
-     '1-3_years', '2026-12-31', 'active', None),
+     '1-3_years', '2027-02-28', 'active', None),
 ]
 
 for g in goals:
     created = '2026-01-05 10:00:00'
-    cursor.execute("""
+    ex("""
         INSERT INTO goals (id, title, description, timeframe, target_date, status, completed_at, created_at, updated_at, user_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
     """, (g[0], g[1], g[2], g[3], g[4], g[5], g[6], created, '2026-03-31 10:00:00'))
@@ -131,7 +188,7 @@ visions = [
     (2, 'Financial independence', 'Achieve enough passive and business income to have full autonomy over how I spend my time.', '5+_years'),
 ]
 for v in visions:
-    cursor.execute("""
+    ex("""
         INSERT INTO visions (id, title, description, timeframe, created_at, updated_at, user_id)
         VALUES (?, ?, ?, ?, ?, ?, NULL)
     """, (v[0], v[1], v[2], v[3], '2026-01-05 10:00:00', '2026-03-31 10:00:00'))
@@ -140,58 +197,60 @@ print("Inserted visions")
 # ============================================================
 # STEP 5: Projects (mix of active, someday/maybe, completed)
 # ============================================================
+# Note on goal target dates above: bumped ~2 months from the original so that,
+# after the date shift, they still read as comfortably in the future.
 projects = [
     # Active projects
-    (1, 'Conduital v2.0 Release', 'Major release with AI weekly reviews, momentum dashboard, and calendar sync. Target: June 2026.', 
-     'active', 1, None, 1, None, 1, 0.87, '2026-03-31 22:15:00', None, None, '2026-06-30',
+    (1, 'Conduital v2.0 Release', 'Major release with AI weekly reviews, momentum dashboard, and calendar sync. Target: late summer 2026.',
+     'active', 1, None, 1, None, 1, 0.87, '2026-03-31 22:15:00', None, None, '2026-08-31',
      'A polished v2.0 release that delights users and drives upgrades.', 'weekly'),
-    
+
     (2, 'Content Marketing Campaign', 'Create a series of blog posts, comparison guides, and YouTube videos about GTD methodology and how Conduital implements it.',
-     'active', 2, None, 2, None, 2, 0.72, '2026-03-30 16:00:00', None, None, '2026-05-15',
+     'active', 2, None, 2, None, 2, 0.72, '2026-03-30 16:00:00', None, None, '2026-07-15',
      'Published content that drives organic traffic and positions Conduital as a thought leader.', 'weekly'),
-    
+
     (3, 'User Onboarding Redesign', 'Redesign the first-run experience with guided setup, sample data, and interactive tutorials.',
-     'active', 1, None, 2, None, 1, 0.65, '2026-03-29 11:00:00', None, None, '2026-04-30',
+     'active', 1, None, 2, None, 1, 0.65, '2026-03-29 11:00:00', None, None, '2026-06-30',
      'New users reach their aha moment within 5 minutes of signing up.', 'weekly'),
-    
+
     (4, 'Q2 Financial Review', 'Prepare Q1 financials, update projections, review subscription metrics and churn.',
-     'active', 3, None, None, None, 2, 0.54, '2026-03-28 09:30:00', None, None, '2026-04-15',
+     'active', 3, None, None, None, 2, 0.54, '2026-03-28 09:30:00', None, None, '2026-06-15',
      'Clear financial picture with actionable insights for Q2 planning.', 'weekly'),
-    
-    (5, 'Half-Marathon Training Plan', 'Follow a 16-week training plan for the October half-marathon. Currently in week 6.',
-     'active', 4, None, 3, None, 3, 0.78, '2026-03-31 06:30:00', None, None, '2026-10-15',
+
+    (5, 'Half-Marathon Training Plan', 'Follow a 16-week training plan for the fall half-marathon. Currently in week 6.',
+     'active', 4, None, 3, None, 3, 0.78, '2026-03-31 06:30:00', None, None, '2026-12-15',
      'Complete the half-marathon in under 2 hours.', 'weekly'),
-    
+
     (6, 'API Integration Layer', 'Build REST API endpoints for third-party integrations (Todoist import, Notion sync, Google Calendar).',
-     'active', 1, None, 1, None, 2, 0.61, '2026-03-27 14:00:00', None, None, '2026-05-31',
+     'active', 1, None, 1, None, 2, 0.61, '2026-03-27 14:00:00', None, None, '2026-07-31',
      'Working API that enables key integrations and opens the platform.', 'weekly'),
-    
+
     (7, 'Networking & Community Building', 'Attend local tech meetups, engage in online communities, build relationships with potential partners.',
      'active', 6, None, None, None, 3, 0.43, '2026-03-25 19:00:00', None, None, None,
      'A growing network of allies, users, and collaborators.', 'weekly'),
-    
-    # Someday/Maybe
+
+    # Someday/Maybe  (intentionally cold -> stalled, for the stalled-detection screenshot)
     (8, 'Mobile App (iOS)', 'Native iOS companion app for capture and quick review on the go.',
      'someday_maybe', 1, None, 1, None, 4, 0.20, '2026-02-15 10:00:00', None, None, None,
      'A polished iOS app that syncs seamlessly with the desktop version.', 'monthly'),
-    
+
     (9, 'Podcast Launch', 'Start a podcast about personal productivity, GTD, and building in public.',
      'someday_maybe', 2, None, None, None, 5, 0.15, '2026-02-01 10:00:00', None, None, None,
      'A weekly podcast with growing listenership.', 'monthly'),
-    
+
     (10, 'Home Office Renovation', 'Redesign the home office for better ergonomics and video recording setup.',
      'someday_maybe', 4, None, None, None, 4, 0.10, '2026-01-20 10:00:00', None, None, None,
      'An inspiring, functional workspace.', 'monthly'),
-    
+
     # Completed projects
     (11, 'Conduital v1.5 Launch', 'Shipped momentum tracking, area health scores, and inbox processing.',
      'completed', 1, None, 1, None, 1, 0.95, '2026-02-28 18:00:00', '2026-02-28 18:00:00', None, '2026-02-28',
      'Successful release with positive user feedback.', 'weekly'),
-    
+
     (12, 'Tax Preparation 2025', 'Gather documents, meet with accountant, file federal and state returns.',
      'completed', 3, None, None, None, 2, 0.92, '2026-03-15 14:00:00', '2026-03-15 14:00:00', None, '2026-03-15',
      'Taxes filed accurately and on time.', 'monthly'),
-    
+
     (13, 'Reading: "Four Thousand Weeks"', 'Read and take notes on Oliver Burkeman\'s book about time management philosophy.',
      'completed', 5, None, 4, None, 3, 0.88, '2026-03-10 21:00:00', '2026-03-10 21:00:00', None, '2026-03-10',
      'Finished with key takeaways documented.', 'monthly'),
@@ -200,7 +259,7 @@ projects = [
 for p in projects:
     created_offset = random.randint(0, 30)
     created = (datetime(2026, 1, 10) + timedelta(days=created_offset)).strftime('%Y-%m-%d %H:%M:%S')
-    cursor.execute("""
+    ex("""
         INSERT INTO projects (id, title, description, status, area_id, phase_template_id, goal_id, vision_id,
                              priority, momentum_score, last_activity_at, completed_at, stalled_since,
                              target_completion_date, file_path, file_hash, created_at, updated_at,
@@ -214,17 +273,17 @@ for p in projects:
 print("Inserted projects")
 
 # ============================================================
-# STEP 6: Tasks â€” lots of variety
+# STEP 6: Tasks - lots of variety
 # ============================================================
 task_id = 0
 
-def add_task(title, desc, status, task_type, project_id, due_date=None, context=None, 
+def add_task(title, desc, status, task_type, project_id, due_date=None, context=None,
              energy=None, priority=3, is_next=False, is_two_min=False, estimated_min=None,
              waiting_for=None, urgency='opportunity_now', started_at=None, completed_at=None):
     global task_id
     task_id += 1
     created = (datetime(2026, 3, 1) + timedelta(days=random.randint(0, 25), hours=random.randint(8, 20))).strftime('%Y-%m-%d %H:%M:%S')
-    cursor.execute("""
+    ex("""
         INSERT INTO tasks (id, title, description, status, task_type, project_id, parent_task_id, phase_id,
                           sequence_order, due_date, defer_until, estimated_minutes, actual_minutes,
                           context, energy_level, location, priority, is_next_action, is_two_minute_task,
@@ -236,7 +295,7 @@ def add_task(title, desc, status, task_type, project_id, due_date=None, context=
           started_at, completed_at, waiting_for, created, '2026-03-31 20:00:00', urgency))
 
 # === Project 1: Conduital v2.0 Release ===
-add_task('Finalize AI weekly review prompt engineering', 'Test and refine the prompts used for AI-generated weekly review summaries.', 
+add_task('Finalize AI weekly review prompt engineering', 'Test and refine the prompts used for AI-generated weekly review summaries.',
          'in_progress', 'action', 1, '2026-04-05', 'computer', 'high', 1, True, False, 120,
          started_at='2026-03-31 10:00:00')
 add_task('Build momentum trend chart component', 'React component showing 30-day momentum trend with sparkline.',
@@ -254,7 +313,7 @@ add_task('Update API documentation for v2.0 endpoints', None,
 add_task('Fix timezone handling in recurring task scheduler', 'Bug: tasks created in PST show wrong time in UTC display.',
          'completed', 'action', 1, '2026-03-25', 'computer', 'high', 1, False, False, 90,
          completed_at='2026-03-25 17:45:00')
-add_task('Performance audit on dashboard load time', 'Profile and optimize the main dashboard â€” target < 500ms.',
+add_task('Performance audit on dashboard load time', 'Profile and optimize the main dashboard - target < 500ms.',
          'todo', 'action', 1, '2026-04-12', 'computer', 'high', 2, False, False, 180)
 
 # === Project 2: Content Marketing Campaign ===
@@ -308,11 +367,11 @@ add_task('Complete Week 7 long run (8 miles)', None,
 add_task('3-mile recovery run', None,
          'completed', 'action', 5, '2026-03-31', None, 'medium', 2, False, False, 30,
          completed_at='2026-03-31 07:00:00')
-add_task('Buy new running shoes', 'Current pair at 400 miles â€” time to replace.',
+add_task('Buy new running shoes', 'Current pair at 400 miles - time to replace.',
          'todo', 'action', 5, '2026-04-06', 'errands', 'low', 2, True, False, 45)
 add_task('Research race-day nutrition strategy', None,
          'todo', 'action', 5, '2026-04-15', 'computer', 'low', 4, False, False, 30)
-add_task('Register for October half-marathon', 'Early bird registration closes April 20.',
+add_task('Register for fall half-marathon', 'Early bird registration closes soon.',
          'todo', 'action', 5, '2026-04-18', 'computer', 'low', 2, False, True, 10,
          urgency='critical_now')
 
@@ -331,9 +390,9 @@ add_task('Create webhook endpoint for external notifications', None,
          'todo', 'action', 6, '2026-04-20', 'computer', 'medium', 3, False, False, 120)
 
 # === Project 7: Networking ===
-add_task('Attend April Tech Meetup', 'Local startup meetup on April 10th.',
+add_task('Attend Tech Meetup', 'Local startup meetup this month.',
          'todo', 'action', 7, '2026-04-10', 'errands', 'medium', 2, True, False, 180)
-add_task('Follow up with contacts from March meetup', 'Send LinkedIn messages to 5 people met at the event.',
+add_task('Follow up with contacts from last meetup', 'Send LinkedIn messages to 5 people met at the event.',
          'todo', 'action', 7, '2026-04-03', 'computer', 'low', 3, True, False, 30)
 add_task('Reply to community forum questions', 'Check and respond to Conduital community posts.',
          'todo', 'action', 7, '2026-04-02', 'computer', 'low', 3, False, True, 15)
@@ -370,7 +429,7 @@ print(f"Inserted {task_id} tasks")
 # ============================================================
 inbox_items = [
     # Unprocessed (recent captures)
-    ('Look into Resend for transactional emails â€” recommended by Jake', '2026-04-01 08:30:00', None, 'manual', None, None),
+    ('Look into Resend for transactional emails - recommended by Jake', '2026-04-01 08:30:00', None, 'manual', None, None),
     ('Idea: add keyboard shortcuts cheat sheet to onboarding', '2026-04-01 07:15:00', None, 'manual', None, None),
     ('Check if annual domain renewal went through', '2026-03-31 22:00:00', None, 'manual', None, None),
     ('Book dentist appointment', '2026-03-31 18:30:00', None, 'manual', None, None),
@@ -384,7 +443,7 @@ inbox_items = [
 ]
 
 for i, item in enumerate(inbox_items, 1):
-    cursor.execute("""
+    ex("""
         INSERT INTO inbox (id, content, captured_at, processed_at, source, result_type, result_id, user_id, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)
     """, (i, item[0], item[1], item[2], item[3], item[4], item[5], item[1], item[1]))
@@ -434,7 +493,7 @@ add_activity('weekly_review', 1, 'completed', '{"duration_minutes": 35}', '2026-
 add_activity('area', 1, 'reviewed', '{"health_score": 0.82}', '2026-03-28 09:15:00')
 add_activity('area', 2, 'reviewed', '{"health_score": 0.65}', '2026-03-28 09:20:00')
 
-# More recent daily activity
+# More recent daily activity (rolling 7-day window up to the anchor "now")
 for day_offset in range(7):
     dt = datetime(2026, 3, 25) + timedelta(days=day_offset)
     # A few random task creations per day
@@ -444,7 +503,7 @@ for day_offset in range(7):
         add_activity('task', random.randint(1, task_id), 'created', None, ts)
 
 for a in activities:
-    cursor.execute("""
+    ex("""
         INSERT INTO activity_log (id, entity_type, entity_id, action_type, details, timestamp, source)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     """, a)
@@ -457,12 +516,12 @@ reviews = [
     (1, None, '2026-03-28 10:00:00', 'Reviewed all areas, processed 8 inbox items, updated 3 project statuses. Momentum is strong on v2.0 and content campaign.',
      'All 6 areas reviewed. 3 projects show improving momentum. Key focus for next week: finalize AI review prompts and complete onboarding wireframes. 5 unprocessed inbox items remain.'),
     (2, None, '2026-03-21 09:30:00', 'Good week. Shipped timezone fix. Marketing content pipeline building up. Need to focus more on financial review.',
-     'Completed 7 tasks across 4 projects. Momentum up on 2 projects, flat on 2. Financial review needs attention â€” moved to priority for next week.'),
+     'Completed 7 tasks across 4 projects. Momentum up on 2 projects, flat on 2. Financial review needs attention - moved to priority for next week.'),
     (3, None, '2026-03-14 10:15:00', 'Tax prep dominating this week. v2.0 work slowed but still on track. Started training plan.',
      'Tax preparation completed. 5 tasks done, 3 new tasks created. Half-marathon training started strong. Need to re-engage with content marketing.'),
 ]
 for r in reviews:
-    cursor.execute("""
+    ex("""
         INSERT INTO weekly_review_completions (id, user_id, completed_at, notes, ai_summary)
         VALUES (?, ?, ?, ?, ?)
     """, r)
@@ -489,7 +548,7 @@ for day_offset in range(30):
             "next_action_defined": random.choice([True, True, True, False]),
             "review_current": random.choice([True, True, False])
         })
-        cursor.execute("""
+        ex("""
             INSERT INTO momentum_snapshots (id, project_id, score, factors_json, snapshot_at)
             VALUES (?, ?, ?, ?, ?)
         """, (snap_id, pid, round(score, 2), factors, dt.strftime('%Y-%m-%d 04:00:00')))
@@ -501,5 +560,4 @@ print(f"Inserted {snap_id} momentum snapshots")
 # ============================================================
 conn.commit()
 conn.close()
-print("\nâœ“ Demo data population complete!")
-
+print("\nDemo data population complete!")

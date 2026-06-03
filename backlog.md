@@ -162,6 +162,7 @@ Spec **APPROVED 2026-05-19** — all four gates closed: CTO M-sizing ✅ 5/14, C
 | ID | Description | Status | Target | Notes |
 |----|-------------|--------|--------|-------|
 | ROADMAP-011 | **Conduital ↔ Board of Advisors Bi-Directional Local API** | **Retired — 2026-05-09 (CPO grooming decision)** | — | Retired in 2026-05-09 CPO grooming session; no further design work warranted. |
+| ROADMAP-012 | **CSV / Third-Party Importer (Todoist · Asana · Notion · Things)** | Open — proposed 2026-06-02 (CTO) | R4 (post-R5) | **Onboarding aid.** Today's two import paths only accept Conduital-native shapes — BACKLOG-090 (`POST /export/import`, Conduital JSON) and `import_from_folder` (markdown/Obsidian vault) — so a user migrating off another SaaS task manager has no first-class path in. Build a **column-mapping importer**: CSV upload + per-tool presets (Todoist/Asana/Notion CSV exports; Things via its export) that map external columns → Conduital entities (project/task/area/due/priority/context) and feed the **existing `ImportService`** so we reuse its FK remap, merge-by-title dedupe, and `validate_export` safety. Phase 1 = CSV (covers the big three exports); Phase 2 = native API connectors. Surfaces in **Settings → Import** beside the JSON-backup and Import-from-Folder controls. Est. M (CSV phase). Depends on: BACKLOG-090 (`import_service.py`). |
 
 ### Storage & Sync
 
