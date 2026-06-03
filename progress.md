@@ -1,5 +1,40 @@
 # Progress Log
 
+## Session: 2026-06-03 — S39: execute MON-013 runbook + harden webhook
+
+### MON-013 external ops — verified deploy state
+- Probed prod: `conduital.com` 307→`www`; `POST www/api/stripe-webhook` is **live on Vercel**
+  (S38 push auto-deployed it). Unsigned/bogus-sig requests returned 200 → proved
+  `STRIPE_WEBHOOK_SECRET` is **unset** on Vercel (endpoint was processing without verification).
+- Runbook Step 1 (deploy) = effectively DONE. Steps 2–7 are dashboard/secret/DNS-gated (Greg's).
+
+### Webhook hardening (fail-closed) — DONE + VERIFIED LIVE
+- Decision (AskUserQuestion): harden to fail-closed, then pivot to an in-repo task.
+- `conduital-site/api/stripe-webhook.js`: with no `STRIPE_WEBHOOK_SECRET`, now returns
+  200 `{"status":"unconfigured"}` and fulfills nothing (was: process without verification).
+  Closes the "open relay once RESEND key is set" foot-gun. +5 `node --test` (25 total, all pass).
+- Runbook updated (verify note, Step 2 security callout, troubleshooting row).
+- Committed + pushed: conduital-site `2917faa` (fix), conduital `a1690d7` (docs). Vercel redeployed.
+- **Verified live:** `POST www/api/stripe-webhook` → `{"status":"unconfigured"}`. ✅
+
+### Harden `storage_first` (in-repo pivot) — DONE
+- Root cause found: the S37 `_yaml_safe` fix only protected the **project** write path
+  (`local_folder._build_write_metadata`). The **handler entities** (area/goal/vision/inbox/
+  context/weekly_review) write via `entity_markdown.py` handlers → `_write_frontmatter_file`,
+  which sanitized datetimes (`_iso_date`) but **NOT enums** — same RepresenterError class as S37.
+  (API enums in `app/schemas/common.py` are `(str, Enum)`; ORM cols are `Mapped[str]`, but an
+  API enum can leak onto an ORM attr / data dict before coercion.)
+- Fix: moved `_yaml_safe` to `app/sync/entity_markdown.py` (single source) and applied it inside
+  `_write_frontmatter_file` (the choke point for all 6 handlers). `local_folder.py` now imports it
+  (dedup; dropped its local copy + unused `enum`/`date` imports). Both write paths now enum/datetime-safe.
+- Test: `test_storage_integration.py::TestStorageFirstSerializationSweep` (6 tests) — project enum-status
+  (S37 regression), project+tasks serialize, and area/goal/vision/context handlers with leaked
+  enums+datetimes. **6/6 pass.** Full suite running for regression + count.
+
+### Next: closeout — backlog Stats, commit conduital (storage_first), S40 next-prompt.
+
+---
+
 ## Session: 2026-06-02 — S38: MON-013 launch blocker — PLAN
 
 ### Decide-the-session (per user request)

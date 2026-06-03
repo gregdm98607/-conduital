@@ -76,6 +76,142 @@ def _patch_storage_first(monkeypatch, storage_root: Path):
 
 
 # ---------------------------------------------------------------------------
+# 0. storage_first serialization sweep (S39 / MON-013 follow-up)
+#    Every entity type must round-trip through storage_first WITHOUT a YAML
+#    RepresenterError — even when API-layer enums (app/schemas/common.py, all
+#    (str, Enum)) or datetimes leak into the write path. Guards the S37 project
+#    fix AND the handler-path _yaml_safe choke point (entity_markdown.py).
+# ---------------------------------------------------------------------------
+
+
+class TestStorageFirstSerializationSweep:
+    def test_project_with_leaked_enum_status_roundtrips(
+        self, db_session, provider, storage_root, monkeypatch
+    ):
+        """S37 regression: a project whose status is an API StatusEnum instance
+        must persist as a plain string, not crash the YAML safe-dumper."""
+        from app.schemas.common import StatusEnum
+
+        _patch_storage_first(monkeypatch, storage_root)
+
+        project = Project(title="Enum Status Project", priority=3, momentum_score=0.4)
+        # Simulate an API enum leaking onto the ORM attribute before refresh.
+        project.status = StatusEnum.ACTIVE
+        db_session.add(project)
+        db_session.flush()
+
+        service = StorageService(db_session)
+        service._provider = provider
+        service.persist_project(project)  # must NOT raise RepresenterError
+        db_session.commit()
+
+        content = Path(project.file_path).read_text(encoding="utf-8")
+        assert "project_status: active" in content
+        assert "StatusEnum" not in content  # value is a plain string, not an enum repr
+        result = provider.read_entity(
+            "project", provider._relative_id(Path(project.file_path))
+        )
+        assert result["metadata"]["project_status"] == "active"
+
+    def test_project_with_tasks_serializes(
+        self, db_session, provider, storage_root, monkeypatch
+    ):
+        """A project carrying tasks serializes to markdown checkbox lines without error
+        (checkbox parse-back is covered by the round-trip tests below)."""
+        _patch_storage_first(monkeypatch, storage_root)
+
+        project = Project(title="Task Carrier", status="active", priority=5, momentum_score=0.0)
+        db_session.add(project)
+        db_session.flush()
+        db_session.add_all([
+            Task(project_id=project.id, title="Done item", status="completed", file_marker="m1"),
+            Task(project_id=project.id, title="Todo item", status="pending", file_marker="m2"),
+        ])
+        db_session.flush()
+
+        service = StorageService(db_session)
+        service._provider = provider
+        service.persist_project(project)  # must NOT raise
+        db_session.commit()
+
+        text = Path(project.file_path).read_text(encoding="utf-8")
+        assert "- [x] Done item" in text
+        assert "- [ ] Todo item" in text
+
+    def test_area_handler_enum_and_datetime_roundtrip(self, provider, storage_root):
+        from app.schemas.common import ReviewFrequencyEnum
+
+        data = {
+            "title": "Health",
+            "description": "Stay well.",
+            "standard_of_excellence": "Exercise 4x/week.",
+            "health_score": 0.8,
+            "review_frequency": ReviewFrequencyEnum.WEEKLY,  # enum leak
+            "is_archived": False,
+            "last_reviewed_at": datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc),  # datetime leak
+        }
+        entity_id = provider.write_entity("area", "", data)  # must NOT raise
+        text = (storage_root / entity_id).read_text(encoding="utf-8")
+        assert "review_frequency: weekly" in text
+        assert "ReviewFrequencyEnum" not in text
+        result = provider.read_entity("area", entity_id)
+        assert result["review_frequency"] == "weekly"
+        assert result["health_score"] == 0.8
+        assert result["last_reviewed_at"] is not None
+
+    def test_goal_handler_enum_and_date_roundtrip(self, provider, storage_root):
+        from datetime import date
+        from app.schemas.common import GoalStatusEnum, GoalTimeframeEnum
+
+        data = {
+            "title": "Ship v2",
+            "description": "Big goal.",
+            "status": GoalStatusEnum.ACTIVE,          # enum leak
+            "timeframe": GoalTimeframeEnum.ONE_YEAR,  # enum leak
+            "target_date": date(2026, 12, 31),
+            "completed_at": datetime(2026, 6, 1, tzinfo=timezone.utc),
+        }
+        entity_id = provider.write_entity("goal", "", data)  # must NOT raise
+        text = (storage_root / entity_id).read_text(encoding="utf-8")
+        assert "status: active" in text
+        assert "timeframe: 1_year" in text
+        assert "Enum" not in text
+        result = provider.read_entity("goal", entity_id)
+        assert result["status"] == "active"
+        assert result["timeframe"] == "1_year"
+
+    def test_vision_handler_enum_roundtrip(self, provider, storage_root):
+        from app.schemas.common import VisionTimeframeEnum
+
+        data = {
+            "title": "North Star",
+            "description": "Where we go.",
+            "timeframe": VisionTimeframeEnum.FIVE_YEAR,  # enum leak
+        }
+        entity_id = provider.write_entity("vision", "", data)  # must NOT raise
+        text = (storage_root / entity_id).read_text(encoding="utf-8")
+        assert "timeframe: 5_year" in text
+        result = provider.read_entity("vision", entity_id)
+        assert result["timeframe"] == "5_year"
+
+    def test_context_handler_enum_roundtrip(self, provider, storage_root):
+        from app.schemas.common import ContextTypeEnum
+
+        data = {
+            "name": "Deep Work",
+            "description": "Focused sessions.",
+            "context_type": ContextTypeEnum.WORK_TYPE,  # enum leak
+            "icon": "brain",
+        }
+        entity_id = provider.write_entity("context", "", data)  # must NOT raise
+        text = (storage_root / entity_id).read_text(encoding="utf-8")
+        assert "context_type: work_type" in text
+        assert "ContextTypeEnum" not in text
+        result = provider.read_entity("context", entity_id)
+        assert result["context_type"] == "work_type"
+
+
+# ---------------------------------------------------------------------------
 # 1. Full round-trip integration tests
 # ---------------------------------------------------------------------------
 

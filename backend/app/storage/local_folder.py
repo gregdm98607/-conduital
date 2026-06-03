@@ -6,11 +6,10 @@ Writing builds YAML-frontmatter markdown from plain dicts so the
 storage layer stays decoupled from SQLAlchemy ORM models.
 """
 
-import enum
 import hashlib
 import logging
 import re
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -18,32 +17,12 @@ import frontmatter
 
 from app.storage.base import Change, ChangeType, StorageProvider
 from app.sync.markdown_parser import MarkdownParser
-from app.sync.entity_markdown import ENTITY_HANDLERS
+from app.sync.entity_markdown import ENTITY_HANDLERS, _yaml_safe
 
 logger = logging.getLogger(__name__)
 
 # Entity types this provider knows how to handle
 SUPPORTED_ENTITY_TYPES = {"project"} | set(ENTITY_HANDLERS.keys())
-
-
-def _yaml_safe(value):
-    """Coerce a value into YAML-serializable primitives.
-
-    SQLAlchemy hands back enum columns (e.g. ``project.status``) as Python
-    ``Enum`` instances. PyYAML's safe dumper has no representer for arbitrary
-    Enums — even ``str``-subclassed ones — so dumping them raises
-    ``RepresenterError``. Datetimes are rendered as ISO strings for stable,
-    round-trippable frontmatter. Dicts/lists are sanitized recursively.
-    """
-    if isinstance(value, enum.Enum):
-        return value.value
-    if isinstance(value, (datetime, date)):
-        return value.isoformat()
-    if isinstance(value, dict):
-        return {k: _yaml_safe(v) for k, v in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [_yaml_safe(v) for v in value]
-    return value
 
 
 class LocalFolderProvider(StorageProvider):

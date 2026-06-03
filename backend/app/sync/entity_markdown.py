@@ -7,6 +7,7 @@ for rich content (notes, descriptions, standards of excellence, etc.).
 Round-trip guarantee: parse(write(data)) == data  (for all supported fields).
 """
 
+import enum
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
@@ -52,8 +53,34 @@ def _sanitize_filename(title: str) -> str:
     return safe
 
 
+def _yaml_safe(value):
+    """Coerce a value into YAML-serializable primitives.
+
+    Mirrors the project write-path sanitizer in ``app/storage/local_folder.py``
+    (which imports this function — single source of truth). API-layer enums
+    (``app/schemas/common.py`` — all ``(str, Enum)``) can be assigned to ORM
+    string fields and reach this writer as ``Enum`` instances before coercion;
+    PyYAML's safe dumper has no representer for arbitrary Enums and raises
+    ``RepresenterError``. Datetimes become ISO strings; dicts/lists recurse.
+    """
+    if isinstance(value, enum.Enum):
+        return value.value
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {k: _yaml_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_yaml_safe(v) for v in value]
+    return value
+
+
 def _write_frontmatter_file(file_path: Path, metadata: dict, body: str) -> None:
-    """Write a markdown file with YAML frontmatter."""
+    """Write a markdown file with YAML frontmatter.
+
+    Metadata is run through ``_yaml_safe`` so an enum/datetime that leaks through
+    any handler can never crash the PyYAML safe dumper (mirrors the project path).
+    """
+    metadata = _yaml_safe(metadata)
     post = frontmatter.Post(body, **metadata)
     file_path.parent.mkdir(parents=True, exist_ok=True)
     with file_path.open("w", encoding="utf-8") as f:
