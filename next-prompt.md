@@ -1,72 +1,57 @@
-# Session 40 — next pick (post-S39)
+# Session 41 — next pick (post-S40)
 
 ## Context
 
-S38 made the **MON-013** Stripe→Resend fulfillment *code complete*. **S39 (2026-06-03)** then:
-1. **Verified the function is live in prod.** The S38 push auto-deployed
-   `conduital-site/api/stripe-webhook.js` to Vercel. `POST https://www.conduital.com/api/stripe-webhook`
-   responds. (Apex 307-redirects to `www`.)
-2. **Hardened the webhook to fail-closed** (deployed + verified live). With no `STRIPE_WEBHOOK_SECRET`
-   it now returns `200 {"status":"unconfigured"}` and fulfills nothing — so adding `RESEND_API_KEY`
-   alone can't make it an open relay. 25 `node --test`. Commits: conduital-site `2917faa`, conduital `a1690d7`.
-3. **Hardened `storage_first` serialization** (the S38 deferred alt). The S37 `_yaml_safe` fix only
-   covered the *project* write path; the *handler* entities (area/goal/vision/inbox/context/weekly_review)
-   wrote via `entity_markdown.py` without enum sanitization — same RepresenterError class. Moved
-   `_yaml_safe` to `entity_markdown.py` (single source, applied in `_write_frontmatter_file`); `local_folder.py`
-   imports it. New `TestStorageFirstSerializationSweep` (6 tests) round-trips every entity type with leaked
-   enums/datetimes. (Committed in the S39 closeout.)
+**MON-013 is closed** (2026-06-04, S40 paired session). The full Stripe→Resend→app
+fulfillment chain was verified end-to-end:
+- Stripe test checkout → `https://www.conduital.com/api/stripe-webhook` → `200 OK {"status":"fulfilled","tier":"gtd","email_sent":"true"}`
+- Email delivered to `gregmaxfield@gmail.com` with key `731D8449-…-BFA72BA7`
+- App: **"Licensed — GTD, Activated 6/4/2026"** ✅
 
-**Probed prod state:** `STRIPE_WEBHOOK_SECRET` is **NOT set** on Vercel yet (endpoint returns
-`{"status":"unconfigured"}`). So MON-013's external ops are still pending.
+S38–S40 history:
+- **S38:** relocated fulfillment to stateless Vercel function + wired PostHog + storage_first enum fix + v1.5.2.
+- **S39:** verified deploy live; hardened webhook fail-closed; hardened `storage_first` handler-path serialization (6-test sweep); 524 backend pass.
+- **S40 (paired):** Resend domain verified, Stripe test-mode webhook registered, end-to-end purchase completed. MON-013 → Done.
 
-## ⭐ Recommended pick — FINISH MON-013 (external ops; launch blocker still open)
+## ⚠️ One remaining action before real buyers go through checkout
 
-The launch blocker is NOT cleared until paid buyers actually receive a key. All code is done +
-deployed + fail-closed. Remaining = **dashboard/secret/DNS work (Greg's hands; agent verifies)**.
-Drive **[`docs/MON-013-fulfillment-runbook.md`](docs/MON-013-fulfillment-runbook.md)**:
-1. **Vercel env vars**: `RESEND_API_KEY` (vault → Silver_Sage_Media → Account Information) +
-   `STRIPE_WEBHOOK_SECRET` (from step 3). Redeploy. (Verify: unsigned `POST` flips from
-   `{"status":"unconfigured"}` → `400 {"error":"Missing stripe-signature header"}`.)
-2. **Resend domain + DNS** for `conduital.com` / sender `licenses@conduital.com`. **Snapshot the
-   Cloudflare zone FIRST** (2026-04-18 incident).
-3. **Stripe webhook** → `https://www.conduital.com/api/stripe-webhook`, event `checkout.session.completed`,
-   copy signing secret → Vercel `STRIPE_WEBHOOK_SECRET`. Set checkout `metadata.conduital_tier`.
-4. **PostHog**: confirm events flow (funnel `/insights/O3Fm24tR`) — needs the v1.5.2 build shipped.
-5. **Test-mode purchase** → delivered email → paste key → tier unlocks → close **MON-013** + flip
-   **MON-002** to verified.
+The Stripe webhook is **test-mode only** — live purchases won't trigger it. Before
+going live, repeat **Step 4 of `docs/MON-013-fulfillment-runbook.md`** in **live mode**:
+1. Stripe → switch to live mode → Developers → Webhooks → Add endpoint
+2. Same URL: `https://www.conduital.com/api/stripe-webhook`
+3. Same event: `checkout.session.completed`
+4. Reveal live-mode `whsec_…` → update `STRIPE_WEBHOOK_SECRET` in Vercel (Production scope) → redeploy
+5. Verify: `curl -X POST https://www.conduital.com/api/stripe-webhook -d "{}"` → `400` (not `unconfigured`)
 
-## Carry items
-1. **Push state:** S39 pushed conduital-site `2917faa` + conduital `a1690d7` (webhook hardening + runbook).
-   The S39 closeout commit (storage_first hardening + planning + this prompt) should also be pushed —
-   confirm `git -C C:/Dev/conduital-site status` and `git status` are clean/synced.
-2. **No 1.5.x installer hosted yet (BACKLOG-161).** `/download/latest` still → `ConduitalSetup-1.4.1.exe`
-   in `conduital-site/vercel.json`. Build/host the 1.5.2 `.exe`, then bump that redirect target. The
-   v1.5.2 build is also what ships the baked PostHog key + new download URL to users.
-3. **`backend/.env` may still be `STORAGE_MODE=storage_first`** (S37 carry). Tests are hermetic; set
-   back to `legacy` if you don't want live file-sync locally.
+## Pick the next swing
 
-## Alternatives (if MON-013 ops are blocked on Greg)
-- **Perf: route code-splitting** — bundle is 834 kB (> Vite 500 kB warn). `React.lazy`+`Suspense` on
-  `App.tsx` routes. Clean half-session win.
+### Recommended: **Build + host the v1.5.2 installer (BACKLOG-161)**
+The most direct path to real-buyer value. The PostHog key + stable `/download/latest` URL
+from S38 only reach users in the new build. Steps (all Greg-side):
+1. Run `build.bat` from `C:\Dev\conduital` to produce `ConduitalSetup-1.5.2.exe`.
+2. Host it (wherever the 1.4.1 .exe is currently hosted, or a new location).
+3. Update the redirect in `conduital-site/vercel.json`: `/download/latest` → new file.
+   (No app rebuild needed — just change the redirect target + redeploy the site.)
+
+### Alternatives
+- **Live-mode Stripe webhook** (see above — 5 minutes, Greg-side only)
+- **Perf: route code-splitting** — bundle is 834 kB (> Vite 500 kB warn). `React.lazy`+`Suspense` on `App.tsx` routes. Clean half-session win.
 - **Wow-factor polish** — BACKLOG-093 quick-capture animation (S) + BACKLOG-150 Health sparklines (M).
 - **Frontend lint backlog** (~18 errors/16 warnings in older pages).
 - **DEBT-020** SyncEngine area markdown handling — needs a sync-engine verification pass before closing.
 
-## Read First
-```
-docs/MON-013-fulfillment-runbook.md          # external-ops checklist (primary)
-backlog.md                                    # MON-013 / MON-002 / Stats
-task_plan.md, findings.md, progress.md        # plan + findings + session log (S38/S39)
-conduital-site/api/stripe-webhook.js          # the function (fail-closed) + test/stripe-webhook.test.mjs
-backend/app/sync/entity_markdown.py           # _yaml_safe choke point (handler writes)
-```
+## State
+- `conduital` master: synced as of last S40 commit (backlog + MON-013 close)
+- `conduital-site` main: synced (fail-closed webhook `2917faa`)
+- Installed app: v1.4.1 (no license UI — predates the license system)
+- Dev backend source: v1.5.2 (has license endpoints, not yet packaged)
 
 ## Phase 4 — Session Closeout (ritual)
-1. Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -q` (hermetic; ~525).
+1. Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -q` (target ~524 pass / 1 skip).
 2. Frontend build: `cd frontend && cmd //c "npm run build"`. Site fn tests: `node --test C:/Dev/conduital-site/test/`.
-3. Update `backlog.md` (mark pick, refresh Stats). Bump version per scope (**app version ≠ download URL**).
-4. Commit (one feat per chunk; closeout commit), then push. **Two repos** if you touch `conduital-site`.
-5. Write Session 41 prompt → `next-prompt.md` (MEMORY rule).
+3. Update `backlog.md` (mark pick, refresh Stats). Bump version per scope.
+4. Commit + push. Two repos if `conduital-site` touched.
+5. Write Session 42 prompt → `next-prompt.md` (MEMORY rule).
 
 ## Shell Notes (Windows)
 - Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -q`
@@ -74,3 +59,5 @@ backend/app/sync/entity_markdown.py           # _yaml_safe choke point (handler 
 - Site function tests: `node --test C:/Dev/conduital-site/test/stripe-webhook.test.mjs`
 - Other repo git: `git -C C:/Dev/conduital-site <cmd>` (branch `main`; conduital is `master`)
 - Probe prod webhook: `curl -sS -X POST https://www.conduital.com/api/stripe-webhook -d "{}"`
+  - `400 Missing stripe-signature` = armed (test-mode secret set) ✅
+  - `200 unconfigured` = signing secret not set ❌
