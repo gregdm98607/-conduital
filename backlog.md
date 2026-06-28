@@ -14,16 +14,17 @@
 > `tasks/lessons.md` (2026-05-31) and `next-prompt.md` carry items (incl. real-DB
 > propagation to verify).
 
-> **✅ RESOLVED (2026-06-04, S40 paired session) — MON-013 end-to-end verified. Was: 🚨 LAUNCH BLOCKER (logged 2026-06-01, CTO).**
+> **✅ RESOLVED (2026-06-04, S40 paired session) — MON-013 test-mode end-to-end verified. Was: 🚨 LAUNCH BLOCKER (logged 2026-06-01, CTO).**
 > Root cause: the Stripe→Resend fulfillment handler lived only in the **desktop** backend
 > (`backend/app/api/webhooks.py`) — in prod it runs on the buyer's `127.0.0.1`, which Stripe can never
 > reach; `RESEND_API_KEY` was unset; the Resend domain was unverified; PostHog was dark.
 > **S38 shipped the code fix:** fulfillment relocated to a **stateless Vercel function beside the site**
 > (`conduital-site/api/stripe-webhook.js`, 20 `node --test`); PostHog prod key wired into `config.py`;
 > `CONDUITAL_DOWNLOAD_URL` → stable `/download/latest`; key-format contract pinned on both sides.
-> **Remaining = human-only ops:** deploy the function, set Vercel env (incl. `RESEND_API_KEY` from vault
-> *Silver_Sage_Media → Account Information*), verify Resend DNS (**snapshot-first**, 2026-04-18 incident),
-> register the Stripe endpoint, run a test purchase. Step-by-step: **`docs/MON-013-fulfillment-runbook.md`**.
+> **S40 closed test-mode ops:** deployed function, set Vercel env, verified Resend DNS (**snapshot-first**,
+> 2026-04-18 incident), registered the Stripe test-mode endpoint, ran a test purchase, delivered email,
+> and activated the key in-app. **Remaining before real buyers:** repeat Stripe webhook registration and
+> `STRIPE_WEBHOOK_SECRET` setup in **live mode**. Step-by-step: **`docs/MON-013-fulfillment-runbook.md`**.
 > See **MON-013** and vault `C-Suite/CTO/CTO_Conduital_Telemetry_StandUp_PostHog_Resend_2026-06-01.md`.
 
 This backlog is organized by commercial release milestones. Each release builds on the previous, enabling incremental delivery.
@@ -442,7 +443,8 @@ For each release, verify:
 | Completed items (archived) | 216+ |
 | Backend tests | 525 (524 pass, 1 skip) — S39 +6 storage_first serialization-sweep (handler-path enum/datetime safety); S38 +4 MON-013 contract tests; suite hermetic (forces legacy storage). Plus conduital-site `api/stripe-webhook.js`: 25 `node --test` (S39 +5 fail-closed). |
 
-*Last updated: 2026-06-04 (S40 paired session — **MON-013 fully closed**: Resend domain verified, Stripe test-mode webhook registered, test purchase completed, email delivered, key activated in-app as "Licensed — GTD". MON-002 verified. Remaining: repeat Stripe webhook registration in live mode before real buyers go through checkout.)*
+*Last updated: 2026-06-27 (S41 planning review — MVP status reconciled: software MVP is beyond the original Windows desktop bar; distribution/sales MVP still needs v1.5.2 packaged+hosted, `/download/latest` updated from 1.4.1, Stripe live-mode webhook armed, and clean VM/upgrade testing evidence.)*
+*Prior: 2026-06-04 (S40 paired session — **MON-013 fully closed in test mode**: Resend domain verified, Stripe test-mode webhook registered, test purchase completed, email delivered, key activated in-app as "Licensed — GTD". MON-002 verified. Remaining: repeat Stripe webhook registration in live mode before real buyers go through checkout.)*
 *Prior: 2026-06-03 (S39 — MON-013 fulfillment function verified LIVE on Vercel; hardened fail-closed; hardened `storage_first` — `_yaml_safe` now covers handler entities; 6-test serialization sweep. Backend 524 pass / 1 skip; site 25 `node --test`.)*
 *Prior: 2026-06-02 (S38 — MON-013 launch blocker CODE COMPLETE: relocated Stripe→Resend fulfillment to a stateless Vercel function (`conduital-site/api/stripe-webhook.js`, 20 `node --test`); wired PostHog prod key + stable `/download/latest` URL in `config.py`; added cross-repo key-format contract test; authored `docs/MON-013-fulfillment-runbook.md` for the external ops; v1.5.1→1.5.2. Backend 518 pass / 1 skip. External deploy/DNS/Stripe steps + push remain Greg-side.)*
 *Prior: 2026-05-31 (CTO Cowork — Gate 4 Weekly Review Assistant backlog mutation filed as R9 / BACKLOG-162 + BACKLOG-163 onboarding deltas; applied SSS CPO 10-delta grooming sweep B1–B9: DEBT-020 Stats reconciled, DOC-005 retired, DIST-001 + DIFF-004 closed, DIST-051 + BACKLOG-061 retired, R4 Nice-to-Have deferred-banner, Storage Providers re-titled, Parking Lot age-sweep scheduled ~6/15. Commit + push remain Greg-side.)*

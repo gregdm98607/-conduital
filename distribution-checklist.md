@@ -2,7 +2,17 @@
 
 **Goal:** Package Conduital as a Windows desktop product and sell via Gumroad.
 **Target Timeline:** 4–6 weeks (part-time)
-**Last Updated:** February 8, 2026
+**Last Updated:** 2026-06-27
+
+## Current MVP Status — 2026-06-27
+
+The original Windows desktop MVP feature/build work is substantially complete, and the product has advanced through v1.5.2 source work. The remaining MVP risk is now distribution and live-sales readiness:
+
+- Source version is **v1.5.2**, but local packaged outputs and the public `/download/latest` redirect still point to **v1.4.1**.
+- MON-013 Stripe to Resend fulfillment was verified end-to-end in **test mode** on 2026-06-04.
+- Before real buyers use live checkout, repeat the Stripe webhook setup in **live mode** and set the live `STRIPE_WEBHOOK_SECRET` in Vercel Production.
+- DNS check on 2026-06-27 found no `_dmarc.conduital.com` TXT record. Add DMARC and verify aligned Resend DKIM before wide dissemination, because license fulfillment uses `licenses@conduital.com`.
+- Next operational gate: build/host `ConduitalSetup-1.5.2.exe`, update `conduital-site` redirects, run clean Windows 10/11 tests, and verify upgrade-in-place from v1.4.1.
 
 ---
 

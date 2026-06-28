@@ -1,63 +1,87 @@
-# Session 41 — next pick (post-S40)
+# Session 42 — recommended next pick
 
-## Context
+## Current State
 
-**MON-013 is closed** (2026-06-04, S40 paired session). The full Stripe→Resend→app
-fulfillment chain was verified end-to-end:
-- Stripe test checkout → `https://www.conduital.com/api/stripe-webhook` → `200 OK {"status":"fulfilled","tier":"gtd","email_sent":"true"}`
-- Email delivered to `gregmaxfield@gmail.com` with key `731D8449-…-BFA72BA7`
-- App: **"Licensed — GTD, Activated 6/4/2026"** ✅
+Conduital is **software-MVP complete enough for the Windows desktop product**, but the
+**distribution/sales MVP is still open**.
 
-S38–S40 history:
-- **S38:** relocated fulfillment to stateless Vercel function + wired PostHog + storage_first enum fix + v1.5.2.
-- **S39:** verified deploy live; hardened webhook fail-closed; hardened `storage_first` handler-path serialization (6-test sweep); 524 backend pass.
-- **S40 (paired):** Resend domain verified, Stripe test-mode webhook registered, end-to-end purchase completed. MON-013 → Done.
+Evidence from Session 41 review:
+- Source version is **v1.5.2** in `backend/pyproject.toml`, `frontend/package.json`, and `installer/conduital.iss`.
+- Local installer outputs stop at `installer/Output/ConduitalSetup-1.4.1.exe`; no 1.5.2 installer is present.
+- Public site redirect still maps `/download/latest` to `/downloads/ConduitalSetup-1.4.1.exe`.
+- MON-013 Stripe to Resend fulfillment was verified end-to-end in **test mode** during S40.
+- Before live buyers go through checkout, Stripe live-mode webhook setup still needs to be repeated.
+- Session 41 DNS check found no `_dmarc.conduital.com` TXT record; SPF is currently `v=spf1 include:_spf.mx.cloudflare.net ~all`, and Resend DKIM is present.
 
-## ⚠️ One remaining action before real buyers go through checkout
+## Recommended Pick: Build + Host v1.5.2, Arm Live Stripe, Fix DMARC
 
-The Stripe webhook is **test-mode only** — live purchases won't trigger it. Before
-going live, repeat **Step 4 of `docs/MON-013-fulfillment-runbook.md`** in **live mode**:
-1. Stripe → switch to live mode → Developers → Webhooks → Add endpoint
-2. Same URL: `https://www.conduital.com/api/stripe-webhook`
-3. Same event: `checkout.session.completed`
-4. Reveal live-mode `whsec_…` → update `STRIPE_WEBHOOK_SECRET` in Vercel (Production scope) → redeploy
-5. Verify: `curl -X POST https://www.conduital.com/api/stripe-webhook -d "{}"` → `400` (not `unconfigured`)
+### P0.1 — Build the installer
+1. Run `build.bat` from `C:\Dev\conduital`.
+2. Confirm `installer\Output\ConduitalSetup-1.5.2.exe` exists.
+3. Smoke test the installer on the dev machine:
+   - install
+   - launch
+   - setup status
+   - app health
+   - license activation path
 
-## Pick the next swing
+### P0.2 — Host the installer
+1. Upload/host `ConduitalSetup-1.5.2.exe` where `conduital-site` serves downloads.
+2. Update `C:\Dev\conduital-site\vercel.json`:
+   - `/download/v1.5.2` -> `/downloads/ConduitalSetup-1.5.2.exe`
+   - `/download/latest` -> `/downloads/ConduitalSetup-1.5.2.exe`
+3. Redeploy `conduital-site`.
+4. Verify `/download/latest` resolves to 1.5.2.
 
-### Recommended: **Build + host the v1.5.2 installer (BACKLOG-161)**
-The most direct path to real-buyer value. The PostHog key + stable `/download/latest` URL
-from S38 only reach users in the new build. Steps (all Greg-side):
-1. Run `build.bat` from `C:\Dev\conduital` to produce `ConduitalSetup-1.5.2.exe`.
-2. Host it (wherever the 1.4.1 .exe is currently hosted, or a new location).
-3. Update the redirect in `conduital-site/vercel.json`: `/download/latest` → new file.
-   (No app rebuild needed — just change the redirect target + redeploy the site.)
+### P0.3 — Arm live-mode Stripe fulfillment
+Repeat **Step 4** of `docs/MON-013-fulfillment-runbook.md` in **Stripe live mode**:
+1. Stripe -> live mode -> Developers -> Webhooks -> Add endpoint.
+2. URL: `https://www.conduital.com/api/stripe-webhook`.
+3. Event: `checkout.session.completed`.
+4. Reveal live `whsec_...`.
+5. Set `STRIPE_WEBHOOK_SECRET` in Vercel Production scope and redeploy.
+6. Verify:
+   - `curl -sS -X POST https://www.conduital.com/api/stripe-webhook -d "{}"`
+   - Expected: `400 Missing stripe-signature` or equivalent fail-closed response.
+   - Bad: `200 unconfigured`.
 
-### Alternatives
-- **Live-mode Stripe webhook** (see above — 5 minutes, Greg-side only)
-- **Perf: route code-splitting** — bundle is 834 kB (> Vite 500 kB warn). `React.lazy`+`Suspense` on `App.tsx` routes. Clean half-session win.
-- **Wow-factor polish** — BACKLOG-093 quick-capture animation (S) + BACKLOG-150 Health sparklines (M).
-- **Frontend lint backlog** (~18 errors/16 warnings in older pages).
-- **DEBT-020** SyncEngine area markdown handling — needs a sync-engine verification pass before closing.
+### P0.4 — Add email authentication before wide dissemination
+This is a launch trust/deliverability gate because 1.5.2 purchase fulfillment sends license email from `licenses@conduital.com`.
 
-## State
-- `conduital` master: synced as of last S40 commit (backlog + MON-013 close)
-- `conduital-site` main: synced (fail-closed webhook `2917faa`)
-- Installed app: v1.4.1 (no license UI — predates the license system)
-- Dev backend source: v1.5.2 (has license endpoints, not yet packaged)
+1. Export/snapshot Cloudflare DNS.
+2. Inventory legitimate senders for `conduital.com`:
+   - Resend fulfillment (`licenses@conduital.com`)
+   - personal/support mailbox sending
+   - ConvertKit/newsletter, if it sends as the domain
+   - Gumroad/Stripe receipt settings, if either sends as the domain
+3. Add a DMARC TXT record at `_dmarc.conduital.com`.
+4. Start with reporting/monitoring or quarantine if sender confidence is high; move to `p=reject` after legitimate mail passes.
+5. Verify Resend fulfillment email passes aligned DKIM/DMARC.
+6. Do **not** blindly change SPF from `~all` to `-all` until every outbound source is included; that can break legitimate mail.
 
-## Phase 4 — Session Closeout (ritual)
-1. Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -q` (target ~524 pass / 1 skip).
-2. Frontend build: `cd frontend && cmd //c "npm run build"`. Site fn tests: `node --test C:/Dev/conduital-site/test/`.
-3. Update `backlog.md` (mark pick, refresh Stats). Bump version per scope.
-4. Commit + push. Two repos if `conduital-site` touched.
-5. Write Session 42 prompt → `next-prompt.md` (MEMORY rule).
+## P1 Confidence Pass
 
-## Shell Notes (Windows)
+After P0:
+- Clean Windows 10 install test.
+- Clean Windows 11 install test.
+- Upgrade-in-place from installed 1.4.1 to 1.5.2.
+- Confirm `%LOCALAPPDATA%\Conduital` data survives upgrade.
+- Update `distribution-checklist.md`, `backlog.md`, and `tasks/todo.md` with evidence.
+
+## P2 Product Build After Launch Path
+
+Recommended after P0/P1:
+- **R9 / BACKLOG-162 Weekly Review Assistant** — highest paid-tier product value.
+
+Alternatives only if they become risk-driven:
+- Route code-splitting if bundle size/perceived startup is hurting distribution.
+- Frontend lint cleanup if it blocks confidence.
+- DEBT-020 sync-engine area markdown verification.
+
+## Shell Notes
+
 - Backend tests: `backend\venv\Scripts\python.exe -m pytest backend/tests/ -q`
 - Frontend build: `cd frontend && cmd //c "npm run build"`
 - Site function tests: `node --test C:/Dev/conduital-site/test/stripe-webhook.test.mjs`
 - Other repo git: `git -C C:/Dev/conduital-site <cmd>` (branch `main`; conduital is `master`)
-- Probe prod webhook: `curl -sS -X POST https://www.conduital.com/api/stripe-webhook -d "{}"`
-  - `400 Missing stripe-signature` = armed (test-mode secret set) ✅
-  - `200 unconfigured` = signing secret not set ❌
+- Current public redirect file: `C:\Dev\conduital-site\vercel.json`

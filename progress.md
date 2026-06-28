@@ -1173,3 +1173,64 @@ Backend had full CRUD (models, schemas, routers mounted in main.py) but zero fro
 - TypeScript: clean (0 errors)
 - Python compile: PASS (all modified files)
 - Backend tests: **174/174 pass (100%)**
+
+---
+
+## Session 41 — MVP Progress Review + Recommended Next Steps — 2026-06-27
+
+### Review Performed
+- Restored planning context from root `task_plan.md`, `findings.md`, `progress.md`, `backlog.md`, and `next-prompt.md`.
+- Confirmed root planning files were stale relative to `backlog.md`: S38 plan still described MON-013 as externally blocked, while `backlog.md` and `next-prompt.md` show S40 closed test-mode end-to-end fulfillment.
+- Checked `tasks/` planning artifacts; `tasks/todo.md` did not exist.
+
+### MVP Assessment
+- **Software MVP:** effectively past the original Windows desktop MVP bar. Core desktop packaging architecture, license UI, monetization flows, telemetry, feedback, file sync, onboarding templates, and paid-tier fulfillment are built.
+- **Distribution/sales MVP:** not fully live. Source is v1.5.2, but the hosted/latest installer path still serves v1.4.1, and Stripe live-mode webhook setup remains required before real buyers use live checkout.
+
+### Evidence Checked
+- Version alignment: `backend/pyproject.toml`, `frontend/package.json`, and `installer/conduital.iss` all show 1.5.2.
+- Installer artifacts: local outputs stop at `installer/Output/ConduitalSetup-1.4.1.exe`; no 1.5.2 installer found.
+- Site redirect: `C:\Dev\conduital-site\vercel.json` still maps `/download/latest` to `/downloads/ConduitalSetup-1.4.1.exe`.
+- Git status: `conduital` master synced with origin, only `AGENTS.md` untracked; `conduital-site` main synced with origin.
+
+### Artifacts Updated
+- Replaced root `task_plan.md` with Session 41 MVP review plan.
+- Replaced root `findings.md` with Session 41 evidence and recommendation summary.
+- Added this progress entry.
+- Added `tasks/todo.md` with MVP review and recommended next steps.
+- Updated `next-prompt.md` to recommend build/host v1.5.2 plus Stripe live-mode webhook before R9.
+- Updated `backlog.md` MON-013 top note to remove stale "remaining human-only ops" wording and clarify the live-mode caveat.
+- Added a current status note to `distribution-checklist.md`.
+
+### Verification
+- Planning/review-only task; no backend/frontend test suites were run.
+- Verification consisted of repository file inspection and git status checks.
+
+---
+
+## Session 41 Addendum — DMARC Spoofing Report Triage — 2026-06-27
+
+### Finding Reviewed
+- External reporter claimed `conduital.com` lacks DMARC enforcement and uses softfail SPF, enabling spoofed `From:` mail.
+
+### DNS Evidence
+- `_dmarc.conduital.com`: no TXT record found.
+- `conduital.com` SPF: `v=spf1 include:_spf.mx.cloudflare.net ~all`.
+- `conduital.com` MX: Cloudflare mail routing.
+- `resend._domainkey.conduital.com`: DKIM TXT key present.
+
+### Decision
+- This does **not** block building the v1.5.2 installer.
+- This **should be addressed before wide dissemination / real-buyer launch**, because paid fulfillment sends license email from `licenses@conduital.com`; spoofable domain mail weakens buyer trust and can hurt deliverability.
+
+### Recommended Handling
+- Add DMARC as a P0 launch gate.
+- Snapshot Cloudflare DNS before changes.
+- Inventory all legitimate senders before changing SPF to hardfail.
+- Verify Resend fulfillment passes aligned DKIM/DMARC, then move DMARC toward `p=reject`.
+
+### Artifacts Updated
+- `tasks/todo.md`
+- `next-prompt.md`
+- `distribution-checklist.md`
+- `findings.md`

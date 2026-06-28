@@ -1,51 +1,52 @@
-# Findings — S38 / MON-013 Fulfillment + Telemetry
+# Findings — Session 41 MVP Progress Review
 
-**Date:** 2026-06-02 · Verified by reading source, not by trusting the handoff.
+**Date:** 2026-06-27
 
-## 1. MON-013 claims — all verified TRUE
-| Claim | Verdict | Evidence |
+## Summary
+
+Conduital is **feature-complete enough for the original Windows desktop MVP**, but it is **not yet fully launch-ready for real buyers** because the newest source build has not been packaged/hosted and Stripe live-mode fulfillment still needs to be armed.
+
+## Evidence
+
+| Area | Finding | Evidence |
 |---|---|---|
-| Fulfillment email skipped when key unset | TRUE | `webhooks.py:113-115` returns False + warns |
-| `RESEND_API_KEY` unset | TRUE | `config.py:319` → `Optional[str] = None` |
-| PostHog dark | TRUE | `config.py:323` → `POSTHOG_WRITE_KEY = None` |
-| No deploy config in `conduital` | TRUE | no Dockerfile/Procfile/render/fly/railway/vercel.json |
-| Download URL stale (1.4.1) | TRUE | `config.py:320` + `conduital-site/vercel.json` redirects |
+| Monetization blockers | R5 must-have launch blockers are closed except live-mode checkout wiring caveat. | `backlog.md` MON-001 through MON-013; MON-013 evidence from S40 test purchase. |
+| Stripe fulfillment | Test-mode Stripe to Resend to app activation was verified end-to-end. | `backlog.md` MON-013: test checkout, delivered email, key activated as GTD. |
+| Live sales readiness | Live-mode Stripe webhook still needs to be repeated before real buyers. | `next-prompt.md` warning; MON-013 note in `backlog.md`. |
+| Current source version | Dev source is v1.5.2. | `backend/pyproject.toml`, `frontend/package.json`, `installer/conduital.iss`. |
+| Hosted/latest installer | Public download redirect still points to v1.4.1. | `C:\Dev\conduital-site\vercel.json`: `/download/latest` -> `/downloads/ConduitalSetup-1.4.1.exe`. |
+| Local build artifacts | No local 1.5.2 installer output exists yet. | `installer/Output` contains installers through `ConduitalSetup-1.4.1.exe`; `backend/dist/Conduital/Conduital.exe` timestamp is 2026-05-11. |
+| Email authentication | `conduital.com` has no DMARC record; SPF is softfail; Resend DKIM is present. Treat DMARC as a pre-dissemination launch gate. | DNS checks on 2026-06-27: `_dmarc.conduital.com` absent; SPF `v=spf1 include:_spf.mx.cloudflare.net ~all`; `resend._domainkey.conduital.com` has a DKIM TXT key. |
+| Repo cleanliness | Main repo is synced with origin; only `AGENTS.md` is untracked. | `git status --short --branch`: `## master...origin/master`, `?? AGENTS.md`. |
+| Site repo cleanliness | Site repo is synced with origin. | `git -C C:\Dev\conduital-site status --short --branch`: `## main...origin/main`. |
 
-## 2. Architecture (the part the handoff understated)
-- **`webhooks.py` is part of the DESKTOP backend.** In prod that backend runs only on the
-  buyer's `127.0.0.1:52140` (bundled in the .exe). Stripe cannot deliver there. That is *why*
-  "no public deploy" exists — there was never meant to be one for the desktop backend.
-- **Public site = separate repo `C:\Dev\conduital-site`.** Astro 6.1 static, on Vercel
-  (`@vercel/analytics` dep; `vercel.json` redirects). Node >=22.12. No `/api` dir, no SSR adapter.
-- `conduital-site/vercel.json` currently only redirects `/download/v1.4.1` and `/download/latest`
-  → `/downloads/ConduitalSetup-1.4.1.exe`. The stable **`/download/latest`** indirection is the
-  right target for app + email (decouples app version from the URL).
+## MVP Position
 
-## 3. DECISIVE: app verifies Stripe keys OFFLINE → stateless function is sufficient
-- `license.py::activate_license` dispatches by format:
-  - 4-group hex → Gumroad (remote `/v2/licenses/verify`)
-  - **8-group hex → `_activate_stripe_opaque()` — trusts FORMAT ONLY, no server call**, stores key
-    as `purchase_id`, sets `tier=gtd`.
-  - `sk_`/`cs_` prefixes → opaque receipt fallback.
-- Code rationale (MON-008/Option A): "the webhook fulfillment path is authoritative … exists for
-  the buyer who pastes the receipt."
-- ⇒ Function needs **no datastore**. Jobs: verify sig → gen 8×8 hex key → Resend email. App unlocks
-  offline when buyer pastes the key.
-- **Key-format contract:** `_STRIPE_WEBHOOK_KEY_RE = ^(?:[0-9A-Fa-f]{8}-){7}[0-9A-Fa-f]{8}$`.
-  Python gen = `secrets.token_hex(32).upper()` grouped 8×8.
-  JS equiv = `crypto.randomBytes(32).toString('hex').toUpperCase()` grouped 8×8.
+### Built
+- Core project/task system, modules, setup wizard, local-first packaging architecture.
+- Markdown/file sync UX, conflict UI, and storage hardening.
+- License activation UI, trial expiry UX, telemetry plumbing, feedback widget/admin view.
+- Stripe/Gumroad activation paths and PostHog/Resend production plumbing.
+- Starter templates/onboarding value for new users.
 
-## 4. Known limitations (pre-existing — NOT expanded this session)
-- **Offline key forgeability:** anyone who knows the 8×8 format can self-issue a "valid" key
-  (format-only trust). Deliberate MON-008 tradeoff for a desktop app. Flag, don't fix here.
-- **Tier ceiling:** `_activate_stripe_opaque` always grants `gtd` regardless of purchase
-  ("only paid Stripe tier today"). If GTD+/full is sold via Stripe, a pasted key under-grants.
-  Note in runbook.
+### Still Needed Before Real-Buyer MVP
+- Package v1.5.2 and host it as `/download/latest`.
+- Register/set Stripe webhook secret in live mode.
+- Publish and verify DMARC for `conduital.com`; do not hardfail SPF until all legitimate outbound senders are known.
+- Run clean Windows 10/11 installer tests and at least one upgrade-in-place test from v1.4.1 to v1.5.2.
+- Decide whether unsigned installer warnings are acceptable for alpha, or purchase/sign before broader paid distribution.
 
-## 5. PostHog
-- Key: `phc_ygx9UwhNNRCrQPhx98zeBuTcezc3W5zr3sMrMiEV3Cm8`, host `https://us.i.posthog.com`
-  (already correct in `telemetry_service.py`). `phc_` = publishable client key → safe to bake as default.
+## Recommendation
 
-## 6. Stale planning artifacts
-- Root `task_plan.md`/`findings.md`/`progress.md` were from v1.1.0 S12-14 (Feb 2026) — abandoned
-  (we're at v1.5.1). Refreshed for S38. Canonical tracking stays `backlog.md` + `next-prompt.md` + vault.
+Do not start R9 by default. First close the distribution gap:
+1. Build and smoke-test `ConduitalSetup-1.5.2.exe`.
+2. Upload/host it and update the public redirect.
+3. Arm Stripe live-mode fulfillment.
+4. Add DMARC and verify Resend fulfillment passes aligned authentication.
+5. Run clean VM plus upgrade tests.
+
+After that, the strongest product next step is R9 / BACKLOG-162 Weekly Review Assistant.
+
+## Historical Context
+
+S38 identified the original MON-013 launch blocker: fulfillment lived in the desktop backend, which Stripe could not reach. S38 relocated fulfillment to a Vercel function; S39 verified and hardened it; S40 completed the test-mode end-to-end purchase and activation path.
